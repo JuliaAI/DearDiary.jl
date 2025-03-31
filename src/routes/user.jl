@@ -15,6 +15,16 @@ function get_user_by_username_handler(::HTTP.Request, username::String)::HTTP.Re
 end
 
 """
+    get_users_handler(request::HTTP.Request)::HTTP.Response
+
+!!! warning
+    This function is for route handling and should not be called directly.
+"""
+function get_users_handler(::HTTP.Request)::HTTP.Response
+    return json(get_users(); status=HTTP.StatusCodes.OK)
+end
+
+"""
     create_user_handler(request::HTTP.Request, parameters::Json{UserPayload})::HTTP.Response
 
 !!! warning

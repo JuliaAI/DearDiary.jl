@@ -1,32 +1,36 @@
 """
-    query_record(::Type{<:User}, username::String;
-        database::SQLite.DB=get_database())::Union{SQLite.Row, Nothing}
+    fetch(::Type{<:User}, username::String)::Union{User, Nothing}
 
-Query an [`User`](@ref) record by username.
+Fetch an [`User`](@ref) record by username.
 
 # Arguments
 - `::Type{<:User}`: The type of the record to query.
 - `username::String`: The username of the user to query.
 
-# Keyword Arguments
-- `database::SQLite.DB`: The database connection.
-
 # Returns
-A [`SQLite.Row`](@ref) object.
+A [`User`](@ref) object. If the record does not exist, return `nothing`.
 """
-function query_record(::Type{<:User}, username::String;
-    database::SQLite.DB=get_database())::Union{SQLite.Row,Nothing}
-    record = DBInterface.execute(database, SQL_SELECT_USER_BY_USERNAME,
-        (username=username,))
-    if (record |> isempty)
-        return nothing
-    end
-    return (record |> first)
+function fetch(::Type{<:User}, username::String)::Union{User,Nothing}
+    user = fetch(SQL_SELECT_USER_BY_USERNAME, (username=username,))
+    return (user |> isnothing) ? nothing : (user |> User)
 end
 
 """
+    fetch_all(::Type{<:User})::Array{User,1}
+
+Fetch all [`User`](@ref) records.
+
+# Arguments
+- `::Type{<:User}`: The type of the records to fetch.
+
+# Returns
+An array of [`User`](@ref) objects.
+"""
+fetch_all(::Type{<:User})::Array{User,1} = SQL_SELECT_USERS |> fetch_all .|> User
+
+"""
     insert_record(::Type{<:User}, first_name::String, last_name::String, username::String,
-        password::String; database::SQLite.DB=get_database())::UpsertResult
+        password::String)::UpsertResult
 
 Insert an [`User`](@ref) record.
 
@@ -37,26 +41,12 @@ Insert an [`User`](@ref) record.
 - `username::String`: The username of the user.
 - `password::String`: The password of the user.
 
-# Keyword Arguments
-- `database::SQLite.DB`: The database connection.
-
 # Returns
-An [`UpsertResult`](@ref).
+An [`UpsertResult`](@ref). `CREATED` if the record was successfully created, `DUPLICATE` if
+the record already exists, `UNPROCESSABLE` if the record violates a constraint, and `ERROR`
+if an error occurred while creating the record.
 """
-function insert_record(::Type{<:User}, first_name::String, last_name::String,
-    username::String, password::String; database::SQLite.DB=get_database())::UpsertResult
-    try
-        DBInterface.execute(database, SQL_INSERT_USER, (first_name=first_name,
-            last_name=last_name, username=username, password=password,
-            created_at=(now() |> string),))
-        return CREATED
-    catch exception
-        if occursin("UNIQUE constraint failed", (exception.msg |> string))
-            return DUPLICATE
-        elseif occursin("CHECK constraint failed", (exception.msg |> string))
-            return UNPROCESSABLE
-        else
-            return ERROR
-        end
-    end
-end
+insert(::Type{<:User}, first_name::String, last_name::String, username::String,
+    password::String)::UpsertResult =
+    insert(SQL_INSERT_USER, (first_name=first_name, last_name=last_name, username=username,
+        password=password, created_at=(now() |> string),))

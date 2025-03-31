@@ -9,3 +9,4 @@ sandbox/
 /docs/Manifest.toml
 .vscode
 .env
+/assets

@@ -21,4 +21,12 @@
             @test TrackingAPI.get_user_by_username("gala") |> isnothing
         end
     end
+
+    @testset verbose = true "get_users" begin
+        TrackingAPI.create_user("Gala", "Missy", "gala", "missy")
+        users = TrackingAPI.get_users()
+
+        @test users isa Array{TrackingAPI.User,1}
+        @test (users |> length) == 2
+    end
 end

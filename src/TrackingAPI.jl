@@ -43,6 +43,7 @@ function run(; host::String="127.0.0.1", port::Int=9000, env_file::String=".env"
 
     user_router = router("/user", tags=["user"])
     @get user_router("/{username}") get_user_by_username_handler
+    @get user_router("/") get_users_handler
     @post user_router("/") create_user_handler
 
     serveparallel(; host=host, port=port, async=true)

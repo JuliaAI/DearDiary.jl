@@ -11,9 +11,7 @@ A [`SQLite.DB`](@ref) object.
 !!! note
 The function is memoized, so the database connection will be reused across calls.
 """
-@memoize get_database()::SQLite.DB = SQLite.DB(
-    haskey(ENV, "TRACKINGAPI_DB_FILE") ? ENV["TRACKINGAPI_DB_FILE"] : "trackingapi.db"
-)
+@memoize get_database()::SQLite.DB = SQLite.DB(api_config.db_file)
 
 """
     initialize_database(; database::SQLite.DB=get_database())

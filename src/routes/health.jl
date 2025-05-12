@@ -1,3 +1,9 @@
+"""
+    get_health_handler()
+
+!!! warning
+    This function is for route handling and should not be called directly.
+"""
 function get_health_handler()
     app_name = "TrackingAPI"
     package_version = TrackingAPI |> pkgversion

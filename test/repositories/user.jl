@@ -36,6 +36,6 @@
         users = TrackingAPI.User |> TrackingAPI.fetch_all
 
         @test users isa Array{TrackingAPI.User,1}
-        @test (users |> length) == 2
+        @test (users |> length) == 3 # Including the default user
     end
 end

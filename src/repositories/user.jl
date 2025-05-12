@@ -16,6 +16,23 @@ function fetch(::Type{<:User}, username::String)::Union{User,Nothing}
 end
 
 """
+    fetch(::Type{<:User}, id::Integer)::Union{User, Nothing}
+
+Fetch an [`User`](@ref) record by id.
+
+# Arguments
+- `::Type{<:User}`: The type of the record to query.
+- `id::Integer`: The id of the user to query.
+
+# Returns
+A [`User`](@ref) object. If the record does not exist, return `nothing`.
+"""
+function fetch(::Type{<:User}, id::Integer)::Union{User,Nothing}
+    user = fetch(SQL_SELECT_USER_BY_ID, (id=id,))
+    return (user |> isnothing) ? nothing : (user |> User)
+end
+
+"""
     fetch_all(::Type{<:User})::Array{User,1}
 
 Fetch all [`User`](@ref) records.

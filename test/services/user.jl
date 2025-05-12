@@ -15,6 +15,7 @@
             @test user.first_name == "Missy"
             @test user.last_name == "Gala"
             @test user.username == "missy"
+            @test CompareHashAndPassword(user.password, "gala")
             @test user.created_at isa DateTime
         end
 

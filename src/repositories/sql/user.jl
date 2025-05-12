@@ -4,8 +4,20 @@ SELECT
     us.first_name,
     us.last_name,
     us.username,
+    us.password,
     us.created_at
 FROM user us WHERE us.username = :username
+"
+
+const SQL_SELECT_USER_BY_ID = "
+SELECT
+    us.ROWID as id,
+    us.first_name,
+    us.last_name,
+    us.username,
+    us.password,
+    us.created_at
+FROM user us WHERE us.ROWID = :id
 "
 
 const SQL_SELECT_USERS = "
@@ -14,6 +26,7 @@ SELECT
     us.first_name,
     us.last_name,
     us.username,
+    us.password,
     us.created_at
 FROM user us
 "

@@ -1,5 +1,5 @@
 @testset verbose = true "health" begin
-    response = "http://127.0.0.1:19000/health" |> HTTP.get
+    response = "http://127.0.0.1:9000/health" |> HTTP.get
 
     @assert response.status == HTTP.StatusCodes.OK
 

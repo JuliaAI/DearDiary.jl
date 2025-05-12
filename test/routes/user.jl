@@ -2,7 +2,7 @@
     @testset verbose = true "create user" begin
         payload = Dict("first_name" => "Missy", "last_name" => "Gala",
             "username" => "missy", "password" => "gala") |> JSON.json
-        response = HTTP.post("http://127.0.0.1:19000/user"; body=payload)
+        response = HTTP.post("http://127.0.0.1:9000/user"; body=payload)
 
         @assert response.status == HTTP.StatusCodes.CREATED
         data = response.body |> String |> JSON.parse
@@ -10,7 +10,7 @@
     end
 
     @testset verbose = true "get user by username" begin
-        response = HTTP.get("http://127.0.0.1:19000/user/missy")
+        response = HTTP.get("http://127.0.0.1:9000/user/missy")
 
         @assert response.status == HTTP.StatusCodes.OK
         data = response.body |> String |> JSON.parse
@@ -26,9 +26,9 @@
     @testset verbose = true "get users" begin
         payload = Dict("first_name" => "Gala", "last_name" => "Missy",
             "username" => "gala", "password" => "missy") |> JSON.json
-        HTTP.post("http://127.0.0.1:19000/user"; body=payload)
+        HTTP.post("http://127.0.0.1:9000/user"; body=payload)
 
-        response = HTTP.get("http://127.0.0.1:19000/user/")
+        response = HTTP.get("http://127.0.0.1:9000/user/")
 
         @assert response.status == HTTP.StatusCodes.OK
         data = response.body |> String |> JSON.parse

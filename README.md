@@ -1,5 +1,6 @@
 # TrackingAPI.jl
 [![CI](https://github.com/pebeto/TrackingAPI.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/pebeto/TrackingAPI.jl/actions/workflows/CI.yml)
+
 A full-featured solution for machine learning lifecycle (made in Julia) with a focus on tracking and reproducibility.
 
 > [!IMPORTANT]

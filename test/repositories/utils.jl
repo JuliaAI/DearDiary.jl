@@ -21,10 +21,13 @@
         end
 
         @testset verbose = true "update" begin
-            @test TrackingAPI.update(TrackingAPI.SQL_UPDATE_USER, 1, (first_name="Ana",)) == TrackingAPI.UPDATED
+            user = TrackingAPI.fetch(TrackingAPI.SQL_SELECT_USER_BY_ID, (id=1,)) |> TrackingAPI.User
+
+            @test TrackingAPI.update(TrackingAPI.SQL_UPDATE_USER, user; first_name="Ana", last_name=nothing) == TrackingAPI.UPDATED
 
             user = TrackingAPI.fetch(TrackingAPI.SQL_SELECT_USER_BY_USERNAME, (username="missy",))
             @test user[:first_name] == "Ana"
+            @test user[:last_name] == "Gala"
         end
 
         @testset verbose = true "delete" begin

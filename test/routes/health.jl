@@ -1,5 +1,5 @@
-@testset verbose = true "health" begin
-    response = "http://127.0.0.1:9000/health" |> HTTP.get
+@testset verbose = true "health route" begin
+    response = HTTP.get("http://127.0.0.1:9000/health"; status_exception=false)
 
     @assert response.status == HTTP.StatusCodes.OK
 

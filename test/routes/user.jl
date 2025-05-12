@@ -1,40 +1,59 @@
 @with_trackingapi_test_db begin
-    @testset verbose = true "create user" begin
-        payload = Dict("first_name" => "Missy", "last_name" => "Gala",
-            "username" => "missy", "password" => "gala") |> JSON.json
-        response = HTTP.post("http://127.0.0.1:9000/user"; body=payload)
+    @testset verbose = true "user routes" begin
+        @testset verbose = true "create user" begin
+            payload = Dict("first_name" => "Missy", "last_name" => "Gala",
+                "username" => "missy", "password" => "gala") |> JSON.json
+            response = HTTP.post("http://127.0.0.1:9000/user"; body=payload, status_exception=false)
 
-        @assert response.status == HTTP.StatusCodes.CREATED
-        data = response.body |> String |> JSON.parse
-        @assert data["message"] == "CREATED"
-    end
+            @assert response.status == HTTP.StatusCodes.CREATED
+            data = response.body |> String |> JSON.parse
+            @assert data["message"] == "CREATED"
+        end
 
-    @testset verbose = true "get user by username" begin
-        response = HTTP.get("http://127.0.0.1:9000/user/missy")
+        @testset verbose = true "get user by username" begin
+            response = HTTP.get("http://127.0.0.1:9000/user/missy"; status_exception=false)
 
-        @assert response.status == HTTP.StatusCodes.OK
-        data = response.body |> String |> JSON.parse
-        user = data |> TrackingAPI.User
+            @assert response.status == HTTP.StatusCodes.OK
+            data = response.body |> String |> JSON.parse
+            user = data |> TrackingAPI.User
 
-        @assert user.id isa Int
-        @assert user.first_name == "Missy"
-        @assert user.last_name == "Gala"
-        @assert user.username == "missy"
-        @assert user.created_at isa DateTime
-    end
+            @assert user.id isa Int
+            @assert user.first_name == "Missy"
+            @assert user.last_name == "Gala"
+            @assert user.username == "missy"
+            @assert user.created_at isa DateTime
+        end
 
-    @testset verbose = true "get users" begin
-        payload = Dict("first_name" => "Gala", "last_name" => "Missy",
-            "username" => "gala", "password" => "missy") |> JSON.json
-        HTTP.post("http://127.0.0.1:9000/user"; body=payload)
+        @testset verbose = true "get users" begin
+            payload = Dict("first_name" => "Gala", "last_name" => "Missy",
+                "username" => "gala", "password" => "missy") |> JSON.json
+            HTTP.post("http://127.0.0.1:9000/user"; body=payload, status_exception=false)
 
-        response = HTTP.get("http://127.0.0.1:9000/user/")
+            response = HTTP.get("http://127.0.0.1:9000/user/"; status_exception=false)
 
-        @assert response.status == HTTP.StatusCodes.OK
-        data = response.body |> String |> JSON.parse
-        users = data .|> TrackingAPI.User
+            @assert response.status == HTTP.StatusCodes.OK
+            data = response.body |> String |> JSON.parse
+            users = data .|> TrackingAPI.User
 
-        @assert users isa Array{TrackingAPI.User,1}
-        @assert (users |> length) == 2
+            @assert users isa Array{TrackingAPI.User,1}
+            @assert (users |> length) == 2
+        end
+
+        @testset verbose = true "update user" begin
+            payload = Dict("first_name" => "Ana", "last_name" => nothing,
+                "password" => nothing) |> JSON.json
+            response = HTTP.patch("http://127.0.0.1:9000/user/1"; body=payload, status_exception=false)
+
+            @assert response.status == HTTP.StatusCodes.OK
+            data = response.body |> String |> JSON.parse
+            @assert data["message"] == "UPDATED"
+
+            response = HTTP.get("http://127.0.0.1:9000/user/missy"; status_exception=false)
+            data = response.body |> String |> JSON.parse
+            user = data |> TrackingAPI.User
+
+            @assert user.first_name == "Ana"
+            @assert user.last_name == "Gala"
+        end
     end
 end

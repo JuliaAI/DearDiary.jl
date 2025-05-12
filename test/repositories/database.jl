@@ -1,9 +1,11 @@
-@testset verbose = true "get database" begin
-    @testset "check memoization" begin
-        db1 = TrackingAPI.get_database()
-        db2 = TrackingAPI.get_database()
+@testset verbose = true "database utilities" begin
+    @testset verbose = true "get database" begin
+        @testset "check memoization" begin
+            db1 = TrackingAPI.get_database()
+            db2 = TrackingAPI.get_database()
 
-        @test db1 === db2
+            @test db1 === db2
+        end
     end
 
     @testset "initialize database" begin

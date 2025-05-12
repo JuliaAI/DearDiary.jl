@@ -12,7 +12,7 @@ A struct that represents a user.
     not the plain text password.
 - `created_at::DateTime`: The date and time the user was created.
 """
-struct User
+struct User <: ResultType
     id::Integer
     first_name::String
     last_name::String
@@ -36,7 +36,7 @@ A struct that represents the payload for creating a user.
 - `username::String`: The username of the user.
 - `password::String`: The password of the user.
 """
-struct UserCreatePayload
+struct UserCreatePayload <: UpsertType
     first_name::String
     last_name::String
     username::String
@@ -53,7 +53,7 @@ A struct that represents the payload for updating a user.
 - `last_name::Union{String, Nothing}`: The last name of the user.
 - `password::Union{String, Nothing}`: The password of the user.
 """
-struct UserUpdatePayload
+struct UserUpdatePayload <: UpsertType
     first_name::Union{String,Nothing}
     last_name::Union{String,Nothing}
     password::Union{String,Nothing}

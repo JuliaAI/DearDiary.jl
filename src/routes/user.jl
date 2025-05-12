@@ -35,3 +35,15 @@ function create_user_handler(::HTTP.Request, parameters::Json{UserCreatePayload}
     upsert_status = upsert_result |> get_status_by_upsert_result
     return json(("message" => upsert_result); status=upsert_status)
 end
+
+"""
+    update_user_handler(request::HTTP.Request, id::Int, parameters::Json{UserUpdatePayload})::HTTP.Response
+
+!!! warning
+    This function is for route handling and should not be called directly.
+"""
+function update_user_handler(::HTTP.Request, id::Int, parameters::Json{UserUpdatePayload})::HTTP.Response
+    upsert_result = update_user(id, parameters.payload)
+    upsert_status = upsert_result |> get_status_by_upsert_result
+    return json(("message" => upsert_result); status=upsert_status)
+end

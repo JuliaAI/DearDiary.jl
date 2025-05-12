@@ -14,6 +14,7 @@ include("utils.jl")
 
 include("types/config.jl")
 include("types/enums.jl")
+include("types/utils.jl")
 include("types/user.jl")
 
 include("repositories/sql/database.jl")
@@ -24,6 +25,7 @@ include("repositories/database.jl")
 include("repositories/user.jl")
 
 include("services/user.jl")
+include("services/utils.jl")
 
 include("routes/utils.jl")
 include("routes/health.jl")
@@ -105,6 +107,7 @@ function run(; env_file::String=".env")
     @get user_router("/{username}") get_user_by_username_handler
     @get user_router("/") get_users_handler
     @post user_router("/") create_user_handler
+    @patch user_router("/{id}") update_user_handler
 
     auth_router = router("/auth", tags=["auth"])
     @post auth_router("/") auth_handler

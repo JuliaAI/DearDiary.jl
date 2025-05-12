@@ -68,6 +68,7 @@ include("repositories/user.jl")
 include("repositories/utils.jl")
 
 include("services/user.jl")
+include("services/utils.jl")
 
 include("routes/utils.jl")
 include("routes/health.jl")

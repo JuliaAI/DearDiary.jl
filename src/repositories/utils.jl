@@ -14,9 +14,8 @@ Fetch a record from the database.
 # Returns
 A dictionary of the record. If the record does not exist, return `nothing`.
 """
-function fetch(query::String, params::NamedTuple;
-    database::SQLite.DB=get_database())::Union{Dict{Symbol,Any},Nothing}
-    record = DBInterface.execute(database, query, params)
+function fetch(query::String, params::NamedTuple)::Union{Dict{Symbol,Any},Nothing}
+    record = DBInterface.execute(get_database(), query, params)
     if (record |> isempty)
         return nothing
     end
@@ -39,9 +38,8 @@ Fetch all records from the database.
 # Returns
 An array of dictionaries of the records.
 """
-fetch_all(query::String; params::NamedTuple=(;),
-    database::SQLite.DB=get_database())::Array{Dict{Symbol,Any},1} =
-    [(record |> row_to_dict) for record in DBInterface.execute(database, query, params)]
+fetch_all(query::String; params::NamedTuple=(;))::Array{Dict{Symbol,Any},1} =
+    [(record |> row_to_dict) for record in DBInterface.execute(get_database(), query, params)]
 
 """
     insert(query::String, params::NamedTuple;
@@ -61,10 +59,9 @@ An [`UpsertResult`](@ref). `CREATED` if the record was successfully created, `DU
 the record already exists, `UNPROCESSABLE` if the record violates a constraint, and `ERROR`
 if an error occurred while creating the record.
 """
-function insert(query::String, params::NamedTuple;
-    database::SQLite.DB=get_database())::UpsertResult
+function insert(query::String, params::NamedTuple)::UpsertResult
     try
-        DBInterface.execute(database, query, params)
+        DBInterface.execute(get_database(), query, params)
         return CREATED
     catch exception
         if occursin("UNIQUE constraint failed", (exception.msg |> string))
@@ -78,14 +75,14 @@ function insert(query::String, params::NamedTuple;
 end
 
 """
-    update(query::String, id::Integer, params::NamedTuple;
+    update(query::String, object::UpsertType, params::NamedTuple;
         database::SQLite.DB=get_database())::UpsertResult
 
 Update a record in the database.
 
 # Arguments
 - `query::String`: The query to execute.
-- `id::Integer`: The ID of the record to update.
+- `object::UpsertType`: The object to update.
 - `params::NamedTuple`: The query parameters.
 
 # Keyword Arguments
@@ -95,12 +92,14 @@ Update a record in the database.
 An [`UpsertResult`](@ref). `UPDATED` if the record was successfully updated,
 `UNPROCESSABLE` if the record violates a constraint, and `ERROR` if an error occurred.
 """
-function update(query::String, id::Integer, params::NamedTuple;
-    database::SQLite.DB=get_database())::UpsertResult
+function update(query::String, object::Union{<:ResultType,Nothing};
+    params...)::UpsertResult
     try
-        fields = join(["$key=:$key" for key in (params |> keys)], ", ")
-        DBInterface.execute(database, replace(query, "{fields}" => fields),
-            merge(params, (id=id,)))
+        params = params |> NamedTuple
+        fields = join(
+            ["$key=:$key" for key in (params |> keys) if params[key] |> !isnothing], ", ")
+        DBInterface.execute(get_database(), replace(query, "{fields}" => fields),
+            merge(params, (id=getfield(object, :id),)))
         return UPDATED
     catch exception
         if occursin("CHECK constraint failed", (exception.msg |> string))
@@ -126,10 +125,9 @@ Delete a record from the database.
 # Returns
 `true` if the record was successfully deleted, `false` otherwise.
 """
-function delete(query::String, id::Integer;
-    database::SQLite.DB=get_database())::Bool
+function delete(query::String, id::Integer)::Bool
     try
-        DBInterface.execute(database, query, (id=id,))
+        DBInterface.execute(get_database(), query, (id=id,))
         return true
     catch _
         return false
@@ -137,9 +135,9 @@ function delete(query::String, id::Integer;
 end
 
 """
-    row_to_dict(type::SQLite.Row)::Dict{Symbol, Any}
+    row_to_dict(row::SQLite.Row)::Dict{Symbol, Any}
 
 Convert a SQLite row to a dictionary.
 """
-row_to_dict(type::SQLite.Row)::Dict{Symbol,Any} =
-    zip((type |> keys), (type |> values)) |> collect |> Dict
+row_to_dict(row::SQLite.Row)::Dict{Symbol,Any} =
+    zip((row |> keys), (row |> values)) |> collect |> Dict

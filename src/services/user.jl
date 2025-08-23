@@ -68,6 +68,7 @@ Update an [`User`](@ref).
 - `last_name::Union{String,Nothing}`: The last name of the user.
 - `password::Union{String,Nothing}`: The password of the user. This will be hashed
     before updating the user.
+- `is_admin::Union{Bool,Nothing}`: Whether the user is an administrator.
 
 # Returns
 An [`UpsertResult`](@ref). `UPDATED` if the record was successfully updated,
@@ -91,5 +92,19 @@ function update_user(id::Int, user_payload::UserUpdatePayload)::UpsertResult
     end
     return update(User, id; first_name=user_payload.first_name,
         last_name=user_payload.last_name,
-        password=(user_payload.password |> isnothing) ? nothing : hashed_password)
+        password=(user_payload.password |> isnothing) ? nothing : hashed_password,
+        is_admin=user_payload.is_admin)
 end
+
+"""
+    delete_user(id::Int)::Bool
+
+Delete an [`User`](@ref).
+
+# Arguments
+- `id::Int`: The id of the user to delete.
+
+# Returns
+`true` if the record was successfully deleted, `false` otherwise.
+"""
+delete_user(id::Int)::Bool = delete(User, id)

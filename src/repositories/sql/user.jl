@@ -5,7 +5,8 @@ SELECT
     us.last_name,
     us.username,
     us.password,
-    us.created_at
+    us.created_at,
+    us.is_admin
 FROM user us WHERE us.username = :username
 "
 
@@ -16,7 +17,8 @@ SELECT
     us.last_name,
     us.username,
     us.password,
-    us.created_at
+    us.created_at,
+    us.is_admin
 FROM user us WHERE us.ROWID = :id
 "
 
@@ -27,7 +29,8 @@ SELECT
     us.last_name,
     us.username,
     us.password,
-    us.created_at
+    us.created_at,
+    us.is_admin
 FROM user us
 "
 

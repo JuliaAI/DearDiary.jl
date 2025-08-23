@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS user (
     username TEXT NOT NULL CHECK (username <> ''),
     password TEXT NOT NULL CHECK (password <> ''),
     created_at TEXT NOT NULL CHECK (created_at <> ''),
+    is_admin INTEGER DEFAULT 0,
     PRIMARY KEY (username)
 )
 "

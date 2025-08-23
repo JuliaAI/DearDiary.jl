@@ -35,13 +35,19 @@
         end
 
         @testset verbose = true "update user" begin
-            user_payload = TrackingAPI.UserUpdatePayload("Ana", nothing, nothing)
+            user_payload = TrackingAPI.UserUpdatePayload("Ana", nothing, nothing, nothing)
             @test TrackingAPI.update_user(1, user_payload) == TrackingAPI.UPDATED
 
             user = TrackingAPI.get_user_by_username("missy")
 
             @test user.first_name == "Ana"
             @test user.last_name == "Gala"
+        end
+
+        @testset verbose = true "delete user" begin
+            @test TrackingAPI.delete_user(1)
+
+            @test TrackingAPI.get_user_by_username("missy") |> isnothing
         end
     end
 end

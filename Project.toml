@@ -1,7 +1,7 @@
 name = "TrackingAPI"
 uuid = "bcf306fc-d39d-4f25-b732-26abcc96baf2"
 authors = ["Jose Esparza <joseesparzadc@icloud.com>"]
-version = "0.0.1"
+version = "0.0.2"
 
 [deps]
 Bcrypt = "137488db-d2e6-4fb9-97f3-1e40a263e83c"

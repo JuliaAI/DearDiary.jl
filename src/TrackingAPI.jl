@@ -108,6 +108,7 @@ function run(; env_file::String=".env")
     @get user_router("/") get_users_handler
     @post user_router("/") create_user_handler
     @patch user_router("/{id}") update_user_handler
+    @delete user_router("/{id}") delete_user_handler
 
     auth_router = router("/auth", tags=["auth"])
     @post auth_router("/") auth_handler

@@ -5,23 +5,23 @@
                 "username" => "missy", "password" => "gala") |> JSON.json
             response = HTTP.post("http://127.0.0.1:9000/user"; body=payload, status_exception=false)
 
-            @assert response.status == HTTP.StatusCodes.CREATED
+            @test response.status == HTTP.StatusCodes.CREATED
             data = response.body |> String |> JSON.parse
-            @assert data["message"] == "CREATED"
+            @test data["message"] == "CREATED"
         end
 
         @testset verbose = true "get user by username" begin
             response = HTTP.get("http://127.0.0.1:9000/user/missy"; status_exception=false)
 
-            @assert response.status == HTTP.StatusCodes.OK
+            @test response.status == HTTP.StatusCodes.OK
             data = response.body |> String |> JSON.parse
             user = data |> TrackingAPI.User
 
-            @assert user.id isa Int
-            @assert user.first_name == "Missy"
-            @assert user.last_name == "Gala"
-            @assert user.username == "missy"
-            @assert user.created_at isa DateTime
+            @test user.id isa Int
+            @test user.first_name == "Missy"
+            @test user.last_name == "Gala"
+            @test user.username == "missy"
+            @test user.created_at isa DateTime
         end
 
         @testset verbose = true "get users" begin
@@ -31,12 +31,12 @@
 
             response = HTTP.get("http://127.0.0.1:9000/user/"; status_exception=false)
 
-            @assert response.status == HTTP.StatusCodes.OK
+            @test response.status == HTTP.StatusCodes.OK
             data = response.body |> String |> JSON.parse
             users = data .|> TrackingAPI.User
 
-            @assert users isa Array{TrackingAPI.User,1}
-            @assert (users |> length) == 2
+            @test users isa Array{TrackingAPI.User,1}
+            @test (users |> length) == 2
         end
 
         @testset verbose = true "update user" begin
@@ -44,16 +44,23 @@
                 "password" => nothing) |> JSON.json
             response = HTTP.patch("http://127.0.0.1:9000/user/1"; body=payload, status_exception=false)
 
-            @assert response.status == HTTP.StatusCodes.OK
+            @test response.status == HTTP.StatusCodes.OK
             data = response.body |> String |> JSON.parse
-            @assert data["message"] == "UPDATED"
+            @test data["message"] == "UPDATED"
 
             response = HTTP.get("http://127.0.0.1:9000/user/missy"; status_exception=false)
             data = response.body |> String |> JSON.parse
             user = data |> TrackingAPI.User
 
-            @assert user.first_name == "Ana"
-            @assert user.last_name == "Gala"
+            @test user.first_name == "Ana"
+            @test user.last_name == "Gala"
+        end
+
+        @testset verbose = true "delete user" begin
+            response = HTTP.delete("http://127.0.0.1:9000/user/1"; status_exception=false)
+            @test response.status == HTTP.StatusCodes.OK
+            data = response.body |> String |> JSON.parse
+            @test data["message"] == "OK"
         end
     end
 end

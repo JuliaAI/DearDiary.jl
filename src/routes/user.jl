@@ -47,3 +47,20 @@ function update_user_handler(::HTTP.Request, id::Int, parameters::Json{UserUpdat
     upsert_status = upsert_result |> get_status_by_upsert_result
     return json(("message" => upsert_result); status=upsert_status)
 end
+
+"""
+    delete_user_handler(request::HTTP.Request, id::Int)::HTTP.Response
+
+!!! warning
+    This function is for route handling and should not be called directly.
+"""
+function delete_user_handler(::HTTP.Request, id::Int)::HTTP.Response
+    success = id |> delete_user
+
+    if !success
+        return json(("message" => (HTTP.StatusCodes.INTERNAL_SERVER_ERROR |> HTTP.statustext));
+            status=HTTP.StatusCodes.INTERNAL_SERVER_ERROR)
+    end
+    return json(("message" => (HTTP.StatusCodes.OK |> HTTP.statustext));
+        status=HTTP.StatusCodes.OK)
+end

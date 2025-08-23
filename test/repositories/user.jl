@@ -60,5 +60,11 @@
             @test user.first_name == "Ana"
             @test user.last_name == "Gala"
         end
+
+        @testset verbose = true "delete" begin
+            @test TrackingAPI.delete(TrackingAPI.User, 2)
+            @test TrackingAPI.fetch(TrackingAPI.User, "missy") |> isnothing
+            @test (TrackingAPI.User |> TrackingAPI.fetch_all |> length) == 2 # Including the default user
+        end
     end
 end

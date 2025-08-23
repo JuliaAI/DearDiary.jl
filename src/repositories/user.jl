@@ -85,7 +85,21 @@ An [`UpsertResult`](@ref). `UPDATED` if the record was successfully updated,
 `UNPROCESSABLE` if the record violates a constraint, and `ERROR` if an error occurred.
 """
 update(::Type{<:User}, id::Integer; first_name::Union{String,Nothing}=nothing,
-    last_name::Union{String,Nothing}=nothing,
-    password::Union{String,Nothing}=nothing)::UpsertResult =
+    last_name::Union{String,Nothing}=nothing, password::Union{String,Nothing}=nothing,
+    is_admin::Union{Bool,Nothing}=nothing)::UpsertResult =
     update(SQL_UPDATE_USER, fetch(User, id); first_name=first_name, last_name=last_name,
-        password=password)
+        password=password, is_admin=is_admin)
+
+"""
+    delete(::Type{<:User}, id::Integer)::Bool
+
+Delete an [`User`](@ref) record.
+
+# Arguments
+- `::Type{<:User}`: The type of the record to delete.
+- `id::Integer`: The id of the user to delete.
+
+# Returns
+`true` if the record was successfully deleted, `false` otherwise.
+"""
+delete(::Type{<:User}, id::Integer)::Bool = delete(SQL_DELETE_USER, id)

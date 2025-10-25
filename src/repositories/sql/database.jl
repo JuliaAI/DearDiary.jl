@@ -15,6 +15,26 @@ INSERT OR IGNORE INTO user (first_name, last_name, username, password, created_d
     VALUES ('Default User', '', 'default', '{password}', strftime('%Y-%m-%dT%H:%M:%f', 'now'), 1)
 "
 
+const SQL_PREVENT_DEFAULT_USER_DELETION = "
+CREATE TRIGGER IF NOT EXISTS prevent_default_user_deletion
+BEFORE DELETE ON user
+FOR EACH ROW
+WHEN OLD.username = 'default'
+BEGIN
+    SELECT RAISE(ABORT, 'Cannot delete the default user.');
+END;
+"
+
+const SQL_PREVENT_DEFAULT_USER_DEMOTE = "
+CREATE TRIGGER IF NOT EXISTS prevent_default_user_demote
+BEFORE UPDATE OF is_admin ON user
+FOR EACH ROW
+WHEN OLD.username = 'default' AND NEW.is_admin = 0
+BEGIN
+    SELECT RAISE(ABORT, 'Cannot demote the default user from admin.');
+END;
+"
+
 const SQL_CREATE_PROJECT = "
 CREATE TABLE IF NOT EXISTS project (
     name TEXT NOT NULL CHECK (name <> ''),

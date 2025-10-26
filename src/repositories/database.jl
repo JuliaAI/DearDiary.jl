@@ -19,6 +19,9 @@ The function is memoized, so the database connection will be reused across calls
 Initializes the database by creating the necessary tables.
 """
 function initialize_database(; database::SQLite.DB=get_database())
+    # Enable foreign key constraints
+    DBInterface.execute(database, "PRAGMA foreign_keys = ON")
+
     DBInterface.execute(database, SQL_CREATE_USER)
     DBInterface.execute(database,replace(SQL_INSERT_DEFAULT_ADMIN_USER, "{password}" => GenerateFromPassword("default") |> String))
     DBInterface.execute(database, SQL_PREVENT_DEFAULT_USER_DELETION)

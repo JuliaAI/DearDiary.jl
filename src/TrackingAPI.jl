@@ -29,9 +29,10 @@ include("repositories/user.jl")
 include("repositories/project.jl")
 include("repositories/userpermission.jl")
 
+include("services/utils.jl")
 include("services/user.jl")
 include("services/project.jl")
-include("services/utils.jl")
+include("services/userpermission.jl")
 
 include("routes/utils.jl")
 include("routes/health.jl")

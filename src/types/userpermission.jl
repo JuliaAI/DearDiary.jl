@@ -21,3 +21,21 @@ struct UserPermission <: ResultType
     update_permission::Bool
     delete_permission::Bool
 end
+
+"""
+    UserPermissionCreatePayload
+
+A struct that represents the payload for creating a user permission.
+
+# Fields
+- `create_permission::Bool`: Permission to create resources.
+- `read_permission::Bool`: Permission to read resources.
+- `update_permission::Bool`: Permission to update resources.
+- `delete_permission::Bool`: Permission to delete resources.
+"""
+struct UserPermissionCreatePayload <: UpsertType
+    create_permission::Bool
+    read_permission::Bool
+    update_permission::Bool
+    delete_permission::Bool
+end

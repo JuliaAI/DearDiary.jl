@@ -28,13 +28,14 @@
             end
 
             @testset "fetch by id" begin
-                user = TrackingAPI.fetch(TrackingAPI.User, 2)
+                username_user = TrackingAPI.fetch(TrackingAPI.User, "missy")
+                user = TrackingAPI.fetch(TrackingAPI.User, username_user.id)
 
                 @test user isa TrackingAPI.User
-                @test user.id == 2
-                @test user.first_name == "Missy"
-                @test user.last_name == "Gala"
-                @test user.username == "missy"
+                @test user.id == username_user.id
+                @test user.first_name == username_user.first_name
+                @test user.last_name == username_user.last_name
+                @test user.username == username_user.username
                 @test user.created_date isa DateTime
             end
 
@@ -54,7 +55,8 @@
         end
 
         @testset verbose = true "update" begin
-            @test TrackingAPI.update(TrackingAPI.User, 2; first_name="Ana", last_name=nothing) isa TrackingAPI.Updated
+            username_user = TrackingAPI.fetch(TrackingAPI.User, "missy")
+            @test TrackingAPI.update(TrackingAPI.User, username_user.id; first_name="Ana", last_name=nothing) isa TrackingAPI.Updated
 
             user = TrackingAPI.fetch(TrackingAPI.User, "missy")
 
@@ -63,7 +65,8 @@
         end
 
         @testset verbose = true "delete" begin
-            @test TrackingAPI.delete(TrackingAPI.User, 2)
+            user = TrackingAPI.fetch(TrackingAPI.User, "missy")
+            @test TrackingAPI.delete(TrackingAPI.User, user.id)
             @test TrackingAPI.fetch(TrackingAPI.User, "missy") |> isnothing
             @test (TrackingAPI.User |> TrackingAPI.fetch_all |> length) == 2 # Including the default user
         end

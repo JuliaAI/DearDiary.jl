@@ -112,7 +112,7 @@ end
 """
     delete_user(id::Int)::Bool
 
-Delete an [`User`](@ref).
+Delete an [`User`](@ref). Also deletes all associated [`UserPermission`](@ref).
 
 # Arguments
 - `id::Int`: The id of the user to delete.

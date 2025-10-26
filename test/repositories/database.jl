@@ -18,7 +18,7 @@
             @test row isa SQLite.Row
             @test keys(row) == [:name]
             @test values(row) in [["user"], ["project"], ["user_project"], ["tag"],
-                ["project_tag"], ["user_permission"]]
+                ["project_tag"], ["user_permission"], ["sqlite_sequence"]]
         end
     end
 end

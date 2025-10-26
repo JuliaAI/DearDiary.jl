@@ -1,4 +1,21 @@
 """
+    fetch(::Type{<:UserPermission}, id::Integer)::Union{UserPermission,Nothing}
+
+Fetch a [`UserPermission`](@ref) record by ID.
+
+# Arguments
+- `::Type{<:UserPermission}`: The type of the record to query.
+- `id::Integer`: The ID of the user permission.
+
+# Returns
+A [`UserPermission`](@ref) object. If the record does not exist, return `nothing`.
+"""
+function fetch(::Type{<:UserPermission}, id::Integer)::Union{UserPermission,Nothing}
+    user_permission = fetch(SQL_SELECT_USERPERMISSION_BY_ID, (id=id,))
+    return (user_permission |> isnothing) ? nothing : (user_permission |> UserPermission)
+end
+
+"""
     fetch(::Type{<:UserPermission}, user_id::Integer,
         project_id::Integer)::Union{UserPermission,Nothing}
 
@@ -41,7 +58,8 @@ insert(::Type{<:UserPermission}, user_id::Integer,
     insert(SQL_INSERT_USERPERMISSION, (user_id=user_id, project_id=project_id,))
 
 """
-    update(::Type{<:UserPermission}; create_permission::Union{Bool,Nothing}=nothing,
+    update(::Type{<:UserPermission}, id::Integer;
+        create_permission::Union{Bool,Nothing}=nothing,
         read_permission::Union{Bool,Nothing}=nothing,
         update_permission::Union{Bool,Nothing}=nothing,
         delete_permission::Union{Bool,Nothing}=nothing,
@@ -49,6 +67,7 @@ insert(::Type{<:UserPermission}, user_id::Integer,
 
 # Arguments
 - `::Type{<:UserPermission}`: The type of the record to update.
+- `id::Integer`: The id of the user permission to update.
 - `create_permission::Union{Bool,Nothing}`: The create permission.
 - `read_permission::Union{Bool,Nothing}`: The read permission.
 - `update_permission::Union{Bool,Nothing}`: The update permission.
@@ -59,14 +78,16 @@ An [`UpsertResult`](@ref). [`Updated`](@ref) if the record was successfully upda
 [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an
 error occurred.
 """
-update(::Type{<:UserPermission}; create_permission::Union{Bool,Nothing}=nothing,
+update(::Type{<:UserPermission}, id::Integer;
+    create_permission::Union{Bool,Nothing}=nothing,
     read_permission::Union{Bool,Nothing}=nothing,
     update_permission::Union{Bool,Nothing}=nothing,
     delete_permission::Union{Bool,Nothing}=nothing,
     manage_permission::Union{Bool,Nothing}=nothing)::UpsertResult =
-    update(SQL_UPDATE_USERPERMISSION; create_permission=create_permission,
-        read_permission=read_permission, update_permission=update_permission,
-        delete_permission=delete_permission, manage_permission=manage_permission)
+    update(SQL_UPDATE_USERPERMISSION, fetch(UserPermission, id);
+        create_permission=create_permission, read_permission=read_permission,
+        update_permission=update_permission, delete_permission=delete_permission,
+        manage_permission=manage_permission)
 
 """
     delete(::Type{<:UserPermission}, id::Integer)::Bool

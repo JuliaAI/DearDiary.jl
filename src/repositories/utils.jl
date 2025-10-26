@@ -1,15 +1,11 @@
 """
-    fetch(query::AbstractString, params::NamedTuple;
-        database::SQLite.DB=get_database())::Union{Dict{Symbol,Any},Nothing}
+    fetch(query::AbstractString, params::NamedTuple)::Union{Dict{Symbol,Any},Nothing}
 
 Fetch a record from the database.
 
 # Arguments
 - `query::AbstractString`: The query to execute.
 - `params::NamedTuple`: The query parameters.
-
-# Keyword Arguments
-- `database::SQLite.DB`: The database connection.
 
 # Returns
 A dictionary of the record. If the record does not exist, return `nothing`.
@@ -23,17 +19,13 @@ function fetch(query::AbstractString, params::NamedTuple)::Union{Dict{Symbol,Any
 end
 
 """
-    fetch_all(query::AbstractString; params::NamedTuple=(;),
-        database::SQLite.DB=get_database())::Array{Dict{Symbol,Any},1}
+    fetch_all(query::AbstractString; params::NamedTuple=(;))::Array{Dict{Symbol,Any},1}
 
 Fetch all records from the database.
 
 # Arguments
 - `query::AbstractString`: The query to execute.
 - `params::NamedTuple`: The query parameters.
-
-# Keyword Arguments
-- `database::SQLite.DB`: The database connection.
 
 # Returns
 An array of dictionaries of the records.
@@ -42,17 +34,14 @@ fetch_all(query::AbstractString; params::NamedTuple=(;))::Array{Dict{Symbol,Any}
     [(record |> row_to_dict) for record in DBInterface.execute(get_database(), query, params)]
 
 """
-    insert(query::AbstractString, params::NamedTuple;
-        database::SQLite.DB=get_database())::Tuple{Union{Nothing,<:Integer},UpsertResult}
+    insert(query::AbstractString, params::NamedTuple
+        )::Tuple{Union{Nothing,<:Integer},UpsertResult}
 
 Insert a record into the database.
 
 # Arguments
 - `query::AbstractString`: The query to execute.
 - `params::NamedTuple`: The query parameters.
-
-# Keyword Arguments
-- `database::SQLite.DB`: The database connection.
 
 # Returns
 - The inserted record ID. If an error occurs, `nothing` is returned.
@@ -70,6 +59,8 @@ function insert(query::AbstractString,
             return nothing, Duplicate()
         elseif occursin("CHECK constraint failed", (exception.msg |> string))
             return nothing, Unprocessable()
+        elseif occursin("FOREIGN KEY constraint failed", (exception.msg |> string))
+            return nothing, Unprocessable()
         else
             return nothing, Error()
         end
@@ -77,8 +68,7 @@ function insert(query::AbstractString,
 end
 
 """
-    update(query::AbstractString, object::UpsertType, params::NamedTuple;
-        database::SQLite.DB=get_database())::UpsertResult
+    update(query::AbstractString, object::UpsertType, params::NamedTuple)::UpsertResult
 
 Update a record in the database.
 
@@ -114,16 +104,13 @@ function update(query::AbstractString, object::Union{<:ResultType,Nothing};
 end
 
 """
-    delete(query::AbstractString, id::Integer; database::SQLite.DB=get_database())::Bool
+    delete(query::AbstractString, id::Integer)::Bool
 
 Delete a record from the database.
 
 # Arguments
 - `query::AbstractString`: The query to execute.
 - `id::Integer`: The ID of the record to delete.
-
-# Keyword Arguments
-- `database::SQLite.DB`: The database connection.
 
 # Returns
 `true` if the record was successfully deleted, `false` otherwise.

@@ -42,9 +42,11 @@
         end
 
         @testset verbose = true "delete project" begin
-            @test TrackingAPI.delete_project(1)
+            user = TrackingAPI.get_user_by_username("default")
+            project_id, _ = TrackingAPI.create_project(user.id, TrackingAPI.ProjectCreatePayload("Project to Delete"))
+            @test TrackingAPI.delete_project(project_id)
 
-            @test TrackingAPI.get_project_by_id(1) |> isnothing
+            @test TrackingAPI.get_project_by_id(project_id) |> isnothing
         end
     end
 end

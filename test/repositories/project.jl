@@ -1,10 +1,10 @@
 @with_trackingapi_test_db begin
     @testset verbose = true "project repository" begin
-        @testset verbose = true "insert project" begin
+        @testset verbose = true "insert" begin
             @test TrackingAPI.insert(TrackingAPI.Project, "Project Missy") isa Tuple{Integer,TrackingAPI.Created}
         end
 
-        @testset verbose = true "fetch project" begin
+        @testset verbose = true "fetch" begin
             project = TrackingAPI.fetch(TrackingAPI.Project, 1)
 
             @test project isa TrackingAPI.Project

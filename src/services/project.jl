@@ -39,7 +39,7 @@ violates a constraint, and [`Error`](@ref) if an error occurred while creating t
 """
 function create_project(user_id::Integer,
     project_payload::ProjectCreatePayload)::Tuple{Union{Nothing,<:Integer},UpsertResult}
-    user = get_user_by_id(user_id)
+    user = user_id |> get_user_by_id
     if user |> isnothing || user.is_admin == 0
         return nothing, Unprocessable()
     end

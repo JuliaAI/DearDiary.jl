@@ -1,5 +1,5 @@
 """
-    Dict(object::UpsertType)::Dict{String,Any}
+    Base.Dict(object::UpsertType)::Dict{String,Any}
 
 Transforms a [`ResultType`](@ref) or an [`UpsertType`](@ref) object to a dictionary.
 
@@ -9,7 +9,7 @@ Transforms a [`ResultType`](@ref) or an [`UpsertType`](@ref) object to a diction
 # Returns
 A dictionary representation of the object.
 """
-function Dict(object::Union{ResultType,UpsertType})::Dict{Symbol,Any}
+function Base.Dict(object::Union{ResultType,UpsertType})::Dict{Symbol,Any}
     fields = object |> typeof |> fieldnames
     values = [getfield(object, field) for field in fields]
     return zip(fields, values) |> collect |> Dict

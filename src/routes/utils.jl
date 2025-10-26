@@ -17,7 +17,7 @@ get_status_by_upsert_result(::Unprocessable) = HTTP.StatusCodes.UNPROCESSABLE_EN
 get_status_by_upsert_result(::Error) = HTTP.StatusCodes.INTERNAL_SERVER_ERROR
 
 """
-    String(::Type{<:UpsertResult})::String
+    Base.String(::Type{<:UpsertResult})::String
 
 Convert an [`UpsertResult`](@ref) type to its string representation in uppercase.
 
@@ -27,7 +27,7 @@ Convert an [`UpsertResult`](@ref) type to its string representation in uppercase
 # Returns
 A string representation of the upsert result type in uppercase.
 """
-String(upsert_result::UpsertResult) =
+Base.String(upsert_result::UpsertResult) =
     upsert_result |> typeof |> nameof |> String |> uppercase
 
 """

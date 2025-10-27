@@ -67,26 +67,19 @@ function create_user(user_payload::UserCreatePayload)::Tuple{Union{Nothing,<:Int
 end
 
 """
-    update_user(id::Int; first_name::Union{String,Nothing}=nothing,
-        last_name::Union{String,Nothing}=nothing,
-        password::Union{String,Nothing}=nothing)::UpsertResult
+    update_user(id::Int, user_payload::UserUpdatePayload)::UpsertResult
 
 Update an [`User`](@ref).
 
 # Arguments
 - `id::Int`: The id of the user to update.
-
-# Keyword Arguments
-- `first_name::Union{String,Nothing}`: The first name of the user.
-- `last_name::Union{String,Nothing}`: The last name of the user.
-- `password::Union{String,Nothing}`: The password of the user. This will be hashed
-    before updating the user.
-- `is_admin::Union{Bool,Nothing}`: Whether the user is an administrator.
+- `user_payload::UserUpdatePayload`: The payload for updating an user.
 
 # Returns
-An [`UpsertResult`](@ref). [`Updated`](@ref) if the record was successfully updated,
-[`Unprocessable`](@ref) if the record violates a constraint or if no fields were provided
-to update, and [`Error`](@ref) if an error occurred while updating the record.
+An [`UpsertResult`](@ref). [`Updated`](@ref) if the record was successfully updated (or
+no fields were changed), [`Unprocessable`](@ref) if the record violates a constraint or if
+no fields were provided to update, and [`Error`](@ref) if an error occurred while updating
+the record.
 """
 function update_user(id::Int, user_payload::UserUpdatePayload)::UpsertResult
     user = fetch(User, id)
@@ -97,7 +90,7 @@ function update_user(id::Int, user_payload::UserUpdatePayload)::UpsertResult
     should_be_updated = compare_object_fields(user; first_name=user_payload.first_name,
         last_name=user_payload.last_name, password=user_payload.password)
     if !should_be_updated
-        return Unprocessable()
+        return Updated()
     end
 
     if !(user_payload.password |> isnothing)

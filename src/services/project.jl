@@ -67,9 +67,10 @@ Update a [`Project`](@ref) record.
 - `project_payload::ProjectUpdatePayload`: The payload for updating a project.
 
 # Returns
-An [`UpsertResult`](@ref). [`Created`](@ref) if the record was successfully created,
-[`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record
-violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
+An [`UpsertResult`](@ref). [`Updated`](@ref) if the record was successfully updated (or
+no changes were made), [`Duplicate`](@ref) if the record already exists,
+[`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an
+error occurred while creating the record.
 """
 function update_project(id::Int, project_payload::ProjectUpdatePayload)::UpsertResult
     project = fetch(Project, id)
@@ -77,7 +78,7 @@ function update_project(id::Int, project_payload::ProjectUpdatePayload)::UpsertR
     should_be_updated = compare_object_fields(project; name=project_payload.name,
         description=project_payload.description)
     if !should_be_updated
-        return Unprocessable()
+        return Updated()
     end
 
     return update(Project, id; name=project_payload.name,

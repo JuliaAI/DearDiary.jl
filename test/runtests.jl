@@ -90,6 +90,7 @@ TrackingAPI.run(; env_file=file)
 include("routes/health.jl")
 include("routes/user.jl")
 include("routes/project.jl")
+include("routes/userpermission.jl")
 
 TrackingAPI.stop()
 file |> rm

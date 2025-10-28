@@ -63,13 +63,13 @@ function create_userpermission(user_id::Integer, project_id::Integer,
 end
 
 """
-    update_userpermission(userpermission_id::Integer,
+    update_userpermission(id::Integer,
         userpermission_payload::UserPermissionUpdatePayload)::UpsertResult
 
 Update a [`UserPermission`](@ref).
 
 # Arguments
-- `userpermission_id::Integer`: The id of the user permission to update.
+- `id::Integer`: The id of the user permission to update.
 - `userpermission_payload::UserPermissionUpdatePayload`: The payload for updating a user
 permission.
 
@@ -79,9 +79,9 @@ no fields were changed), [`Unprocessable`](@ref) if the record violates a constr
 no fields were provided to update, and [`Error`](@ref) if an error occurred while updating
 the record.
 """
-function update_userpermission(userpermission_id::Integer,
+function update_userpermission(id::Integer,
     userpermission_payload::UserPermissionUpdatePayload)::UpsertResult
-    userpermission = fetch(UserPermission, userpermission_id)
+    userpermission = fetch(UserPermission, id)
     if userpermission |> isnothing
         return Unprocessable()
     end
@@ -95,7 +95,7 @@ function update_userpermission(userpermission_id::Integer,
         return Updated()
     end
 
-    return update(UserPermission, userpermission_id;
+    return update(UserPermission, id;
         create_permission=userpermission_payload.create_permission,
         read_permission=userpermission_payload.read_permission,
         update_permission=userpermission_payload.update_permission,
@@ -103,15 +103,15 @@ function update_userpermission(userpermission_id::Integer,
 end
 
 """
-    delete_userpermission(userpermission_id::Integer)::Bool
+    delete_userpermission(id::Integer)::Bool
 
 Delete a [`UserPermission`](@ref).
 
 # Arguments
-- `userpermission_id::Integer`: The id of the user permission to delete.
+- `id::Integer`: The id of the user permission to delete.
 
 # Returns
 `true` if the record was successfully deleted, `false` otherwise.
 """
-delete_userpermission(userpermission_id::Integer)::Bool =
-    delete(UserPermission, userpermission_id)
+delete_userpermission(id::Integer)::Bool =
+    delete(UserPermission, id)

@@ -1,9 +1,7 @@
 """
     get_database()::SQLite.DB
 
-Returns a SQLite database connection. The database file is specified by the
-`TRACKINGAPI_DB_FILE` environment variable. If the variable is not set, the
-default value is `trackingapi.db` in the current directory.
+Returns a SQLite database connection. The database file is specified by the `TRACKINGAPI_DB_FILE` environment variable. If the variable is not set, the default value is `trackingapi.db` in the current directory.
 
 # Returns
 A [`SQLite.DB`](@ref) object.
@@ -29,7 +27,11 @@ function initialize_database(; database::SQLite.DB=get_database())
     DBInterface.execute(database, "PRAGMA foreign_keys = ON")
 
     DBInterface.execute(database, SQL_CREATE_USER)
-    DBInterface.execute(database, replace(SQL_INSERT_DEFAULT_ADMIN_USER, "{password}" => GenerateFromPassword("default") |> String))
+    DBInterface.execute(
+        database,
+        SQL_INSERT_DEFAULT_ADMIN_USER,
+        (password=GenerateFromPassword("default") |> String,),
+    )
     DBInterface.execute(database, SQL_PREVENT_DEFAULT_USER_DELETION)
     DBInterface.execute(database, SQL_PREVENT_DEFAULT_USER_DEMOTE)
 

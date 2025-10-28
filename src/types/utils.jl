@@ -1,3 +1,5 @@
+const Optional{T} = Union{T,Nothing}
+
 abstract type ResultType end
 abstract type UpsertType end
 
@@ -5,8 +7,9 @@ abstract type KeyConversionTrait end
 struct WithSymbolKeys <: KeyConversionTrait end
 struct WithStringKeys <: KeyConversionTrait end
 
-KeyConversionTrait(::Type{Dict{K,Any}}) where {K} =
+function KeyConversionTrait(::Type{Dict{K,Any}}) where {K}
     throw(ArgumentError("Unsupported key type $K. Supported types are Symbol and String."))
+end
 KeyConversionTrait(::Type{Dict{Symbol,Any}}) = WithSymbolKeys()
 KeyConversionTrait(::Type{Dict{String,Any}}) = WithStringKeys()
 
@@ -15,7 +18,9 @@ Base.convert(::Type{Status}, value::Integer) = Status(value)
 convert_field_to_key(::WithSymbolKeys, field::Symbol) = field
 convert_field_to_key(::WithStringKeys, field::Symbol) = field |> String
 
-function type_from_dict(::Type{T}, data::Dict{K,Any}, trait::KeyConversionTrait) where {T,K}
+function type_from_dict(
+    ::Type{T}, data::Dict{K,Any}, trait::KeyConversionTrait
+)::T where {T,K}
     type_fields = T |> fieldnames
     values = map(type_fields) do field
         key = convert_field_to_key(trait, field)
@@ -51,11 +56,9 @@ function type_from_dict(::Type{T}, data::Dict{K,Any}, trait::KeyConversionTrait)
 end
 
 """
-    type_from_dict(::Type{T}, data::Dict{K,Any}) where {T, K}
+    type_from_dict(::Type{T}, data::Dict{K,Any})::T where {T, K}
 
-Builds an instance of type `T` from a dictionary `data`. All fields of the struct `T` must
-be present in the dictionary. If a field is of type `DateTime` and the corresponding value
-in the dictionary is not a `DateTime`, it will be converted to it.
+Builds an instance of type `T` from a dictionary `data`. All fields of the struct `T` must be present in the dictionary. If a field is of type `DateTime` and the corresponding value in the dictionary is not a `DateTime`, it will be converted to it.
 
 # Arguments
 - `::Type{T}`: The type of the struct to create.
@@ -64,8 +67,9 @@ in the dictionary is not a `DateTime`, it will be converted to it.
 # Returns
 An instance of type `T` populated with the values from the dictionary.
 """
-type_from_dict(::Type{T}, data::Dict{K,Any}) where {T,K} =
-    type_from_dict(T, data, (data |> typeof |> KeyConversionTrait))
+function type_from_dict(::Type{T}, data::Dict{K,Any})::T where {T,K}
+    return type_from_dict(T, data, (data |> typeof |> KeyConversionTrait))
+end
 
 # Allowing construction of ResultType from Dict
 (::Type{T})(data::Dict{K,Any}) where {T<:ResultType,K} = type_from_dict(T, data)

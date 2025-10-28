@@ -55,8 +55,10 @@ function AuthMiddleware(handler)
                 auth_header = get(request.headers |> Dict, "Authorization", missing)
 
                 if auth_header |> ismissing
-                    return json(("message" => "Missing authorization header");
-                        status=HTTP.StatusCodes.UNAUTHORIZED)
+                    return json(
+                        ("message" => "Missing authorization header");
+                        status=HTTP.StatusCodes.UNAUTHORIZED,
+                    )
                 end
 
                 token = split(auth_header, " ")[2]
@@ -65,8 +67,10 @@ function AuthMiddleware(handler)
                 try
                     payload = JSONWebTokens.decode(encoding, token)
 
-                    is_valid_payload =
-                        all(claim -> haskey(payload, claim), ["sub", "id", "exp"])
+                    is_valid_payload = all(
+                        claim -> haskey(payload, claim),
+                        ["sub", "id", "exp"],
+                    )
                     if payload |> isnothing || !is_valid_payload
                         throw(ArgumentError("Invalid token payload"))
                     end
@@ -89,8 +93,10 @@ function AuthMiddleware(handler)
                     request.context[:user] = user
                 catch e
                     msg = (e isa ArgumentError) ? e.msg : "Invalid token"
-                    return json(("message" => msg);
-                        status=HTTP.StatusCodes.UNAUTHORIZED)
+                    return json(
+                        ("message" => msg);
+                        status=HTTP.StatusCodes.UNAUTHORIZED,
+                    )
                 end
             end
         end
@@ -104,10 +110,7 @@ end
 
 Starts the server.
 
-By default, the server will run on `127.0.0.1:9000`. You can change both the host and port
-by modifying the `.env` file specific entries. The environment variables are loaded from
-the `.env` file by default. You can change the file path by passing the `env_file`
-argument.
+By default, the server will run on `127.0.0.1:9000`. You can change both the host and port by modifying the `.env` file specific entries. The environment variables are loaded from the `.env` file by default. You can change the file path by passing the `env_file` argument.
 """
 function run(; env_file::String=".env")
     global api_config = env_file |> load_config
@@ -144,8 +147,12 @@ function run(; env_file::String=".env")
     auth_router = router("/auth", tags=["auth"])
     @post auth_router("/") auth_handler
 
-    serveparallel(; host=api_config.host, port=api_config.port, async=true,
-        middleware=[AuthMiddleware])
+    serveparallel(;
+        host=api_config.host,
+        port=api_config.port,
+        async=true,
+        middleware=[AuthMiddleware],
+    )
 end
 
 """

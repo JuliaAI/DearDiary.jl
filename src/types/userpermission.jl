@@ -46,14 +46,14 @@ end
 A struct that represents the payload for updating a user permission.
 
 # Fields
-- `create_permission::Union{Bool,Nothing}`: Permission to create resources.
-- `read_permission::Union{Bool,Nothing}`: Permission to read resources.
-- `update_permission::Union{Bool,Nothing}`: Permission to update resources.
-- `delete_permission::Union{Bool,Nothing}`: Permission to delete resources.
+- `create_permission::Optional{Bool}`: Permission to create resources, or `nothing` if not updating.
+- `read_permission::Optional{Bool}`: Permission to read resources, or `nothing` if not updating.
+- `update_permission::Optional{Bool}`: Permission to update resources, or `nothing` if not updating.
+- `delete_permission::Optional{Bool}`: Permission to delete resources, or `nothing` if not updating.
 """
 struct UserPermissionUpdatePayload <: UpsertType
-    create_permission::Union{Bool,Nothing}
-    read_permission::Union{Bool,Nothing}
-    update_permission::Union{Bool,Nothing}
-    delete_permission::Union{Bool,Nothing}
+    create_permission::Optional{Bool}
+    read_permission::Optional{Bool}
+    update_permission::Optional{Bool}
+    delete_permission::Optional{Bool}
 end

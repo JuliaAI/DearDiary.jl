@@ -34,11 +34,26 @@ function load_config(file::AbstractString)::APIConfig
             end
         end
         host = get(env_vars, "TRACKINGAPI_HOST", host)
-        port = haskey(env_vars, "TRACKINGAPI_PORT") ? parse(Int, env_vars["TRACKINGAPI_PORT"]) : port
+
+        port = if haskey(env_vars, "TRACKINGAPI_PORT")
+            parse(Int, env_vars["TRACKINGAPI_PORT"])
+        else
+            port
+        end
         db_file = get(env_vars, "TRACKINGAPI_DB_FILE", db_file)
         jwt_secret = get(env_vars, "TRACKINGAPI_JWT_SECRET", jwt_secret)
-        enable_auth = haskey(env_vars, "TRACKINGAPI_ENABLE_AUTH") ? parse(Bool, env_vars["TRACKINGAPI_ENABLE_AUTH"]) : enable_auth
-        enable_api = haskey(env_vars, "TRACKINGAPI_ENABLE_API") ? parse(Bool, env_vars["TRACKINGAPI_ENABLE_API"]) : enable_api
+
+        enable_auth = if haskey(env_vars, "TRACKINGAPI_ENABLE_AUTH")
+            parse(Bool, env_vars["TRACKINGAPI_ENABLE_AUTH"])
+        else
+            enable_auth
+        end
+
+        enable_api = if haskey(env_vars, "TRACKINGAPI_ENABLE_API")
+            parse(Bool, env_vars["TRACKINGAPI_ENABLE_API"])
+        else
+            enable_api
+        end
     end
     return APIConfig(host, port, db_file, jwt_secret, enable_auth, enable_api)
 end

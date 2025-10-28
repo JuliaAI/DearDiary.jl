@@ -6,7 +6,7 @@ A struct representing a project with its details.
 # Fields
 - `id::Integer`: The ID of the project.
 - `name::String`: The name of the project.
-- `description::Union{String,Nothing}`: A brief description of the project.
+- `description::String`: A brief description of the project.
 - `created_date::DateTime`: The date and time the project was created.
 """
 struct Project <: ResultType
@@ -22,7 +22,6 @@ end
 A struct that represents the payload for creating a project.
 
 # Fields
-- `user_id::Union{Int,Nothing}`: The ID of the user creating the project.
 - `name::String`: The name of the project.
 """
 struct ProjectCreatePayload <: UpsertType
@@ -35,10 +34,10 @@ end
 A struct that represents the payload for updating a project.
 
 # Fields
-- `name::Union{String,Nothing}`: The name of the project.
-- `description::Union{String,Nothing}`: A brief description of the project.
+- `name::Optional{String}`: The name of the project, or `nothing` if not updating.
+- `description::Optional{String}`: A brief description of the project, or `nothing` if not updating.
 """
 struct ProjectUpdatePayload <: UpsertType
-    name::Union{String,Nothing}
-    description::Union{String,Nothing}
+    name::Optional{String}
+    description::Optional{String}
 end

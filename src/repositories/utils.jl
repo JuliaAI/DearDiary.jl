@@ -1,58 +1,76 @@
 """
-    fetch(query::AbstractString, params::NamedTuple)::Union{Dict{Symbol,Any},Nothing}
+    Base.Dict(row::SQLite.Row)::Dict{Symbol,Any}
+
+Transforms a SQLite row into a dictionary.
+
+# Arguments
+- `row::SQLite.Row`: The row to transform.
+
+# Returns
+A dictionary representation of the row.
+"""
+function Base.Dict(row::SQLite.Row)::Dict{Symbol,Any}
+    return zip((row |> keys), (row |> values)) |> collect |> Dict
+end
+
+"""
+    fetch(query::AbstractString, parameters::NamedTuple)::Optional{Dict{Symbol,Any}}
 
 Fetch a record from the database.
 
 # Arguments
 - `query::AbstractString`: The query to execute.
-- `params::NamedTuple`: The query parameters.
+- `parameters::NamedTuple`: The query parameters.
 
 # Returns
 A dictionary of the record. If the record does not exist, return `nothing`.
 """
-function fetch(query::AbstractString, params::NamedTuple)::Union{Dict{Symbol,Any},Nothing}
-    record = DBInterface.execute(get_database(), query, params)
-    if (record |> isempty)
+function fetch(query::AbstractString, parameters::NamedTuple)::Optional{Dict{Symbol,Any}}
+    result = DBInterface.execute(get_database(), query, parameters)
+    if (result |> isempty)
         return nothing
     end
-    return record |> first |> row_to_dict
+    return result |> first |> Dict
 end
 
 """
-    fetch_all(query::AbstractString; params::NamedTuple=(;))::Array{Dict{Symbol,Any},1}
+    fetch_all(query::AbstractString; parameters::NamedTuple=(;))::Array{Dict{Symbol,Any},1}
 
 Fetch all records from the database.
 
 # Arguments
 - `query::AbstractString`: The query to execute.
-- `params::NamedTuple`: The query parameters.
+- `parameters::NamedTuple`: The query parameters.
 
 # Returns
 An array of dictionaries of the records.
 """
-fetch_all(query::AbstractString; params::NamedTuple=(;))::Array{Dict{Symbol,Any},1} =
-    [(record |> row_to_dict) for record in DBInterface.execute(get_database(), query, params)]
+function fetch_all(
+    query::AbstractString; parameters::NamedTuple=(;)
+)::Array{Dict{Symbol,Any},1}
+    results = DBInterface.execute(get_database(), query, parameters)
+    return [(record |> Dict) for record in results]
+end
 
 """
-    insert(query::AbstractString, params::NamedTuple
-        )::Tuple{Union{Nothing,<:Integer},UpsertResult}
+    insert(query::AbstractString, parameters::NamedTuple)::Tuple{Optional{<:Integer},UpsertResult}
 
 Insert a record into the database.
 
 # Arguments
 - `query::AbstractString`: The query to execute.
-- `params::NamedTuple`: The query parameters.
+- `parameters::NamedTuple`: The query parameters.
 
 # Returns
 - The inserted record ID. If an error occurs, `nothing` is returned.
-- An [`UpsertResult`](@ref). [`Created`](@ref) if the record was successfully created,
-[`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record
-violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
+- An [`UpsertResult`](@ref). [`Created`](@ref) if the record was successfully created, [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
 """
-function insert(query::AbstractString,
-    params::NamedTuple)::Tuple{Union{Nothing,<:Integer},UpsertResult}
+function insert(
+    query::AbstractString, parameters::NamedTuple
+)::Tuple{Optional{<:Integer},UpsertResult}
     try
-        record_id = (DBInterface.execute(get_database(), query, params)) |> first |> first
+        result = DBInterface.execute(get_database(), query, parameters)
+        record_id = result |> first |> first
         return record_id, Created()
     catch exception
         if occursin("UNIQUE constraint failed", (exception.msg |> string))
@@ -68,31 +86,32 @@ function insert(query::AbstractString,
 end
 
 """
-    update(query::AbstractString, object::UpsertType, params::NamedTuple)::UpsertResult
+    update(query::AbstractString, object::Optional{<:ResultType}; parameters...)::UpsertResult
 
 Update a record in the database.
 
 # Arguments
 - `query::AbstractString`: The query to execute.
-- `object::UpsertType`: The object to update.
-- `params::NamedTuple`: The query parameters.
-
-# Keyword Arguments
-- `database::SQLite.DB`: The database connection.
+- `object::Optional{<:UpsertType}`: The object to update.
+- `parameters`: The fields to update.
 
 # Returns
-An [`UpsertResult`](@ref). [`Updated`](@ref) if the record was successfully updated,
-[`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an
-error occurred.
+An [`UpsertResult`](@ref). [`Updated`](@ref) if the record was successfully updated, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred.
 """
-function update(query::AbstractString, object::Union{<:ResultType,Nothing};
-    params...)::UpsertResult
+function update(
+    query::AbstractString, object::Optional{<:ResultType}; parameters...
+)::UpsertResult
     try
-        params = params |> NamedTuple
+        parameters = parameters |> NamedTuple
         fields = join(
-            ["$key=:$key" for key in (params |> keys) if params[key] |> !isnothing], ", ")
-        DBInterface.execute(get_database(), replace(query, "{fields}" => fields),
-            merge(params, (id=getfield(object, :id),)))
+            ["$key=:$key" for key in (parameters |> keys) if parameters[key] |> !isnothing],
+            ", ",
+        )
+        DBInterface.execute(
+            get_database(),
+            replace(query, "{fields}" => fields),
+            merge(parameters, (id=getfield(object, :id),)),
+        )
         return Updated()
     catch exception
         if occursin("CHECK constraint failed", (exception.msg |> string))
@@ -117,17 +136,9 @@ Delete a record from the database.
 """
 function delete(query::AbstractString, id::Integer)::Bool
     try
-        DBInterface.execute(get_database(), query, (id=id,))
+        DBInterface.execute(get_database(),query,(id=id,))
         return true
     catch _
         return false
     end
 end
-
-"""
-    row_to_dict(row::SQLite.Row)::Dict{Symbol, Any}
-
-Convert a SQLite row to a dictionary.
-"""
-row_to_dict(row::SQLite.Row)::Dict{Symbol,Any} =
-    zip((row |> keys), (row |> values)) |> collect |> Dict

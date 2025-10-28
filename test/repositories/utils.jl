@@ -39,7 +39,7 @@
         @testset verbose = true "row to dict" begin
             rows = DBInterface.execute(TrackingAPI.get_database(),
                 "SELECT name FROM sqlite_schema WHERE type='table' ORDER BY name")
-            row_dict = rows |> first |> TrackingAPI.row_to_dict
+            row_dict = rows |> first |> TrackingAPI.Dict
 
             @test row_dict isa Dict
             @test :name in (row_dict |> keys)

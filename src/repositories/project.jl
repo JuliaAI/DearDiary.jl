@@ -1,5 +1,5 @@
 """
-    fetch(::Type{<:Project}, id::Integer)::Union{Project,Nothing}
+    fetch(::Type{<:Project}, id::Integer)::Optional{Project}
 
 Fetch a [`Project`](@ref) record by id.
 
@@ -10,7 +10,7 @@ Fetch a [`Project`](@ref) record by id.
 # Returns
 A [`Project`](@ref) object. If the record does not exist, return `nothing`.
 """
-function fetch(::Type{<:Project}, id::Integer)::Union{Project,Nothing}
+function fetch(::Type{<:Project}, id::Integer)::Optional{Project}
     project = fetch(SQL_SELECT_PROJECT_BY_ID, (id=id,))
     return (project |> isnothing) ? nothing : (project |> Project)
 end
@@ -26,12 +26,12 @@ Fetch all [`Project`](@ref) records.
 # Returns
 An array of [`Project`](@ref) objects.
 """
-fetch_all(::Type{<:Project})::Array{Project,1} =
-    SQL_SELECT_PROJECTS |> fetch_all .|> Project
+function fetch_all(::Type{<:Project})::Array{Project,1}
+    return SQL_SELECT_PROJECTS |> fetch_all .|> Project
+end
 
 """
-    insert(::Type{<:Project},
-        name::AbstractString)::Tuple{Union{Nothing,<:Integer},UpsertResult}
+    insert(::Type{<:Project}, name::AbstractString)::Tuple{Optional{<:Integer},UpsertResult}
 
 Insert a [`Project`](@ref) record.
 
@@ -41,33 +41,38 @@ Insert a [`Project`](@ref) record.
 
 # Returns
 - The inserted record ID. If an error occurs, `nothing` is returned.
-- A [`UpsertResult`](@ref). [`Created`](@ref) if the record was successfully created,
-[`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record
-violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
+- A [`UpsertResult`](@ref). [`Created`](@ref) if the record was successfully created, [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
 """
-insert(::Type{<:Project},
-    name::AbstractString)::Tuple{Union{Nothing,<:Integer},UpsertResult} =
-    insert(SQL_INSERT_PROJECT, (name=name, created_date=(now() |> string),))
+function insert(
+    ::Type{<:Project}, name::AbstractString
+)::Tuple{Optional{<:Integer},UpsertResult}
+    return insert(SQL_INSERT_PROJECT, (name=name, created_date=(now() |> string)))
+end
 
 """
-    update(::Type{<:Project}, name::Union{String,Nothing},
-        description::Union{String,Nothing})::UpsertResult
+    update(::Type{<:Project}, name::Optional{String}, description::Optional{String})::UpsertResult
 
 Update a [`Project`](@ref) record.
 
 # Arguments
 - `::Type{<:Project}`: The type of the record to update.
-- `name::String`: The name of the project.
-- `description::String`: A brief description of the project.
+- `id::Integer`: The id of the project to update.
+
+# Keyword Arguments
+- `name::Optional{String}`: The name of the project.
+- `description::Optional{String}`: A brief description of the project.
 
 # Returns
-A [`UpsertResult`](@ref). [`Updated`](@ref) if the record was successfully updated,
-[`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an
-error occurred.
+A [`UpsertResult`](@ref). [`Updated`](@ref) if the record was successfully updated, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred.
 """
-update(::Type{<:Project}, id::Integer; name::Union{String,Nothing}=nothing,
-    description::Union{String,Nothing}=nothing)::UpsertResult =
-    update(SQL_UPDATE_PROJECT, fetch(Project, id); name=name, description=description)
+function update(
+    ::Type{<:Project}, id::Integer;
+    name::Optional{String}=nothing,
+    description::Optional{String}=nothing
+)::UpsertResult
+    fields = (name=name, description=description)
+    return update(SQL_UPDATE_PROJECT, fetch(Project, id); fields...)
+end
 
 """
     delete(::Type{<:Project}, id::Integer)::Bool

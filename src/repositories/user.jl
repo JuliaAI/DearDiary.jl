@@ -1,5 +1,5 @@
 """
-    fetch(::Type{<:User}, username::AbstractString)::Union{User,Nothing}
+    fetch(::Type{<:User}, username::AbstractString)::Optional{User}
 
 Fetch a [`User`](@ref) record by username.
 
@@ -10,13 +10,13 @@ Fetch a [`User`](@ref) record by username.
 # Returns
 An [`User`](@ref) object. If the record does not exist, return `nothing`.
 """
-function fetch(::Type{<:User}, username::AbstractString)::Union{User,Nothing}
+function fetch(::Type{<:User}, username::AbstractString)::Optional{User}
     user = fetch(SQL_SELECT_USER_BY_USERNAME, (username=username,))
     return (user |> isnothing) ? nothing : (user |> User)
 end
 
 """
-    fetch(::Type{<:User}, id::Integer)::Union{User,Nothing}
+    fetch(::Type{<:User}, id::Integer)::Optional{User}
 
 Fetch a [`User`](@ref) record by id.
 
@@ -27,7 +27,7 @@ Fetch a [`User`](@ref) record by id.
 # Returns
 An [`User`](@ref) object. If the record does not exist, return `nothing`.
 """
-function fetch(::Type{<:User}, id::Integer)::Union{User,Nothing}
+function fetch(::Type{<:User}, id::Integer)::Optional{User}
     user = fetch(SQL_SELECT_USER_BY_ID, (id=id,))
     return (user |> isnothing) ? nothing : (user |> User)
 end
@@ -57,13 +57,12 @@ Fetch all [`User`](@ref) records associated with a specific project.
 # Returns
 An array of [`User`](@ref) objects.
 """
-fetch_all(::Type{<:User}, project_id::Integer)::Array{User,1} =
-    fetch_all(SQL_SELECT_USERS_BY_PROJECT_ID, (id=project_id,)) .|> User
+function fetch_all(::Type{<:User}, project_id::Integer)::Array{User,1}
+    return fetch_all(SQL_SELECT_USERS_BY_PROJECT_ID, (id=project_id,)) .|> User
+end
 
 """
-    insert(::Type{<:User}, first_name::AbstractString, last_name::AbstractString,
-        username::AbstractString,
-        password::AbstractString)::Tuple{Union{Nothing,<:Integer},UpsertResult}
+    insert(::Type{<:User}, first_name::AbstractString, last_name::AbstractString, username::AbstractString, password::AbstractString)::Tuple{Optional{<:Integer},UpsertResult}
 
 Insert a [`User`](@ref) record.
 
@@ -76,40 +75,58 @@ Insert a [`User`](@ref) record.
 
 # Returns
 - The inserted record ID. If an error occurs, `nothing` is returned.
-- An [`UpsertResult`](@ref). [`Created`](@ref) if the record was successfully created,
-[`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record
-violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
+- An [`UpsertResult`](@ref). [`Created`](@ref) if the record was successfully created, [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
 """
-insert(::Type{<:User}, first_name::AbstractString, last_name::AbstractString,
+function insert(
+    ::Type{<:User},
+    first_name::AbstractString,
+    last_name::AbstractString,
     username::AbstractString,
-    password::AbstractString)::Tuple{Union{Nothing,<:Integer},UpsertResult} =
-    insert(SQL_INSERT_USER, (first_name=first_name, last_name=last_name, username=username,
-        password=password, created_date=(now() |> string),))
+    password::AbstractString
+)::Tuple{Optional{<:Integer},UpsertResult}
+    fields = (
+        first_name=first_name,
+        last_name=last_name,
+        username=username,
+        password=password,
+        created_date=(now() |> string),
+    )
+    return insert(SQL_INSERT_USER, fields)
+end
 
 """
-    update(::Type{<:User}, id::Integer; first_name::Union{String,Nothing}=nothing,
-        last_name::Union{String,Nothing}=nothing, password::Union{String,Nothing}=nothing,
-        is_admin::Union{String,Nothing}=nothing)::UpsertResult
+    update(::Type{<:User}, id::Integer; first_name::Optional{String}=nothing, last_name::Optional{String}=nothing, password::Optional{String}=nothing, is_admin::Optional{String}=nothing)::UpsertResult
 
 Update a [`User`](@ref) record.
 
 # Arguments
 - `::Type{<:User}`: The type of the record to update.
-- `first_name::String`: The first name of the user.
-- `last_name::String`: The last name of the user.
-- `password::String`: The password of the user.
-- `is_admin::Bool`: Whether the user is an admin.
+- `id::Integer`: The id of the user to update.
+
+# Keyword Arguments
+- `first_name::Optional{String}`: The first name of the user.
+- `last_name::Optional{String}`: The last name of the user.
+- `password::Optional{String}`: The password of the user.
+- `is_admin::Optional{Bool}`: Whether the user is an admin.
 
 # Returns
-An [`UpsertResult`](@ref). [`Updated`](@ref) if the record was successfully updated,
-[`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an
-error occurred.
+An [`UpsertResult`](@ref). [`Updated`](@ref) if the record was successfully updated, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred.
 """
-update(::Type{<:User}, id::Integer; first_name::Union{String,Nothing}=nothing,
-    last_name::Union{String,Nothing}=nothing, password::Union{String,Nothing}=nothing,
-    is_admin::Union{Bool,Nothing}=nothing)::UpsertResult =
-    update(SQL_UPDATE_USER, fetch(User, id); first_name=first_name, last_name=last_name,
-        password=password, is_admin=is_admin)
+function update(
+    ::Type{<:User}, id::Integer;
+    first_name::Optional{String}=nothing,
+    last_name::Optional{String}=nothing,
+    password::Optional{String}=nothing,
+    is_admin::Optional{Bool}=nothing
+)::UpsertResult
+    fields = (
+        first_name=first_name,
+        last_name=last_name,
+        password=password,
+        is_admin=is_admin,
+    )
+    return update(SQL_UPDATE_USER, fetch(User, id); fields...)
+end
 
 """
     delete(::Type{<:User}, id::Integer)::Bool

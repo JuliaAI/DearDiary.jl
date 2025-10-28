@@ -10,6 +10,7 @@ A struct to hold the configuration for the API server.
 - `jwt_secret::String`: The JWT secret for authentication. If not set, it defaults
     to `Nothing`.
 - `enable_auth::Bool`: Whether to enable authentication or not.
+- `enable_api::Bool`: Whether the API server is enabled or not.
 """
 struct APIConfig
     host::String
@@ -17,4 +18,5 @@ struct APIConfig
     db_file::String
     jwt_secret::String
     enable_auth::Bool
+    enable_api::Bool
 end

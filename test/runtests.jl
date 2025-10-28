@@ -20,7 +20,7 @@ A string representing the path to the created test environment file.
 """
 function create_test_env_file(; host::String="127.0.0.1",
     db_file::String="trackingapi_test.db", jwt_secret::Union{String,Nothing}=nothing,
-    enable_auth::Bool=false)::String
+    enable_auth::Bool=false, enable_api::Bool=false)::String
     file = ".env.trackingapitest"
 
     open(file, "w") do io
@@ -31,6 +31,7 @@ function create_test_env_file(; host::String="127.0.0.1",
             write(io, "TRACKINGAPI_JWT_SECRET=$jwt_secret\n")
         end
         write(io, "TRACKINGAPI_ENABLE_AUTH=$enable_auth\n")
+        write(io, "TRACKINGAPI_ENABLE_API=$enable_api\n")
     end
     return file
 end
@@ -42,7 +43,11 @@ macro with_trackingapi_test_db(expr)
         try
             $(expr |> esc)
         finally
-            "trackingapi_test.db" |> rm
+            if isdefined(Main, :api_config)
+                "trackingapi_test.db" |> rm
+            else
+                "trackingapi.db" |> rm
+            end
             TrackingAPI.get_database |> memoize_cache |> empty!
         end
     end
@@ -50,19 +55,8 @@ end
 
 include("utils.jl")
 
-# Auth tests
-file = create_test_env_file(; enable_auth=true)
-TrackingAPI.run(; env_file=file)
-
-include("routes/auth.jl")
-include("routes/utils.jl")
-
-TrackingAPI.stop()
-file |> rm
-
 # Functional tests
 file = create_test_env_file()
-TrackingAPI.run(; env_file=file)
 
 include("types/utils.jl")
 
@@ -76,6 +70,22 @@ include("services/user.jl")
 include("services/utils.jl")
 include("services/project.jl")
 include("services/userpermission.jl")
+
+file |> rm
+
+# Auth tests
+file = create_test_env_file(; enable_auth=true, enable_api=true)
+TrackingAPI.run(; env_file=file)
+
+include("routes/auth.jl")
+include("routes/utils.jl")
+
+TrackingAPI.stop()
+file |> rm
+
+# Route tests
+file = create_test_env_file(; enable_api=true)
+TrackingAPI.run(; env_file=file)
 
 include("routes/health.jl")
 include("routes/user.jl")

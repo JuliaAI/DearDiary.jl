@@ -106,6 +106,11 @@ argument.
 """
 function run(; env_file::String=".env")
     global api_config = env_file |> load_config
+
+    if !api_config.enable_api
+        error("API server is disabled. Set TRACKINGAPI_ENABLE_API=true to enable it.")
+    end
+
     initialize_database()
 
     health_router = router("/health", tags=["health"])

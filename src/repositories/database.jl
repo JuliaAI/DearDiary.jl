@@ -11,7 +11,13 @@ A [`SQLite.DB`](@ref) object.
 !!! note
 The function is memoized, so the database connection will be reused across calls.
 """
-@memoize get_database()::SQLite.DB = SQLite.DB(api_config.db_file)
+@memoize function get_database()::SQLite.DB
+    if isdefined(Main, :api_config)
+        return SQLite.DB(api_config.db_file)
+    else
+        return SQLite.DB("trackingapi.db")
+    end
+end
 
 """
     initialize_database(; database::SQLite.DB=get_database())

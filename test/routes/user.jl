@@ -4,14 +4,16 @@
             payload = Dict("first_name" => "Missy", "last_name" => "Gala",
                 "username" => "missy", "password" => "gala") |> JSON.json
             response = HTTP.post("http://127.0.0.1:9000/user"; body=payload, status_exception=false)
+            username_user = TrackingAPI.get_user_by_username("missy")
 
             @test response.status == HTTP.StatusCodes.CREATED
             data = response.body |> String |> JSON.parse
-            @test data["user_id"] == 2
+            @test data["user_id"] == username_user.id
         end
 
         @testset verbose = true "get user by id" begin
-            response = HTTP.get("http://127.0.0.1:9000/user/2"; status_exception=false)
+            username_user = TrackingAPI.get_user_by_username("missy")
+            response = HTTP.get("http://127.0.0.1:9000/user/$(username_user.id)"; status_exception=false)
 
             @test response.status == HTTP.StatusCodes.OK
             data = response.body |> String |> JSON.parse
@@ -40,15 +42,16 @@
         end
 
         @testset verbose = true "update user" begin
+            username_user = TrackingAPI.get_user_by_username("missy")
             payload = Dict("first_name" => "Ana", "last_name" => nothing,
                 "password" => nothing) |> JSON.json
-            response = HTTP.patch("http://127.0.0.1:9000/user/2"; body=payload, status_exception=false)
+            response = HTTP.patch("http://127.0.0.1:9000/user/$(username_user.id)"; body=payload, status_exception=false)
 
             @test response.status == HTTP.StatusCodes.OK
             data = response.body |> String |> JSON.parse
             @test data["message"] == "UPDATED"
 
-            response = HTTP.get("http://127.0.0.1:9000/user/2"; status_exception=false)
+            response = HTTP.get("http://127.0.0.1:9000/user/$(username_user.id)"; status_exception=false)
             data = response.body |> String |> JSON.parse
             user = data |> TrackingAPI.User
 
@@ -57,7 +60,8 @@
         end
 
         @testset verbose = true "delete user" begin
-            response = HTTP.delete("http://127.0.0.1:9000/user/2"; status_exception=false)
+            username_user = TrackingAPI.get_user_by_username("missy")
+            response = HTTP.delete("http://127.0.0.1:9000/user/$(username_user.id)"; status_exception=false)
             @test response.status == HTTP.StatusCodes.OK
             data = response.body |> String |> JSON.parse
             @test data["message"] == "OK"

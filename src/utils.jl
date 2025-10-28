@@ -22,6 +22,7 @@ function load_config(file::AbstractString)::APIConfig
     db_file = "trackingapi.db"
     jwt_secret = "trackingapi_secret"
     enable_auth = false
+    enable_api = false
 
     if (file |> isfile)
         env_vars = Dict{String,String}()
@@ -37,6 +38,7 @@ function load_config(file::AbstractString)::APIConfig
         db_file = get(env_vars, "TRACKINGAPI_DB_FILE", db_file)
         jwt_secret = get(env_vars, "TRACKINGAPI_JWT_SECRET", jwt_secret)
         enable_auth = haskey(env_vars, "TRACKINGAPI_ENABLE_AUTH") ? parse(Bool, env_vars["TRACKINGAPI_ENABLE_AUTH"]) : enable_auth
+        enable_api = haskey(env_vars, "TRACKINGAPI_ENABLE_API") ? parse(Bool, env_vars["TRACKINGAPI_ENABLE_API"]) : enable_api
     end
-    return APIConfig(host, port, db_file, jwt_secret, enable_auth)
+    return APIConfig(host, port, db_file, jwt_secret, enable_auth, enable_api)
 end

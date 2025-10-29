@@ -4,7 +4,7 @@
 Returns a SQLite database connection. The database file is specified by the `TRACKINGAPI_DB_FILE` environment variable. If the variable is not set, the default value is `trackingapi.db` in the current directory.
 
 # Returns
-A [`SQLite.DB`](@ref) object.
+A [SQLite.DB](https://juliadatabases.org/SQLite.jl/stable/#SQLite.DB) object.
 
 !!! note
 The function is memoized, so the database connection will be reused across calls.

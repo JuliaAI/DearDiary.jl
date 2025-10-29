@@ -1,6 +1,58 @@
 const Optional{T} = Union{T,Nothing}
 
+"""
+    UpsertResult
+
+A marker abstract type for the result of an upsert operation.
+"""
+abstract type UpsertResult end
+"""
+    Created
+
+A marker type indicating that a record was successfully created.
+"""
+struct Created <: UpsertResult end
+
+"""
+    Updated
+
+A marker type indicating that a record was successfully updated.
+"""
+struct Updated <: UpsertResult end
+
+"""
+    Duplicate
+
+A marker type indicating that a record already exists.
+"""
+struct Duplicate <: UpsertResult end
+
+"""
+    Unprocessable
+
+A marker type indicating that a record violates a constraint and cannot be processed.
+"""
+struct Unprocessable <: UpsertResult end
+
+"""
+    Error
+
+A marker type indicating that an error occurred while creating or updating a record.
+"""
+struct Error <: UpsertResult end
+
+"""
+    ResultType
+
+A marker abstract type for result types.
+"""
 abstract type ResultType end
+
+"""
+    UpsertType
+
+A marker abstract type for upsert types.
+"""
 abstract type UpsertType end
 
 abstract type KeyConversionTrait end
@@ -13,11 +65,14 @@ end
 KeyConversionTrait(::Type{Dict{Symbol,Any}}) = WithSymbolKeys()
 KeyConversionTrait(::Type{Dict{String,Any}}) = WithStringKeys()
 
-Base.convert(::Type{Status}, value::Integer) = Status(value)
-
 convert_field_to_key(::WithSymbolKeys, field::Symbol) = field
 convert_field_to_key(::WithStringKeys, field::Symbol) = field |> String
 
+"""
+    type_from_dict(::Type{T}, data::Dict{K,Any}, trait::KeyConversionTrait)::T where {T, K}
+
+Builds an instance of type `T` from a dictionary `data` with `trait` related to the type `K`. All the fields in the struct `T` must be present in the dictionary.
+"""
 function type_from_dict(
     ::Type{T}, data::Dict{K,Any}, trait::KeyConversionTrait
 )::T where {T,K}
@@ -55,21 +110,7 @@ function type_from_dict(
     return T(values...)
 end
 
-"""
-    type_from_dict(::Type{T}, data::Dict{K,Any})::T where {T, K}
-
-Builds an instance of type `T` from a dictionary `data`. All fields of the struct `T` must be present in the dictionary. If a field is of type `DateTime` and the corresponding value in the dictionary is not a `DateTime`, it will be converted to it.
-
-# Arguments
-- `::Type{T}`: The type of the struct to create.
-- `data::Dict{K,Any}`: The dictionary containing the data to populate the struct.
-
-# Returns
-An instance of type `T` populated with the values from the dictionary.
-"""
-function type_from_dict(::Type{T}, data::Dict{K,Any})::T where {T,K}
+# Allowing construction of ResultType from Dict
+function (::Type{T})(data::Dict{K,Any})::T where {T<:ResultType,K} 
     return type_from_dict(T, data, (data |> typeof |> KeyConversionTrait))
 end
-
-# Allowing construction of ResultType from Dict
-(::Type{T})(data::Dict{K,Any}) where {T<:ResultType,K} = type_from_dict(T, data)

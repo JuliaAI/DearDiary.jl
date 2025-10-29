@@ -1,3 +1,4 @@
+push!(LOAD_PATH, "../src/")
 using Documenter
 using TrackingAPI
 
@@ -5,7 +6,7 @@ DocMeta.setdocmeta!(TrackingAPI, :DocTestSetup, :(using TrackingAPI); recursive=
 
 makedocs(;
     modules=[TrackingAPI],
-    sitename="TrackingAPI.jl",
+    sitename="$(TrackingAPI |> nameof |> String).jl",
     format=Documenter.HTML(;),
     pages=[
         "Home" => "index.md",
@@ -13,5 +14,5 @@ makedocs(;
 )
 
 deploydocs(;
-    repo="github.com/pebeto/TrackingAPI.jl.git",
+    repo="github.com/pebeto/TrackingAPI.jl",
 )

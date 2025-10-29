@@ -7,7 +7,7 @@
 
     @testset verbose = true "constructing a type from a symbol dictionary" begin
         dict = Dict(:a => 1, :b => "test", :c => 3.14)
-        obj = TrackingAPI.type_from_dict(TestType, dict)
+        obj = TrackingAPI.type_from_dict(TestType, dict, TrackingAPI.WithSymbolKeys())
 
         @test obj isa TestType
         @test obj.a == 1
@@ -17,7 +17,7 @@
 
     @testset verbose = true "constructing a type from a string dictionary" begin
         dict = Dict("a" => 1, "b" => "test", "c" => 3.14)
-        obj = TrackingAPI.type_from_dict(TestType, dict)
+        obj = TrackingAPI.type_from_dict(TestType, dict, TrackingAPI.WithStringKeys())
 
         @test obj isa TestType
         @test obj.a == 1
@@ -28,12 +28,12 @@
     @testset verbose = true "handling missing fields" begin
         dict = Dict(:a => 1, :b => "test")
 
-        @test_throws KeyError TrackingAPI.type_from_dict(TestType, dict)
+        @test_throws KeyError TrackingAPI.type_from_dict(TestType, dict, TrackingAPI.WithSymbolKeys())
     end
 
     @testset verbose = true "handling extra fields" begin
         dict = Dict(:a => 1, :b => "test", :c => 3.14, :d => "extra")
-        obj = TrackingAPI.type_from_dict(TestType, dict)
+        obj = TrackingAPI.type_from_dict(TestType, dict, TrackingAPI.WithSymbolKeys())
 
         @test obj isa TestType
         @test obj.a == 1
@@ -54,6 +54,6 @@
     @testset verbose = true "error on invalid field types" begin
         dict = Dict(:a => "not an int", :b => "test", :c => 3.14)
 
-        @test_throws ArgumentError TrackingAPI.type_from_dict(TestType, dict)
+        @test_throws ArgumentError TrackingAPI.type_from_dict(TestType, dict, TrackingAPI.WithSymbolKeys())
     end
 end

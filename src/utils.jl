@@ -1,10 +1,3 @@
-abstract type UpsertResult end
-struct Created <: UpsertResult end
-struct Updated <: UpsertResult end
-struct Duplicate <: UpsertResult end
-struct Unprocessable <: UpsertResult end
-struct Error <: UpsertResult end
-
 """
     load_config(file::AbstractString)
 

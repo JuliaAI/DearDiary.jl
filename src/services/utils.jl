@@ -25,8 +25,7 @@ Checks if the object fields are different from the provided keyword arguments.
 - `kwargs...`: The keyword arguments to compare with the object fields.
 
 # Returns
-`true` if any of the object fields are different from the provided keyword arguments,
-`false` otherwise.
+`true` if any of the object fields are different from the provided keyword arguments, `false` otherwise.
 """
 function compare_object_fields(object::ResultType; kwargs...)::Bool
     fields = object |> typeof |> fieldnames

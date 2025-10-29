@@ -3,14 +3,14 @@
 
 A struct that represents a user.
 
-# Fields
-- `id::Integer`: The ID of the user.
-- `first_name::String`: The first name of the user.
-- `last_name::String`: The last name of the user.
-- `username::String`: The username of the user.
-- `password::String`: The password of the user. This is a hashed version of the password, not the plain text password.
-- `created_date::DateTime`: The date and time the user was created.
-- `is_admin::Bool`: Whether the user is an administrator.
+Fields
+- `id`: The ID of the user.
+- `first_name`: The first name of the user.
+- `last_name`: The last name of the user.
+- `username`: The username of the user.
+- `password`: The password of the user. This is a hashed version of the password, not the plain text password.
+- `created_date`: The date and time the user was created.
+- `is_admin`: Whether the user is an administrator.
 """
 struct User <: ResultType
     id::Integer
@@ -27,11 +27,11 @@ end
 
 A struct that represents the payload for creating a user.
 
-# Fields
-- `first_name::String`: The first name of the user.
-- `last_name::String`: The last name of the user.
-- `username::String`: The username of the user.
-- `password::String`: The password of the user.
+Fields
+- `first_name`: The first name of the user.
+- `last_name`: The last name of the user.
+- `username`: The username of the user.
+- `password`: The password of the user.
 """
 struct UserCreatePayload <: UpsertType
     first_name::String
@@ -45,11 +45,11 @@ end
 
 A struct that represents the payload for updating a user.
 
-# Fields
-- `first_name::Optional{String}`: The first name of the user, or `nothing` if not updating.
-- `last_name::Optional{String}`: The last name of the user, or `nothing` if not updating.
-- `password::Optional{String}`: The password of the user, or `nothing` if not updating.
-- `is_admin::Optional{Bool}`: Whether the user is an administrator, or `nothing` if not updating.
+Fields
+- `first_name`: The first name of the user, or `nothing` if not updating.
+- `last_name`: The last name of the user, or `nothing` if not updating.
+- `password`: The password of the user, or `nothing` if not updating.
+- `is_admin`: Whether the user is an administrator, or `nothing` if not updating.
 """
 struct UserUpdatePayload <: UpsertType
     first_name::Optional{String}
@@ -63,9 +63,9 @@ end
 
 A struct that represents the payload for user login.
 
-# Fields
-- `username::String`: The username of the user.
-- `password::String`: The password of the user.
+Fields
+- `username`: The username of the user.
+- `password`: The password of the user.
 """
 struct UserLoginPayload
     username::String

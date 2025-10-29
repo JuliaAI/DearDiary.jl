@@ -1,6 +1,5 @@
 """
-    get_userpermission_by_user_and_project(user_id::Integer,
-        project_id::Integer)::Union{UserPermission, Nothing}
+    get_userpermission_by_user_and_project(user_id::Integer, project_id::Integer)::Optional{UserPermission}
 
 Get a [`UserPermission`](@ref) by [`User`](@ref) id and [`Project`](@ref) IDs.
 
@@ -11,29 +10,30 @@ Get a [`UserPermission`](@ref) by [`User`](@ref) id and [`Project`](@ref) IDs.
 # Returns
 A [`UserPermission`](@ref) object. If the record does not exist, return `nothing`.
 """
-get_userpermission_by_user_and_project(user_id::Integer,
-    project_id::Integer)::Union{UserPermission,Nothing} =
-    fetch(UserPermission, user_id, project_id)
+function get_userpermission_by_user_and_project(
+    user_id::Integer, project_id::Integer
+)::Optional{UserPermission}
+    return fetch(UserPermission, user_id, project_id)
+end
 
 """
-    create_userpermission(user_id::Integer, project_id::Integer,
-        userpermission_payload::UserPermissionCreatePayload)::Tuple{Union{Nothing,<:Integer},UpsertResult}
+    create_userpermission(user_id::Integer, project_id::Integer, userpermission_payload::UserPermissionCreatePayload)::Tuple{Optional{<:Integer},UpsertResult}
 
 Create a [`UserPermission`](@ref).
 
 # Arguments
 - `user_id::Integer`: The id of the user.
 - `project_id::Integer`: The id of the project.
-- `userpermission_payload::UserPermissionCreatePayload`: The payload for creating a user
-permission.
+- `userpermission_payload::UserPermissionCreatePayload`: The payload for creating a user permission.
 
 # Returns
-An [`UpsertResult`](@ref). [`Created`](@ref) if the record was successfully created,
-[`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record
-violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
+An [`UpsertResult`](@ref). [`Created`](@ref) if the record was successfully created, [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
 """
-function create_userpermission(user_id::Integer, project_id::Integer,
-    userpermission_payload::UserPermissionCreatePayload)::Tuple{Union{Nothing,<:Integer},UpsertResult}
+function create_userpermission(
+    user_id::Integer,
+    project_id::Integer,
+    userpermission_payload::UserPermissionCreatePayload
+)::Tuple{Optional{<:Integer},UpsertResult}
     user = user_id |> get_user_by_id
     if user |> isnothing
         return nothing, Unprocessable()
@@ -49,11 +49,13 @@ function create_userpermission(user_id::Integer, project_id::Integer,
         return nothing, insert_result
     end
 
-    update_result = update(UserPermission, userpermission_id;
+    update_result = update(
+        UserPermission, userpermission_id;
         create_permission=userpermission_payload.create_permission,
         read_permission=userpermission_payload.read_permission,
         update_permission=userpermission_payload.update_permission,
-        delete_permission=userpermission_payload.delete_permission)
+        delete_permission=userpermission_payload.delete_permission,
+    )
     if !(update_result isa Updated)
         delete(UserPermission, userpermission_id)
         return nothing, update_result
@@ -63,43 +65,43 @@ function create_userpermission(user_id::Integer, project_id::Integer,
 end
 
 """
-    update_userpermission(id::Integer,
-        userpermission_payload::UserPermissionUpdatePayload)::UpsertResult
+    update_userpermission(id::Integer, userpermission_payload::UserPermissionUpdatePayload)::UpsertResult
 
 Update a [`UserPermission`](@ref).
 
 # Arguments
 - `id::Integer`: The id of the user permission to update.
-- `userpermission_payload::UserPermissionUpdatePayload`: The payload for updating a user
-permission.
+- `userpermission_payload::UserPermissionUpdatePayload`: The payload for updating a user permission.
 
 # Returns
-An [`UpsertResult`](@ref). [`Updated`](@ref) if the record was successfully updated (or
-no fields were changed), [`Unprocessable`](@ref) if the record violates a constraint or if
-no fields were provided to update, and [`Error`](@ref) if an error occurred while updating
-the record.
+An [`UpsertResult`](@ref). [`Updated`](@ref) if the record was successfully updated (or no fields were changed), [`Unprocessable`](@ref) if the record violates a constraint or if no fields were provided to update, and [`Error`](@ref) if an error occurred while updating the record.
 """
-function update_userpermission(id::Integer,
-    userpermission_payload::UserPermissionUpdatePayload)::UpsertResult
+function update_userpermission(
+    id::Integer, userpermission_payload::UserPermissionUpdatePayload
+)::UpsertResult
     userpermission = fetch(UserPermission, id)
     if userpermission |> isnothing
         return Unprocessable()
     end
 
-    should_be_updated = compare_object_fields(userpermission;
+    should_be_updated = compare_object_fields(
+        userpermission;
         create_permission=userpermission_payload.create_permission,
         read_permission=userpermission_payload.read_permission,
         update_permission=userpermission_payload.update_permission,
-        delete_permission=userpermission_payload.delete_permission)
+        delete_permission=userpermission_payload.delete_permission,
+    )
     if !should_be_updated
         return Updated()
     end
 
-    return update(UserPermission, id;
+    return update(
+        UserPermission, id;
         create_permission=userpermission_payload.create_permission,
         read_permission=userpermission_payload.read_permission,
         update_permission=userpermission_payload.update_permission,
-        delete_permission=userpermission_payload.delete_permission)
+        delete_permission=userpermission_payload.delete_permission,
+    )
 end
 
 """
@@ -113,5 +115,4 @@ Delete a [`UserPermission`](@ref).
 # Returns
 `true` if the record was successfully deleted, `false` otherwise.
 """
-delete_userpermission(id::Integer)::Bool =
-    delete(UserPermission, id)
+delete_userpermission(id::Integer)::Bool = delete(UserPermission, id)

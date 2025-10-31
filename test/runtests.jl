@@ -104,6 +104,11 @@ include("routes/health.jl")
 include("routes/user.jl")
 include("routes/project.jl")
 include("routes/userpermission.jl")
+include("routes/experiment.jl")
+include("routes/iteration.jl")
+include("routes/parameter.jl")
+include("routes/metric.jl")
+include("routes/resource.jl")
 
 TrackingAPI.stop()
 file |> rm

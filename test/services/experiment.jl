@@ -41,7 +41,7 @@
                 @test experiment isa TrackingAPI.Experiment
                 @test experiment.id == experiment_id
                 @test experiment.project_id == project_id
-                @test experiment.status_id == TrackingAPI.IN_PROGRESS
+                @test experiment.status_id == TrackingAPI.IN_PROGRESS |> Integer
                 @test experiment.name == "Service Test Experiment"
             end
 
@@ -93,7 +93,7 @@
             experiment = TrackingAPI.get_experiment_by_id(experiment_id)
 
             @test experiment isa TrackingAPI.Experiment
-            @test experiment.status_id == TrackingAPI.FINISHED
+            @test experiment.status_id == TrackingAPI.FINISHED |> Integer
             @test experiment.name == "Updated Service Test Experiment"
             @test experiment.description == "Updated description"
             @test experiment.end_date isa DateTime

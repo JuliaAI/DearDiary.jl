@@ -27,36 +27,45 @@ function get_experiments(project_id::Integer)::Array{Experiment,1}
 end
 
 """
-    create_experiment(project_id::Integer, status_id::Status, name::AbstractString)::Tuple{Optional{<:Int64},UpsertResult}
+    create_experiment(project_id::Integer, status_id::Integer, name::AbstractString)::Tuple{Optional{<:Int64},UpsertResult}
 
 Create a [`Experiment`](@ref).
 
 # Arguments
 - `project_id::Integer`: The id of the project to create the experiment for.
-- `status::Status`: The status of the experiment.
+- `status_id::Integer`: The status of the experiment.
 - `name::AbstractString`: The name of the experiment.
 
 # Returns
 An [`UpsertResult`](@ref). [`Created`](@ref) if the record was successfully created, [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
 """
 function create_experiment(
-    project_id::Integer, status::Status, name::AbstractString
+    project_id::Integer, status_id::Integer, name::AbstractString
 )::Tuple{Optional{<:Int64},UpsertResult}
     project = project_id |> get_project_by_id
     if project |> isnothing
         return nothing, Unprocessable()
     end
 
+    if !(status_id in (Status |> instances .|> Int))
+        return nothing, Unprocessable()
+    end
+
     experiment_id, experiment_upsert_result = insert(
         Experiment,
         project_id,
-        status |> Integer,
+        status_id,
         name,
     )
     if !(experiment_upsert_result isa Created)
         return nothing, experiment_upsert_result
     end
     return experiment_id, experiment_upsert_result
+end
+function create_experiment(
+    project_id::Integer, status::Status, name::AbstractString
+)::Tuple{Optional{<:Int64},UpsertResult}
+    return create_experiment(project_id, (status |> Integer), name)
 end
 
 """
@@ -66,7 +75,7 @@ Update a [`Experiment`](@ref) record.
 
 # Arguments
 - `id::Integer`: The id of the experiment to update.
-- `status::Optional{Status}`: The new status of the experiment.
+- `status_id::Optional{Integer}`: The new status of the experiment.
 - `name::Optional{AbstractString}`: The new name of the experiment.
 - `description::Optional{AbstractString}`: The new description of the experiment.
 - `end_date::Optional{DateTime}`: The new end date of the experiment.
@@ -76,7 +85,7 @@ An [`UpsertResult`](@ref). [`Updated`](@ref) if the record was successfully upda
 """
 function update_experiment(
     id::Integer,
-    status::Optional{Status},
+    status_id::Optional{Integer},
     name::Optional{AbstractString},
     description::Optional{AbstractString},
     end_date::Optional{DateTime},
@@ -86,9 +95,13 @@ function update_experiment(
         return Unprocessable()
     end
 
+    if !(status_id in (Status |> instances .|> Int))
+        return nothing, Unprocessable()
+    end
+
     should_be_updated = compare_object_fields(
         experiment;
-        status_id=status |> Integer,
+        status_id=status_id,
         name=name,
         description=description,
         end_date=end_date,
@@ -99,10 +112,25 @@ function update_experiment(
 
     return update(
         Experiment, id;
-        status_id=status |> Integer,
+        status_id=status_id,
         name=name,
         description=description,
         end_date=end_date,
+    )
+end
+function update_experiment(
+    id::Integer,
+    status::Optional{Status},
+    name::Optional{AbstractString},
+    description::Optional{AbstractString},
+    end_date::Optional{DateTime},
+)::UpsertResult
+    return update_experiment(
+        id,
+        (status |> isnothing) ? nothing : (status |> Integer),
+        name,
+        description,
+        end_date,
     )
 end
 
@@ -122,6 +150,9 @@ function delete_experiment(id::Integer)::Bool
 
     for iteration in get_iterations(experiment.id)
         delete_iteration(iteration.id)
+    end
+    for resource in get_resources(experiment.id)
+        delete_resource(resource.id)
     end
     return delete(Experiment, id)
 end

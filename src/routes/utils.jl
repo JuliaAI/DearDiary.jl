@@ -87,3 +87,22 @@ macro same_user_or_admin_required(function_definition)
     new_function = Expr(:function, function_signature, wrapped_body)
     return esc(new_function)
 end
+
+"""
+    find(form_data::AbstractArray{HTTP.Multipart,1}, field_name::AbstractString)::Union{HTTP.Multipart,Nothing}
+
+Find a part in the multipart form data by its field name.
+
+# Arguments
+- `form_data::AbstractArray{HTTP.Multipart,1}`: The multipart form data to search.
+- `field_name::AbstractString`: The name of the field to find.
+
+# Returns
+An `HTTP.Multipart` part if found, otherwise `nothing`.
+"""
+function find(
+    form_data::AbstractArray{HTTP.Multipart,1}, field_name::AbstractString,
+)::Union{HTTP.Multipart,Nothing}
+    index = findfirst(part -> part.name == field_name, form_data)
+    return index |> isnothing ? nothing : form_data[index]
+end

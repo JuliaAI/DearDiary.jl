@@ -15,7 +15,7 @@ Fields
 struct Experiment <: ResultType
     id::Int64
     project_id::Int64
-    status_id::Status
+    status_id::Integer
     name::String
     description::String
     created_date::DateTime
@@ -32,7 +32,7 @@ Fields
 - `name`: The name of the experiment.
 """
 struct ExperimentCreatePayload <: UpsertType
-    status_id::Status
+    status_id::Integer
     name::String
 end
 
@@ -48,7 +48,7 @@ Fields
 - `end_date`: The date and time when the experiment ended, or `nothing` if not updating.
 """
 struct ExperimentUpdatePayload <: UpsertType
-    status_id::Optional{Status}
+    status_id::Optional{Integer}
     name::Optional{String}
     description::Optional{String}
     end_date::Optional{DateTime}

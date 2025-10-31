@@ -3,22 +3,18 @@
         @testset verbose = true "create parameter" begin
             @testset "with existing iteration" begin
                 user = TrackingAPI.get_user_by_username("default")
-                project_id, _ = TrackingAPI.create_project(
-                    user.id,
-                    TrackingAPI.ProjectCreatePayload("Test project"),
-                )
+                project_id, _ = TrackingAPI.create_project(user.id, "Test Project")
                 experiment_id, _ = TrackingAPI.create_experiment(
                     project_id,
-                    TrackingAPI.ExperimentCreatePayload(
-                        TrackingAPI.IN_PROGRESS,
-                        "Test experiment",
-                    ),
+                    TrackingAPI.IN_PROGRESS,
+                    "Test experiment",
                 )
                 iteration_id, _ = TrackingAPI.create_iteration(experiment_id)
 
                 parameter_id, result = TrackingAPI.create_parameter(
                     iteration_id,
-                    TrackingAPI.ParameterCreatePayload("learning_rate", "0.01"),
+                    "learning_rate",
+                    "0.01",
                 )
 
                 @test parameter_id isa Integer
@@ -28,7 +24,8 @@
             @testset "with non-existing iteration" begin
                 parameter_id, result = TrackingAPI.create_parameter(
                     9999,
-                    TrackingAPI.ParameterCreatePayload("learning_rate", "0.01"),
+                    "learning_rate",
+                    0.01,
                 )
 
                 @test parameter_id |> isnothing
@@ -39,21 +36,17 @@
         @testset verbose = true "get parameter by id" begin
             @testset "existing parameter" begin
                 user = TrackingAPI.get_user_by_username("default")
-                project_id, _ = TrackingAPI.create_project(
-                    user.id,
-                    TrackingAPI.ProjectCreatePayload("Test project"),
-                )
+                project_id, _ = TrackingAPI.create_project(user.id, "Test Project")
                 experiment_id, _ = TrackingAPI.create_experiment(
                     project_id,
-                    TrackingAPI.ExperimentCreatePayload(
-                        TrackingAPI.IN_PROGRESS,
-                        "Test experiment",
-                    ),
+                    TrackingAPI.IN_PROGRESS,
+                    "Test experiment",
                 )
                 iteration_id, _ = TrackingAPI.create_iteration(experiment_id)
                 parameter_id, _ = TrackingAPI.create_parameter(
                     iteration_id,
-                    TrackingAPI.ParameterCreatePayload("learning_rate", "0.01"),
+                    "learning_rate",
+                    "0.01",
                 )
 
                 parameter = TrackingAPI.get_parameter_by_id(parameter_id)
@@ -74,25 +67,22 @@
 
         @testset verbose = true "get parameters" begin
             user = TrackingAPI.get_user_by_username("default")
-            project_id, _ = TrackingAPI.create_project(
-                user.id,
-                TrackingAPI.ProjectCreatePayload("Test project"),
-            )
+            project_id, _ = TrackingAPI.create_project(user.id, "Test Project")
             experiment_id, _ = TrackingAPI.create_experiment(
                 project_id,
-                TrackingAPI.ExperimentCreatePayload(
-                    TrackingAPI.IN_PROGRESS,
-                    "Test experiment",
-                ),
+                TrackingAPI.IN_PROGRESS,
+                "Test experiment",
             )
             iteration_id, _ = TrackingAPI.create_iteration(experiment_id)
             TrackingAPI.create_parameter(
                 iteration_id,
-                TrackingAPI.ParameterCreatePayload("learning_rate", "0.01"),
+                "learning_rate",
+                0.01,
             )
             TrackingAPI.create_parameter(
                 iteration_id,
-                TrackingAPI.ParameterCreatePayload("learning_rate_decay", "0.001"),
+                "learning_rate_decay",
+                "0.001",
             )
 
             parameters = TrackingAPI.get_parameters(iteration_id)
@@ -103,28 +93,25 @@
 
         @testset verbose = true "update parameter" begin
             user = TrackingAPI.get_user_by_username("default")
-            project_id, _ = TrackingAPI.create_project(
-                user.id,
-                TrackingAPI.ProjectCreatePayload("Test project"),
-            )
+            project_id, _ = TrackingAPI.create_project(user.id, "Test Project")
             experiment_id, _ = TrackingAPI.create_experiment(
                 project_id,
-                TrackingAPI.ExperimentCreatePayload(
-                    TrackingAPI.IN_PROGRESS,
-                    "Test experiment",
-                ),
+                TrackingAPI.IN_PROGRESS,
+                "Test experiment",
             )
             iteration_id, _ = TrackingAPI.create_iteration(experiment_id)
             parameter_id, _ = TrackingAPI.create_parameter(
                 iteration_id,
-                TrackingAPI.ParameterCreatePayload("learning_rate", "0.01"),
+                "learning_rate",
+                "0.01",
             )
 
             parameter = TrackingAPI.get_parameter_by_id(parameter_id)
 
             update_result = TrackingAPI.update_parameter(
                 parameter_id,
-                TrackingAPI.ParameterUpdatePayload(nothing, 0.001),
+                nothing,
+                0.001,
             )
             @test update_result isa TrackingAPI.Updated
 
@@ -138,21 +125,17 @@
         @testset verbose = true "delete parameter" begin
             @testset "single parameter" begin
                 user = TrackingAPI.get_user_by_username("default")
-                project_id, _ = TrackingAPI.create_project(
-                    user.id,
-                    TrackingAPI.ProjectCreatePayload("Test project"),
-                )
+                project_id, _ = TrackingAPI.create_project(user.id, "Test Project")
                 experiment_id, _ = TrackingAPI.create_experiment(
                     project_id,
-                    TrackingAPI.ExperimentCreatePayload(
-                        TrackingAPI.IN_PROGRESS,
-                        "Test experiment",
-                    ),
+                    TrackingAPI.IN_PROGRESS,
+                    "Test experiment",
                 )
                 iteration_id, _ = TrackingAPI.create_iteration(experiment_id)
                 parameter_id, _ = TrackingAPI.create_parameter(
                     iteration_id,
-                    TrackingAPI.ParameterCreatePayload("learning_rate", "0.01"),
+                    "learning_rate",
+                    "0.01",
                 )
 
                 @test TrackingAPI.delete_parameter(parameter_id)
@@ -161,25 +144,22 @@
 
             @testset "all parameters by iteration" begin
                 user = TrackingAPI.get_user_by_username("default")
-                project_id, _ = TrackingAPI.create_project(
-                    user.id,
-                    TrackingAPI.ProjectCreatePayload("Test project"),
-                )
+                project_id, _ = TrackingAPI.create_project(user.id, "Test Project")
                 experiment_id, _ = TrackingAPI.create_experiment(
                     project_id,
-                    TrackingAPI.ExperimentCreatePayload(
-                        TrackingAPI.IN_PROGRESS,
-                        "Test experiment",
-                    ),
+                    TrackingAPI.IN_PROGRESS,
+                    "Test experiment",
                 )
                 iteration_id, _ = TrackingAPI.create_iteration(experiment_id)
                 TrackingAPI.create_parameter(
                     iteration_id,
-                    TrackingAPI.ParameterCreatePayload("batch_size", 32),
+                    "batch_size",
+                    32,
                 )
                 TrackingAPI.create_parameter(
                     iteration_id,
-                    TrackingAPI.ParameterCreatePayload("learning_rate", "0.001"),
+                    "learning_rate",
+                    0.001,
                 )
                 iteration = TrackingAPI.get_iteration_by_id(iteration_id)
 

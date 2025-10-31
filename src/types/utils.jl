@@ -73,12 +73,10 @@ convert_field_to_key(::WithStringKeys, field::Symbol) = field |> String
 
 Builds an instance of type `T` from a dictionary `data` with `trait` related to the type `K`. All the fields in the struct `T` must be present in the dictionary.
 """
-function type_from_dict(
-    ::Type{T}, data::Dict{K,Any}, trait::KeyConversionTrait
-)::T where {T,K}
+function type_from_dict(::Type{T}, data::Dict{K,Any})::T where {T,K}
     type_fields = T |> fieldnames
     values = map(type_fields) do field
-        key = convert_field_to_key(trait, field)
+        key = convert_field_to_key((data |> typeof |> KeyConversionTrait), field)
         value = get(data, key, nothing)
         if value === nothing
             throw(KeyError(key))
@@ -111,6 +109,4 @@ function type_from_dict(
 end
 
 # Allowing construction of ResultType from Dict
-function (::Type{T})(data::Dict{K,Any})::T where {T<:ResultType,K} 
-    return type_from_dict(T, data, (data |> typeof |> KeyConversionTrait))
-end
+(::Type{T})(data::AbstractDict) where {T<:ResultType} = type_from_dict(T, data)

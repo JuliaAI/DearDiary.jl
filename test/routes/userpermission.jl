@@ -2,13 +2,8 @@
     @testset verbose = true "userpermission routes" begin
         @testset verbose = true "create" begin
             user = TrackingAPI.get_user_by_username("default")
-            project_id, _ = TrackingAPI.create_project(
-                user.id,
-                TrackingAPI.ProjectCreatePayload("Missy Project"),
-            )
-            new_user_id, _ = TrackingAPI.create_user(
-                TrackingAPI.UserCreatePayload("Choclo", "Dokie", "choclo", "dokie"),
-            )
+            project_id, _ = TrackingAPI.create_project(user.id, "Test Project")
+            new_user_id, _ = TrackingAPI.create_user("Choclo", "Dokie", "choclo", "dokie")
             payload = Dict(
                 "create_permission" => true,
                 "read_permission" => true,
@@ -34,17 +29,15 @@
 
         @testset verbose = true "get by user id and project id" begin
             user = TrackingAPI.get_user_by_username("default")
-            project_id, _ = TrackingAPI.create_project(
-                user.id,
-                TrackingAPI.ProjectCreatePayload("Gala Project"),
-            )
-            new_user_id, _ = TrackingAPI.create_user(
-                TrackingAPI.UserCreatePayload("Dokie", "Choclo", "dokie", "choclo"),
-            )
+            project_id, _ = TrackingAPI.create_project(user.id, "Test Project")
+            new_user_id, _ = TrackingAPI.create_user("Dokie", "Choclo", "dokie", "choclo")
             userpermission_id, _ = TrackingAPI.create_userpermission(
                 new_user_id,
                 project_id,
-                TrackingAPI.UserPermissionCreatePayload(false, true, false, false),
+                false,
+                true,
+                false,
+                false,
             )
 
             response = HTTP.get(
@@ -68,17 +61,15 @@
 
         @testset verbose = true "update" begin
             user = TrackingAPI.get_user_by_username("default")
-            project_id, _ = TrackingAPI.create_project(
-                user.id,
-                TrackingAPI.ProjectCreatePayload("Ana Project"),
-            )
-            new_user_id, _ = TrackingAPI.create_user(
-                TrackingAPI.UserCreatePayload("Ana", "Missy", "ana", "missy"),
-            )
+            project_id, _ = TrackingAPI.create_project(user.id, "Test Project")
+            new_user_id, _ = TrackingAPI.create_user("Ana", "Missy", "ana", "missy")
             userpermission_id, _ = TrackingAPI.create_userpermission(
                 new_user_id,
                 project_id,
-                TrackingAPI.UserPermissionCreatePayload(false, true, false, false),
+                false,
+                true,
+                false,
+                false,
             )
 
             payload = Dict(
@@ -111,17 +102,15 @@
 
         @testset verbose = true "delete" begin
             user = TrackingAPI.get_user_by_username("default")
-            project_id, _ = TrackingAPI.create_project(
-                user.id,
-                TrackingAPI.ProjectCreatePayload("Galinha Project"),
-            )
-            new_user_id, _ = TrackingAPI.create_user(
-                TrackingAPI.UserCreatePayload("Galinha", "Ana", "galinha", "ana"),
-            )
+            project_id, _ = TrackingAPI.create_project(user.id, "Test Project")
+            new_user_id, _ = TrackingAPI.create_user("Galinha", "Ana", "galinha", "ana")
             userpermission_id, _ = TrackingAPI.create_userpermission(
                 new_user_id,
                 project_id,
-                TrackingAPI.UserPermissionCreatePayload(false, true, false, false),
+                false,
+                true,
+                false,
+                false,
             )
 
             response = HTTP.delete(

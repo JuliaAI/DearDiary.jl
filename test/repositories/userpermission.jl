@@ -39,10 +39,7 @@
 
         @testset verbose = true "fetch" begin
             user = TrackingAPI.fetch(TrackingAPI.User, "default")
-            project_id, _ = TrackingAPI.create_project(
-                user.id,
-                TrackingAPI.ProjectCreatePayload("Default Project"),
-            )
+            project_id, _ = TrackingAPI.create_project(user.id, "Test Project")
 
             @testset "fetch with existing user and project" begin
                 userpermission = TrackingAPI.fetch(
@@ -85,10 +82,7 @@
 
         @testset verbose = true "update" begin
             user = TrackingAPI.fetch(TrackingAPI.User, "default")
-            project_id, _ = TrackingAPI.create_project(
-                user.id,
-                TrackingAPI.ProjectCreatePayload("Default Project"),
-            )
+            project_id, _ = TrackingAPI.create_project(user.id, "Test Project")
 
             userpermission = TrackingAPI.fetch(
                 TrackingAPI.UserPermission,
@@ -114,10 +108,7 @@
             user = TrackingAPI.fetch(TrackingAPI.User, "default")
 
             @testset verbose = true "delete using userpermission id" begin
-                project_id, _ = TrackingAPI.create_project(
-                    user.id,
-                    TrackingAPI.ProjectCreatePayload("Default Project"),
-                )
+                project_id, _ = TrackingAPI.create_project(user.id, "Test Project")
                 userpermission = TrackingAPI.fetch(
                     TrackingAPI.UserPermission,
                     user.id,
@@ -133,10 +124,7 @@
             end
 
             @testset verbose = true "delete using project" begin
-                project_id, _ = TrackingAPI.create_project(
-                    user.id,
-                    TrackingAPI.ProjectCreatePayload("Default Project"),
-                )
+                project_id, _ = TrackingAPI.create_project(user.id, "Test Project")
                 project = TrackingAPI.fetch(TrackingAPI.Project, project_id)
 
                 @test TrackingAPI.delete(TrackingAPI.UserPermission, project)
@@ -148,10 +136,7 @@
             end
 
             @testset verbose = true "delete using user" begin
-                project_id, _ = TrackingAPI.create_project(
-                    user.id,
-                    TrackingAPI.ProjectCreatePayload("Default Project"),
-                )
+                project_id, _ = TrackingAPI.create_project(user.id, "Test Project")
 
                 @test TrackingAPI.delete(TrackingAPI.UserPermission, user)
                 @test TrackingAPI.fetch(

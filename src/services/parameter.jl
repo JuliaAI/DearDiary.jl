@@ -27,69 +27,68 @@ function get_parameters(iteration_id::Integer)::Array{Parameter,1}
 end
 
 """
-    create_parameter(iteration_id::Integer, parameter_payload::ParameterCreatePayload)::Tuple{Optional{<:Int64},UpsertResult}
+    create_parameter(iteration_id::Integer, key::AbstractString, value::AbstractString)::Tuple{Optional{<:Int64},UpsertResult}
 
 # Arguments
 - `iteration_id::Integer`: The id of the iteration to create the parameter for.
-- `parameter_payload::ParameterCreatePayload`: The payload for creating a parameter.
+- `key::AbstractString`: The key of the parameter.
+- `value::AbstractString`: The value of the parameter.
 
 # Returns
 An [`UpsertResult`](@ref). [`Created`](@ref) if the record was successfully created, [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
 """
 function create_parameter(
-    iteration_id::Integer, parameter_payload::ParameterCreatePayload
+    iteration_id::Integer, key::AbstractString, value::AbstractString
 )::Tuple{Optional{<:Int64},UpsertResult}
     iteration = iteration_id |> get_iteration_by_id
     if iteration |> isnothing
         return nothing, Unprocessable()
     end
 
-    parameter_id, parameter_upsert_result = insert(
-        Parameter,
-        iteration_id,
-        parameter_payload.key,
-        parameter_payload.value,
-    )
+    parameter_id, parameter_upsert_result = insert(Parameter, iteration_id, key, value)
     if !(parameter_upsert_result isa Created)
         return nothing, parameter_upsert_result
     end
     return parameter_id, parameter_upsert_result
 end
+function create_parameter(
+    iteration_id::Integer, key::AbstractString, value::Real
+)::Tuple{Optional{<:Int64},UpsertResult}
+    return create_parameter(iteration_id, key, value |> string)
+end
 
 """
-    update_parameter(id::Integer, parameter_payload::ParameterUpdatePayload)::UpsertResult
+    update_parameter(id::Integer, key::Optional{AbstractString}, value::Optional{AbstractString})::UpsertResult
 
 Update a [`Parameter`](@ref) record.
 
 # Arguments
 - `id::Integer`: The id of the parameter to update.
-- `parameter_payload::ParameterUpdatePayload`: The payload for updating the parameter.
+- `key::Optional{AbstractString}`: The new key for the parameter.
+- `value::Optional{AbstractString}`: The new value for the parameter.
 
 # Returns
 An [`UpsertResult`](@ref). [`Updated`](@ref) if the record was successfully updated (or no changes were made), [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
 """
 function update_parameter(
-    id::Integer, parameter_payload::ParameterUpdatePayload
+    id::Integer, key::Optional{AbstractString}, value::Optional{AbstractString}
 )::UpsertResult
     parameter = id |> get_parameter_by_id
     if parameter |> isnothing
         return Unprocessable()
     end
 
-    should_be_updated = compare_object_fields(
-        parameter;
-        key=parameter_payload.key,
-        value=parameter_payload.value,
-    )
+    should_be_updated = compare_object_fields(parameter; key=key, value=value)
     if !should_be_updated
         return Updated()
     end
 
-    return update(
-        Parameter, id;
-        key=parameter_payload.key,
-        value=parameter_payload.value,
-    )
+    return update(Parameter, id; key=key, value=value)
+end
+function update_parameter(
+    id::Integer, key::Optional{AbstractString}, value::Optional{Real}
+)::UpsertResult
+    return update_parameter(id, key, (value |> isnothing) ? nothing : string(value))
 end
 
 """

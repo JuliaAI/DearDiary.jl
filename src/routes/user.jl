@@ -30,7 +30,12 @@ function setup_user_routes()
     @post root("/") @admin_required function (
         request::HTTP.Request, parameters::Json{UserCreatePayload}
     )
-        user_id, upsert_result = parameters.payload |> create_user
+        user_id, upsert_result = create_user(
+            parameters.payload.first_name,
+            parameters.payload.last_name,
+            parameters.payload.username,
+            parameters.payload.password,
+        )
         upsert_status = upsert_result |> get_status_by_upsert_result
         return json(("user_id" => user_id); status=upsert_status)
     end
@@ -38,7 +43,13 @@ function setup_user_routes()
     @patch root("/{id}") @same_user_or_admin_required function (
         request::HTTP.Request, id::Integer, parameters::Json{UserUpdatePayload}
     )
-        upsert_result = update_user(id, parameters.payload)
+        upsert_result = update_user(
+            id,
+            parameters.payload.first_name,
+            parameters.payload.last_name,
+            parameters.payload.password,
+            parameters.payload.is_admin,
+        )
         upsert_status = upsert_result |> get_status_by_upsert_result
         return json(("message" => (upsert_result |> String)); status=upsert_status)
     end

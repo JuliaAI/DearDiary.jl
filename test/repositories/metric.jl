@@ -3,16 +3,11 @@
         @testset verbose = true "insert" begin
             @testset "with existing iteration" begin
                 user = TrackingAPI.get_user_by_username("default")
-                project_id, _ = TrackingAPI.create_project(
-                    user.id,
-                    TrackingAPI.ProjectCreatePayload("Metric Iteration Project"),
-                )
+                project_id, _ = TrackingAPI.create_project(user.id, "Test Project")
                 experiment_id, _ = TrackingAPI.create_experiment(
                     project_id,
-                    TrackingAPI.ExperimentCreatePayload(
-                        TrackingAPI.IN_PROGRESS,
-                        "Metric Test Experiment",
-                    ),
+                    TrackingAPI.IN_PROGRESS,
+                    "Metric Test Experiment",
                 )
                 iteration_id, _ = TrackingAPI.create_iteration(experiment_id)
 
@@ -37,16 +32,11 @@
         @testset verbose = true "fetch" begin
             @testset "existing metric" begin
                 user = TrackingAPI.get_user_by_username("default")
-                project_id, _ = TrackingAPI.create_project(
-                    user.id,
-                    TrackingAPI.ProjectCreatePayload("Metric Iteration Project"),
-                )
+                project_id, _ = TrackingAPI.create_project(user.id, "Test Project")
                 experiment_id, _ = TrackingAPI.create_experiment(
                     project_id,
-                    TrackingAPI.ExperimentCreatePayload(
-                        TrackingAPI.IN_PROGRESS,
-                        "Metric Test Experiment",
-                    ),
+                    TrackingAPI.IN_PROGRESS,
+                    "Metric Test Experiment",
                 )
                 iteration_id, _ = TrackingAPI.create_iteration(experiment_id)
                 metric_id, _ = TrackingAPI.insert(
@@ -74,16 +64,11 @@
 
         @testset verbose = true "fetch all" begin
             user = TrackingAPI.get_user_by_username("default")
-            project_id, _ = TrackingAPI.create_project(
-                user.id,
-                TrackingAPI.ProjectCreatePayload("Metric Iteration Project"),
-            )
+            project_id, _ = TrackingAPI.create_project(user.id, "Test Project")
             experiment_id, _ = TrackingAPI.create_experiment(
                 project_id,
-                TrackingAPI.ExperimentCreatePayload(
-                    TrackingAPI.IN_PROGRESS,
-                    "Metric Test Experiment",
-                ),
+                TrackingAPI.IN_PROGRESS,
+                "Metric Test Experiment",
             )
             iteration_id, _ = TrackingAPI.create_iteration(experiment_id)
             TrackingAPI.insert(
@@ -106,16 +91,11 @@
 
         @testset verbose = true "update" begin
             user = TrackingAPI.get_user_by_username("default")
-            project_id, _ = TrackingAPI.create_project(
-                user.id,
-                TrackingAPI.ProjectCreatePayload("Metric Iteration Project"),
-            )
+            project_id, _ = TrackingAPI.create_project(user.id, "Test Project")
             experiment_id, _ = TrackingAPI.create_experiment(
                 project_id,
-                TrackingAPI.ExperimentCreatePayload(
-                    TrackingAPI.IN_PROGRESS,
-                    "Metric Test Experiment",
-                ),
+                TrackingAPI.IN_PROGRESS,
+                "Metric Test Experiment",
             )
             iteration_id, _ = TrackingAPI.create_iteration(experiment_id)
             metric_id, _ = TrackingAPI.insert(
@@ -140,16 +120,11 @@
         @testset verbose = true "delete" begin
             @testset "single metric" begin
                 user = TrackingAPI.get_user_by_username("default")
-                project_id, _ = TrackingAPI.create_project(
-                    user.id,
-                    TrackingAPI.ProjectCreatePayload("Metric Iteration Project"),
-                )
+                project_id, _ = TrackingAPI.create_project(user.id, "Test Project")
                 experiment_id, _ = TrackingAPI.create_experiment(
                     project_id,
-                    TrackingAPI.ExperimentCreatePayload(
-                        TrackingAPI.IN_PROGRESS,
-                        "Metric Test Experiment",
-                    ),
+                    TrackingAPI.IN_PROGRESS,
+                    "Metric Test Experiment",
                 )
                 iteration_id, _ = TrackingAPI.create_iteration(experiment_id)
                 metric_id, _ = TrackingAPI.insert(
@@ -165,16 +140,11 @@
 
             @testset "all metrics by iteration" begin
                 user = TrackingAPI.get_user_by_username("default")
-                project_id, _ = TrackingAPI.create_project(
-                    user.id,
-                    TrackingAPI.ProjectCreatePayload("Metric Iteration Project"),
-                )
+                project_id, _ = TrackingAPI.create_project(user.id, "Test Project")
                 experiment_id, _ = TrackingAPI.create_experiment(
                     project_id,
-                    TrackingAPI.ExperimentCreatePayload(
-                        TrackingAPI.IN_PROGRESS,
-                        "Metric Test Experiment",
-                    ),
+                    TrackingAPI.IN_PROGRESS,
+                    "Metric Test Experiment",
                 )
                 iteration_id, _ = TrackingAPI.create_iteration(experiment_id)
                 iteration = TrackingAPI.get_iteration_by_id(iteration_id)

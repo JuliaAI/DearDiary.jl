@@ -30,12 +30,15 @@ function setup_userpermission_routes()
         request::HTTP.Request,
         user_id::Integer,
         project_id::Integer,
-        parameters::Json{UserPermissionCreatePayload}
+        parameters::Json{UserPermissionCreatePayload},
     )
         userpermission_id, upsert_result = create_userpermission(
             user_id,
             project_id,
-            parameters.payload,
+            parameters.payload.create_permission,
+            parameters.payload.read_permission,
+            parameters.payload.update_permission,
+            parameters.payload.delete_permission,
         )
         upsert_status = upsert_result |> get_status_by_upsert_result
         return json(("userpermission_id" => userpermission_id); status=upsert_status)
@@ -44,7 +47,13 @@ function setup_userpermission_routes()
     @patch root("/{id}") @admin_required function (
         request::HTTP.Request, id::Integer, parameters::Json{UserPermissionUpdatePayload}
     )
-        upsert_result = update_userpermission(id, parameters.payload)
+        upsert_result = update_userpermission(
+            id,
+            parameters.payload.create_permission,
+            parameters.payload.read_permission,
+            parameters.payload.update_permission,
+            parameters.payload.delete_permission,
+        )
         upsert_status = upsert_result |> get_status_by_upsert_result
         return json(("message" => (upsert_result |> String)); status=upsert_status)
     end

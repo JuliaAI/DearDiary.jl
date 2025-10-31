@@ -28,7 +28,7 @@ function update(
     status_id::Optional{Integer}=nothing,
     name::Optional{AbstractString}=nothing,
     description::Optional{String}=nothing,
-    end_date::Optional{DateTime}=nothing
+    end_date::Optional{DateTime}=nothing,
 )::UpsertResult
     fields = (status_id=status_id, name=name, description=description, end_date=end_date)
     return update(SQL_UPDATE_EXPERIMENT, fetch(Experiment, id); fields...)

@@ -24,7 +24,7 @@ end
 function update(
     ::Type{<:Iteration}, id::Integer;
     notes::Optional{AbstractString}=nothing,
-    end_date::Optional{DateTime}=nothing
+    end_date::Optional{DateTime}=nothing,
 )::UpsertResult
     fields = (notes=notes, end_date=end_date)
     return update(SQL_UPDATE_ITERATION, fetch(Iteration, id); fields...)

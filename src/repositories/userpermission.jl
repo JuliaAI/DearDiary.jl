@@ -25,7 +25,7 @@ function update(
     read_permission::Optional{Bool}=nothing,
     update_permission::Optional{Bool}=nothing,
     delete_permission::Optional{Bool}=nothing,
-    manage_permission::Optional{Bool}=nothing
+    manage_permission::Optional{Bool}=nothing,
 )::UpsertResult
     fields = (
         create_permission=create_permission,

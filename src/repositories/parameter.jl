@@ -26,7 +26,7 @@ end
 function update(
     ::Type{<:Parameter}, id::Integer;
     key::Optional{AbstractString}=nothing,
-    value::Optional{AbstractString}=nothing
+    value::Optional{AbstractString}=nothing,
 )::UpsertResult
     fields = (key=key, value=value)
     return update(SQL_UPDATE_PARAMETER, fetch(Parameter, id); fields...)

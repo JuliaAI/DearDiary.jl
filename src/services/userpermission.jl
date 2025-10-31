@@ -17,14 +17,17 @@ function get_userpermission_by_user_and_project(
 end
 
 """
-    create_userpermission(user_id::Integer, project_id::Integer, userpermission_payload::UserPermissionCreatePayload)::Tuple{Optional{<:Int64},UpsertResult}
+    create_userpermission(user_id::Integer, project_id::Integer, create_permission::Bool, read_permission::Bool, update_permission::Bool, delete_permission::Bool)::Tuple{Optional{<:Int64},UpsertResult}
 
 Create a [`UserPermission`](@ref).
 
 # Arguments
 - `user_id::Integer`: The id of the user.
 - `project_id::Integer`: The id of the project.
-- `userpermission_payload::UserPermissionCreatePayload`: The payload for creating a user permission.
+- `create_permission::Bool`: Whether the user has create permission.
+- `read_permission::Bool`: Whether the user has read permission.
+- `update_permission::Bool`: Whether the user has update permission.
+- `delete_permission::Bool`: Whether the user has delete permission.
 
 # Returns
 An [`UpsertResult`](@ref). [`Created`](@ref) if the record was successfully created, [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
@@ -32,7 +35,10 @@ An [`UpsertResult`](@ref). [`Created`](@ref) if the record was successfully crea
 function create_userpermission(
     user_id::Integer,
     project_id::Integer,
-    userpermission_payload::UserPermissionCreatePayload
+    create_permission::Bool,
+    read_permission::Bool,
+    update_permission::Bool,
+    delete_permission::Bool,
 )::Tuple{Optional{<:Int64},UpsertResult}
     user = user_id |> get_user_by_id
     if user |> isnothing
@@ -51,10 +57,10 @@ function create_userpermission(
 
     update_result = update(
         UserPermission, userpermission_id;
-        create_permission=userpermission_payload.create_permission,
-        read_permission=userpermission_payload.read_permission,
-        update_permission=userpermission_payload.update_permission,
-        delete_permission=userpermission_payload.delete_permission,
+        create_permission=create_permission,
+        read_permission=read_permission,
+        update_permission=update_permission,
+        delete_permission=delete_permission,
     )
     if !(update_result isa Updated)
         delete(UserPermission, userpermission_id)
@@ -65,19 +71,26 @@ function create_userpermission(
 end
 
 """
-    update_userpermission(id::Integer, userpermission_payload::UserPermissionUpdatePayload)::UpsertResult
+    update_userpermission(id::Integer, create_permission::Optional{Bool}, read_permission::Optional{Bool}, update_permission::Optional{Bool}, delete_permission::Optional{Bool})::UpsertResult
 
 Update a [`UserPermission`](@ref).
 
 # Arguments
 - `id::Integer`: The id of the user permission to update.
-- `userpermission_payload::UserPermissionUpdatePayload`: The payload for updating a user permission.
+- `create_permission::Optional{Bool}`: The new create permission.
+- `read_permission::Optional{Bool}`: The new read permission.
+- `update_permission::Optional{Bool}`: The new update permission.
+- `delete_permission::Optional{Bool}`: The new delete permission.
 
 # Returns
 An [`UpsertResult`](@ref). [`Updated`](@ref) if the record was successfully updated (or no fields were changed), [`Unprocessable`](@ref) if the record violates a constraint or if no fields were provided to update, and [`Error`](@ref) if an error occurred while updating the record.
 """
 function update_userpermission(
-    id::Integer, userpermission_payload::UserPermissionUpdatePayload
+    id::Integer,
+    create_permission::Optional{Bool},
+    read_permission::Optional{Bool},
+    update_permission::Optional{Bool},
+    delete_permission::Optional{Bool},
 )::UpsertResult
     userpermission = fetch(UserPermission, id)
     if userpermission |> isnothing
@@ -86,10 +99,10 @@ function update_userpermission(
 
     should_be_updated = compare_object_fields(
         userpermission;
-        create_permission=userpermission_payload.create_permission,
-        read_permission=userpermission_payload.read_permission,
-        update_permission=userpermission_payload.update_permission,
-        delete_permission=userpermission_payload.delete_permission,
+        create_permission=create_permission,
+        read_permission=read_permission,
+        update_permission=update_permission,
+        delete_permission=delete_permission,
     )
     if !should_be_updated
         return Updated()
@@ -97,10 +110,10 @@ function update_userpermission(
 
     return update(
         UserPermission, id;
-        create_permission=userpermission_payload.create_permission,
-        read_permission=userpermission_payload.read_permission,
-        update_permission=userpermission_payload.update_permission,
-        delete_permission=userpermission_payload.delete_permission,
+        create_permission=create_permission,
+        read_permission=read_permission,
+        update_permission=update_permission,
+        delete_permission=delete_permission,
     )
 end
 

@@ -4,7 +4,7 @@
             user = TrackingAPI.get_user_by_username("default")
             project_id, project_upsert_result = TrackingAPI.create_project(
                 user.id,
-                TrackingAPI.ProjectCreatePayload("Test Project"),
+                "Test Project",
             )
 
             @test project_upsert_result isa TrackingAPI.Created
@@ -35,11 +35,11 @@
         end
 
         @testset verbose = true "update project" begin
-            project_payload = TrackingAPI.ProjectUpdatePayload(
+            @test TrackingAPI.update_project(
+                1,
                 "Updated Test Project",
-                "Updated Description",
-            )
-            @test TrackingAPI.update_project(1, project_payload) isa TrackingAPI.Updated
+                "Updated Description"
+            ) isa TrackingAPI.Updated
 
             project = TrackingAPI.get_project_by_id(1)
 
@@ -49,10 +49,8 @@
 
         @testset verbose = true "delete project" begin
             user = TrackingAPI.get_user_by_username("default")
-            project_id, _ = TrackingAPI.create_project(
-                user.id,
-                TrackingAPI.ProjectCreatePayload("Project to Delete"),
-            )
+            project_id, _ = TrackingAPI.create_project(user.id, "Project to Delete")
+
             @test TrackingAPI.delete_project(project_id)
             @test TrackingAPI.get_project_by_id(project_id) |> isnothing
         end

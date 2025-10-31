@@ -2,22 +2,16 @@
     @testset verbose = true "userpermission service" begin
         @testset verbose = true "create" begin
             user = TrackingAPI.get_user_by_username("default")
-            project_id, _ = TrackingAPI.create_project(
-                user.id,
-                TrackingAPI.ProjectCreatePayload("Test Project"),
-            )
-            userpermission_payload = TrackingAPI.UserPermissionCreatePayload(
-                false,
-                true,
-                false,
-                false,
-            )
+            project_id, _ = TrackingAPI.create_project(user.id, "Test Project")
 
             @testset "create with no existing user" begin
                 _, upsert_result = TrackingAPI.create_userpermission(
                     9999,
                     project_id,
-                    userpermission_payload,
+                    false,
+                    true,
+                    false,
+                    false,
                 )
                 @test upsert_result isa TrackingAPI.Unprocessable
             end
@@ -26,19 +20,23 @@
                 _, upsert_result = TrackingAPI.create_userpermission(
                     user.id,
                     9999,
-                    userpermission_payload,
+                    false,
+                    true,
+                    false,
+                    false,
                 )
                 @test upsert_result isa TrackingAPI.Unprocessable
             end
 
             @testset "create with existing user and project" begin
-                new_user_id, _ = TrackingAPI.create_user(
-                    TrackingAPI.UserCreatePayload("Gala", "Missy", "gala", "missy"),
-                )
+                new_user_id, _ = TrackingAPI.create_user("Gala", "Missy", "gala", "missy")
                 userpermission_id, upsert_result = TrackingAPI.create_userpermission(
                     new_user_id,
                     project_id,
-                    userpermission_payload,
+                    false,
+                    true,
+                    false,
+                    false,
                 )
                 @test upsert_result isa TrackingAPI.Created
                 @test userpermission_id isa Integer
@@ -48,7 +46,10 @@
                 _, upsert_result = TrackingAPI.create_userpermission(
                     user.id,
                     project_id,
-                    userpermission_payload,
+                    false,
+                    true,
+                    false,
+                    false,
                 )
                 @test upsert_result isa TrackingAPI.Duplicate
             end
@@ -56,10 +57,7 @@
 
         @testset verbose = true "get by user id and project id" begin
             user = TrackingAPI.get_user_by_username("default")
-            project_id, _ = TrackingAPI.create_project(
-                user.id,
-                TrackingAPI.ProjectCreatePayload("Default Project"),
-            )
+            project_id, _ = TrackingAPI.create_project(user.id, "Test Project")
 
             @testset "get with existing user and project" begin
                 userpermission = TrackingAPI.get_userpermission_by_user_and_project(
@@ -102,10 +100,7 @@
 
         @testset verbose = true "update" begin
             user = TrackingAPI.get_user_by_username("default")
-            project_id, _ = TrackingAPI.create_project(
-                user.id,
-                TrackingAPI.ProjectCreatePayload("Default Project"),
-            )
+            project_id, _ = TrackingAPI.create_project(user.id, "Test Project")
 
             userpermission = TrackingAPI.get_userpermission_by_user_and_project(
                 user.id,
@@ -116,15 +111,12 @@
             @test userpermission.update_permission == false
             @test userpermission.delete_permission == false
 
-            userpermission_payload = TrackingAPI.UserPermissionUpdatePayload(
+            @test TrackingAPI.update_userpermission(
+                userpermission.id,
                 true,
                 nothing,
                 nothing,
                 nothing,
-            )
-            @test TrackingAPI.update_userpermission(
-                userpermission.id,
-                userpermission_payload,
             ) isa TrackingAPI.Updated
             userpermission = TrackingAPI.get_userpermission_by_user_and_project(
                 user.id,
@@ -138,10 +130,7 @@
 
         @testset verbose = true "delete" begin
             user = TrackingAPI.get_user_by_username("default")
-            project_id, _ = TrackingAPI.create_project(
-                user.id,
-                TrackingAPI.ProjectCreatePayload("Default Project"),
-            )
+            project_id, _ = TrackingAPI.create_project(user.id, "Test Project")
             userpermission = TrackingAPI.get_userpermission_by_user_and_project(
                 user.id,
                 project_id,

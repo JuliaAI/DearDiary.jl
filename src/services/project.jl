@@ -22,26 +22,26 @@ An array of [`Project`](@ref) objects.
 get_projects()::Array{Project,1} = Project |> fetch_all
 
 """
-    create_project(user_id::Integer, project_payload::ProjectCreatePayload)::Tuple{Optional{<:Int64},UpsertResult}
+    create_project(user_id::Integer, name::AbstractString)::Tuple{Optional{<:Int64},UpsertResult}
 
 Create a [`Project`](@ref).
 
 # Arguments
 - `user_id::Integer`: The id of the user creating the project. The user must have admin privileges.
-- `project_payload::ProjectCreatePayload`: The payload for creating an project.
+- `name::AbstractString`: The name of the project.
 
 # Returns
 An [`UpsertResult`](@ref). [`Created`](@ref) if the record was successfully created, [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
 """
 function create_project(
-    user_id::Integer, project_payload::ProjectCreatePayload
+    user_id::Integer, name::AbstractString
 )::Tuple{Optional{<:Int64},UpsertResult}
     user = user_id |> get_user_by_id
     if user |> isnothing || user.is_admin == 0
         return nothing, Unprocessable()
     end
 
-    project_id, project_upsert_result = insert(Project, project_payload.name)
+    project_id, project_upsert_result = insert(Project, name)
     if !(project_upsert_result isa Created)
         return nothing, project_upsert_result
     end
@@ -55,34 +55,32 @@ function create_project(
 end
 
 """
-    update_project(id::Int, project_payload::ProjectUpdatePayload)::UpsertResult
+    update_project(id::Int, name::Optional{AbstractString}, description::Optional{AbstractString})::UpsertResult
 
 Update a [`Project`](@ref) record.
 
 # Arguments
 - `id::Integer`: The id of the project to update.
-- `project_payload::ProjectUpdatePayload`: The payload for updating a project.
+- `name::Optional{AbstractString}`: The new name for the project.
+- `description::Optional{AbstractString}`: The new description for the project.
 
 # Returns
 An [`UpsertResult`](@ref). [`Updated`](@ref) if the record was successfully updated (or no changes were made), [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
 """
-function update_project(id::Integer, project_payload::ProjectUpdatePayload)::UpsertResult
+function update_project(
+    id::Integer, name::Optional{AbstractString}, description::Optional{AbstractString}
+)::UpsertResult
     project = fetch(Project, id)
+    if project |> isnothing
+        return Unprocessable()
+    end
 
-    should_be_updated = compare_object_fields(
-        project;
-        name=project_payload.name,
-        description=project_payload.description,
-    )
+    should_be_updated = compare_object_fields(project; name=name, description=description)
     if !should_be_updated
         return Updated()
     end
 
-    return update(
-        Project, id;
-        name=project_payload.name,
-        description=project_payload.description,
-    )
+    return update(Project, id; name=name, description=description)
 end
 
 """

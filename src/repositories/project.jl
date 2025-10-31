@@ -16,7 +16,7 @@ end
 function update(
     ::Type{<:Project}, id::Integer;
     name::Optional{AbstractString}=nothing,
-    description::Optional{AbstractString}=nothing
+    description::Optional{AbstractString}=nothing,
 )::UpsertResult
     fields = (name=name, description=description)
     return update(SQL_UPDATE_PROJECT, fetch(Project, id); fields...)

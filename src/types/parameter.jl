@@ -52,10 +52,7 @@ struct ParameterUpdatePayload <: UpsertType
     value::Optional{String}
 end
 function ParameterUpdatePayload(
-    key::Optional{AbstractString}=nothing, value::Optional{Real}=nothing
+    key::Optional{AbstractString}, value::Optional{Real}
 )::ParameterUpdatePayload
-    return ParameterUpdatePayload(
-        (key |> isnothing) ? nothing : key,
-        (value |> isnothing) ? nothing : (value |> string),
-    )
+    return ParameterUpdatePayload(key, (value |> isnothing) ? nothing : (value |> string))
 end

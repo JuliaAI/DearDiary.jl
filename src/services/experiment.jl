@@ -27,19 +27,20 @@ function get_experiments(project_id::Integer)::Array{Experiment,1}
 end
 
 """
-    create_experiment(project_id::Integer, experiment_payload::ExperimentCreatePayload)::Tuple{Optional{<:Int64},UpsertResult}
+    create_experiment(project_id::Integer, status_id::Status, name::AbstractString)::Tuple{Optional{<:Int64},UpsertResult}
 
 Create a [`Experiment`](@ref).
 
 # Arguments
 - `project_id::Integer`: The id of the project to create the experiment for.
-- `experiment_payload::ExperimentCreatePayload`: The payload for creating an experiment.
+- `status::Status`: The status of the experiment.
+- `name::AbstractString`: The name of the experiment.
 
 # Returns
 An [`UpsertResult`](@ref). [`Created`](@ref) if the record was successfully created, [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
 """
 function create_experiment(
-    project_id::Integer, experiment_payload::ExperimentCreatePayload
+    project_id::Integer, status::Status, name::AbstractString
 )::Tuple{Optional{<:Int64},UpsertResult}
     project = project_id |> get_project_by_id
     if project |> isnothing
@@ -49,8 +50,8 @@ function create_experiment(
     experiment_id, experiment_upsert_result = insert(
         Experiment,
         project_id,
-        experiment_payload.status_id |> Integer,
-        experiment_payload.name,
+        status |> Integer,
+        name,
     )
     if !(experiment_upsert_result isa Created)
         return nothing, experiment_upsert_result
@@ -59,19 +60,26 @@ function create_experiment(
 end
 
 """
-    update_experiment(id::Integer, experiment_payload::ExperimentUpdatePayload)::UpsertResult
+    update_experiment(id::Integer, status::Optional{Status}, name::Optional{AbstractString}, description::Optional{AbstractString}, end_date::Optional{DateTime})::UpsertResult
 
 Update a [`Experiment`](@ref) record.
 
 # Arguments
 - `id::Integer`: The id of the experiment to update.
-- `experiment_payload::ExperimentUpdatePayload`: The payload for updating the experiment.
+- `status::Optional{Status}`: The new status of the experiment.
+- `name::Optional{AbstractString}`: The new name of the experiment.
+- `description::Optional{AbstractString}`: The new description of the experiment.
+- `end_date::Optional{DateTime}`: The new end date of the experiment.
 
 # Returns
 An [`UpsertResult`](@ref). [`Updated`](@ref) if the record was successfully updated (or no changes were made), [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
 """
 function update_experiment(
-    id::Integer, experiment_payload::ExperimentUpdatePayload
+    id::Integer,
+    status::Optional{Status},
+    name::Optional{AbstractString},
+    description::Optional{AbstractString},
+    end_date::Optional{DateTime},
 )::UpsertResult
     experiment = fetch(Experiment, id)
     if experiment |> isnothing
@@ -80,10 +88,10 @@ function update_experiment(
 
     should_be_updated = compare_object_fields(
         experiment;
-        status_id=experiment_payload.status_id,
-        name=experiment_payload.name,
-        description=experiment_payload.description,
-        end_date=experiment_payload.end_date,
+        status_id=status |> Integer,
+        name=name,
+        description=description,
+        end_date=end_date,
     )
     if !should_be_updated
         return Updated()
@@ -91,10 +99,10 @@ function update_experiment(
 
     return update(
         Experiment, id;
-        status_id=experiment_payload.status_id |> Integer,
-        name=experiment_payload.name,
-        description=experiment_payload.description,
-        end_date=experiment_payload.end_date,
+        status_id=status |> Integer,
+        name=name,
+        description=description,
+        end_date=end_date,
     )
 end
 

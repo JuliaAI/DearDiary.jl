@@ -48,65 +48,81 @@ An array of [`User`](@ref) objects.
 get_users_by_project_id(project_id::Integer)::Array{User,1} = fetch_all(User, project_id)
 
 """
-    create_user(user_payload::UserCreatePayload)::Tuple{Optional{<:Int64},UpsertResult}
+    create_user(first_name::AbstractString, last_name::AbstractString, username::AbstractString, password::AbstractString)::Tuple{Optional{<:Int64},UpsertResult}
 
 Create an [`User`](@ref).
 
 # Arguments
-- `user_payload::UserCreatePayload`: The payload for creating an user.
+- `first_name::AbstractString`: The first name of the user.
+- `last_name::AbstractString`: The last name of the user.
+- `username::AbstractString`: The username of the user.
+- `password::AbstractString`: The password of the user.
 
 # Returns
 An [`UpsertResult`](@ref). [`Created`](@ref) if the record was successfully created, [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
 """
 function create_user(
-    user_payload::UserCreatePayload
+    first_name::AbstractString,
+    last_name::AbstractString,
+    username::AbstractString,
+    password::AbstractString,
 )::Tuple{Optional{<:Int64},UpsertResult}
     return insert(
         User,
-        user_payload.first_name,
-        user_payload.last_name,
-        user_payload.username,
-        GenerateFromPassword(user_payload.password) |> String,
+        first_name,
+        last_name,
+        username,
+        GenerateFromPassword(password) |> String,
     )
 end
 
 """
-    update_user(id::Integer, user_payload::UserUpdatePayload)::UpsertResult
+    update_user(id::Integer, first_name::Optional{AbstractString}, last_name::Optional{AbstractString}, password::Optional{AbstractString}, is_admin::Optional{Bool})::UpsertResult
 
 Update an [`User`](@ref).
 
 # Arguments
 - `id::Integer`: The id of the user to update.
-- `user_payload::UserUpdatePayload`: The payload for updating an user.
+- `first_name::Optional{AbstractString}`: The new first name of the user.
+- `last_name::Optional{AbstractString}`: The new last name of the user.
+- `password::Optional{AbstractString}`: The new password of the user.
+- `is_admin::Optional{Bool}`: The new admin status of the user.
 
 # Returns
 An [`UpsertResult`](@ref). [`Updated`](@ref) if the record was successfully updated (or no fields were changed), [`Unprocessable`](@ref) if the record violates a constraint or if no fields were provided to update, and [`Error`](@ref) if an error occurred while updating the record.
 """
-function update_user(id::Integer, user_payload::UserUpdatePayload)::UpsertResult
+function update_user(
+    id::Integer,
+    first_name::Optional{AbstractString},
+    last_name::Optional{AbstractString},
+    password::Optional{AbstractString},
+    is_admin::Optional{Bool},
+)::UpsertResult
     user = fetch(User, id)
-    if user |> isnothing || (user_payload.first_name |> isnothing && user_payload.last_name |> isnothing && user_payload.password |> isnothing)
+    if user |> isnothing
         return Unprocessable()
     end
 
     should_be_updated = compare_object_fields(
         user;
-        first_name=user_payload.first_name,
-        last_name=user_payload.last_name,
-        password=user_payload.password,
+        first_name=first_name,
+        last_name=last_name,
+        password=password,
+        is_admin=is_admin,
     )
     if !should_be_updated
         return Updated()
     end
 
-    if !(user_payload.password |> isnothing)
-        hashed_password = GenerateFromPassword(user_payload.password) |> String
+    if !(password |> isnothing)
+        hashed_password = password |> GenerateFromPassword |> String
     end
     return update(
         User, id;
-        first_name=user_payload.first_name,
-        last_name=user_payload.last_name,
-        password=(user_payload.password |> isnothing) ? nothing : hashed_password,
-        is_admin=user_payload.is_admin,
+        first_name=first_name,
+        last_name=last_name,
+        password=(password |> isnothing) ? nothing : hashed_password,
+        is_admin=is_admin,
     )
 end
 

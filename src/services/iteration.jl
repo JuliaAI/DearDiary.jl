@@ -49,39 +49,32 @@ function create_iteration(experiment_id::Integer)::Tuple{Optional{<:Int64},Upser
 end
 
 """
-    update_iteration(id::Int, iteration_payload::IterationUpdatePayload)::UpsertResult
+    update_iteration(id::Int, notes::Optional{AbstractString}, end_date::Optional{DateTime})::UpsertResult
 
 Update a [`Iteration`](@ref) record.
 
 # Arguments
 - `id::Integer`: The id of the iteration to update.
-- `iteration_payload::IterationUpdatePayload`: The payload for updating the iteration.
+- `notes::Optional{AbstractString}`: The new notes for the iteration.
+- `end_date::Optional{DateTime}`: The new end date for the iteration.
 
 # Returns
 An [`UpsertResult`](@ref). [`Updated`](@ref) if the record was successfully updated (or no changes were made), [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
 """
 function update_iteration(
-    id::Integer, iteration_payload::IterationUpdatePayload
+    id::Integer, notes::Optional{AbstractString}, end_date::Optional{DateTime}
 )::UpsertResult
     iteration = id |> get_iteration_by_id
     if iteration |> isnothing
         return Unprocessable()
     end
 
-    should_be_updated = compare_object_fields(
-        iteration;
-        notes=iteration_payload.notes,
-        end_date=iteration_payload.end_date,
-    )
+    should_be_updated = compare_object_fields(iteration; notes=notes, end_date=end_date)
     if !should_be_updated
         return Updated()
     end
 
-    return update(
-        Iteration, id;
-        notes=iteration_payload.notes,
-        end_date=iteration_payload.end_date,
-    )
+    return update(Iteration, id; notes=notes, end_date=end_date)
 end
 
 """

@@ -28,7 +28,7 @@ function setup_project_routes()
     @post root("/") @admin_required function (
         request::HTTP.Request, parameters::Json{ProjectCreatePayload}
     )
-        project_id, upsert_result = create_project(user.id, parameters.payload)
+        project_id, upsert_result = create_project(user.id, parameters.payload.name)
         upsert_status = upsert_result |> get_status_by_upsert_result
         return json(("project_id" => project_id); status=upsert_status)
     end
@@ -36,7 +36,11 @@ function setup_project_routes()
     @patch root("/{id}") function (
         request::HTTP.Request, id::Integer, parameters::Json{ProjectUpdatePayload}
     )
-        upsert_result = update_project(id, parameters.payload)
+        upsert_result = update_project(
+            id,
+            parameters.payload.name,
+            parameters.payload.description,
+        )
         upsert_status = upsert_result |> get_status_by_upsert_result
         return json(("message" => (upsert_result |> String)); status=upsert_status)
     end

@@ -26,7 +26,7 @@ end
 function update(
     ::Type{<:Metric}, id::Integer;
     key::Optional{AbstractString}=nothing,
-    value::Optional{AbstractFloat}=nothing
+    value::Optional{AbstractFloat}=nothing,
 )::UpsertResult
     fields = (key=key, value=value)
     return update(SQL_UPDATE_METRIC, fetch(Metric, id); fields...)

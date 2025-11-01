@@ -1,4 +1,4 @@
-@with_deardiary_test_db begin
+@with_tracking_test_db begin
     @testset verbose = true "metric service" begin
         @testset verbose = true "create metric" begin
             @testset "with existing iteration" begin

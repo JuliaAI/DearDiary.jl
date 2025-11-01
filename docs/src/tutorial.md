@@ -44,7 +44,7 @@ experiment data will be stored.
 Tracking.initialize_database()
 ```
 
-This will create a local SQLite database file named `deardiary.db` in the current
+This will create a local SQLite database file named `tracking.db` in the current
 directory.
 
 ## Creating a new project and experiment

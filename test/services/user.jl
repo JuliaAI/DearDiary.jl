@@ -1,4 +1,4 @@
-@with_deardiary_test_db begin
+@with_tracking_test_db begin
     @testset verbose = true "user service" begin
         @testset verbose = true "create user" begin
             user_id, user_upsert_result = Tracking.create_user(

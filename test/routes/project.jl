@@ -1,4 +1,4 @@
-@with_deardiary_test_db begin
+@with_tracking_test_db begin
     @testset verbose = true "project routes" begin
         @testset verbose = true "create project" begin
             payload = Dict("name" => "Missy project") |> JSON.json

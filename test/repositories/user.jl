@@ -1,4 +1,4 @@
-@with_deardiary_test_db begin
+@with_tracking_test_db begin
     @testset verbose = true "user repository" begin
         @testset verbose = true "insert user" begin
             @testset "insert with no existing username" begin

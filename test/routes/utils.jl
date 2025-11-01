@@ -12,7 +12,7 @@
         end
     end
 
-    @with_deardiary_test_db begin
+    @with_tracking_test_db begin
         @testset verbose = true "admin required macro" begin
             @testset verbose = true "as an admin" begin
                 payload = Dict(

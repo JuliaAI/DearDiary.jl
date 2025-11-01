@@ -1,4 +1,4 @@
-@with_deardiary_test_db begin
+@with_tracking_test_db begin
     @testset verbose = true "auth" begin
         @testset verbose = true "auth handler with user not found" begin
             payload = Dict("username" => "missy", "password" => "gala") |> JSON.json

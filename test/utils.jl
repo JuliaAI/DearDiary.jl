@@ -6,8 +6,8 @@
 
         @test config.host == "0.0.0.0"
         @test config.port == 9000
-        @test config.db_file == "deardiary_test.db"
-        @test config.jwt_secret == "deardiary_secret"
+        @test config.db_file == "tracking_test.db"
+        @test config.jwt_secret == "tracking_secret"
         @test config.enable_auth == false
     end
 

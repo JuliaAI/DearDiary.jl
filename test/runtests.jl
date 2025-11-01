@@ -19,27 +19,27 @@ A string representing the path to the created test environment file.
 """
 function create_test_env_file(;
     host::String="127.0.0.1",
-    db_file::String="deardiary_test.db",
+    db_file::String="tracking_test.db",
     jwt_secret::Union{String,Nothing}=nothing,
     enable_auth::Bool=false,
     enable_api::Bool=false
 )::String
-    file = ".env.deardiarytest"
+    file = ".env.trackingtest"
 
     open(file, "w") do io
-        write(io, "DEARDIARY_HOST=$host\n")
-        write(io, "DEARDIARY_DB_FILE=$db_file\n")
-        write(io, "# DEARDIARY_DB_FILE=comment\n")
+        write(io, "TRACKING_HOST=$host\n")
+        write(io, "TRACKING_DB_FILE=$db_file\n")
+        write(io, "# TRACKING_DB_FILE=comment\n")
         if !(jwt_secret |> isnothing)
-            write(io, "DEARDIARY_JWT_SECRET=$jwt_secret\n")
+            write(io, "TRACKING_JWT_SECRET=$jwt_secret\n")
         end
-        write(io, "DEARDIARY_ENABLE_AUTH=$enable_auth\n")
-        write(io, "DEARDIARY_ENABLE_API=$enable_api\n")
+        write(io, "TRACKING_ENABLE_AUTH=$enable_auth\n")
+        write(io, "TRACKING_ENABLE_API=$enable_api\n")
     end
     return file
 end
 
-macro with_deardiary_test_db(expr)
+macro with_tracking_test_db(expr)
     quote
         Tracking.initialize_database()
 
@@ -47,9 +47,9 @@ macro with_deardiary_test_db(expr)
             $(expr |> esc)
         finally
             if isdefined(Main, :api_config)
-                "deardiary_test.db" |> rm
+                "tracking_test.db" |> rm
             else
-                "deardiary.db" |> rm
+                "tracking.db" |> rm
             end
             Tracking.get_database |> memoize_cache |> empty!
         end

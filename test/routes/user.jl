@@ -1,4 +1,4 @@
-@with_deardiary_test_db begin
+@with_tracking_test_db begin
     @testset verbose = true "user routes" begin
         @testset verbose = true "create user" begin
             payload = Dict(

@@ -1,7 +1,7 @@
 """
     get_database()::SQLite.DB
 
-Returns a SQLite database connection. The database file is specified by the `DEARDIARY_DB_FILE` environment variable. If the variable is not set, the default value is `deardiary.db` in the current directory.
+Returns a SQLite database connection. The database file is specified by the `TRACKING_DB_FILE` environment variable. If the variable is not set, the default value is `tracking.db` in the current directory.
 
 # Returns
 A [SQLite.DB](https://juliadatabases.org/SQLite.jl/stable/#SQLite.DB) object.
@@ -13,7 +13,7 @@ A [SQLite.DB](https://juliadatabases.org/SQLite.jl/stable/#SQLite.DB) object.
     if isdefined(Main, :api_config)
         return SQLite.DB(api_config.db_file)
     else
-        return SQLite.DB("deardiary.db")
+        return SQLite.DB("tracking.db")
     end
 end
 

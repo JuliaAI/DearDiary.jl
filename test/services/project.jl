@@ -1,4 +1,4 @@
-@with_deardiary_test_db begin
+@with_tracking_test_db begin
     @testset verbose = true "project service" begin
         @testset verbose = true "create project" begin
             @testset verbose = true "with user_id as argument" begin

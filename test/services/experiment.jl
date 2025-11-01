@@ -1,4 +1,4 @@
-@with_deardiary_test_db begin
+@with_tracking_test_db begin
     @testset verbose = true "experiment service" begin
         @testset verbose = true "create experiment" begin
             @testset "with existing project" begin

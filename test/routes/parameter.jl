@@ -1,4 +1,4 @@
-@with_deardiary_test_db begin
+@with_tracking_test_db begin
     @testset verbose = true "parameter routes" begin
         @testset verbose = true "create parameter" begin
             project_payload = Dict("name" => "Parameter Project") |> JSON.json

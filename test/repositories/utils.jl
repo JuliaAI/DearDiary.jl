@@ -1,4 +1,4 @@
-@with_deardiary_test_db begin
+@with_tracking_test_db begin
     @testset verbose = true "repository utils" begin
         @testset verbose = true "insert" begin
             first_user = (

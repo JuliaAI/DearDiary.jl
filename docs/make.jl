@@ -9,9 +9,9 @@ makedocs(;
     sitename="$(TrackingAPI |> nameof |> String).jl",
     format=Documenter.HTML(;),
     pages=[
-        "Home" => "home.md",
+        "Home" => "index.md",
         "Tutorial" => "tutorial.md",
-        "Index" => "index.md",
+        "Index" => "indexes.md",
         "Reference" => [
             "Types" => "reference/types.md",
             "User" => "reference/user.md",

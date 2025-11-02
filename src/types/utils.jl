@@ -111,3 +111,78 @@ end
 
 # Allowing construction of ResultType from Dict
 (::Type{T})(data::AbstractDict) where {T<:ResultType} = type_from_dict(T, data)
+
+"""
+    Base.show(io::IO, ::MIME"text/plain", T::Type{<:UpsertResult})
+
+Show a pretty-printed representation of an [`UpsertResult`](@ref) type.
+
+# Arguments
+- `io::IO`: The IO stream to write to.
+- `::MIME"text/plain"`: The MIME type for plain text.
+- `x::T`: The upsert result type to show.
+
+# Returns
+Nothing, but prints the representation to the IO stream.
+"""
+function Base.show(io::IO, ::MIME"text/plain", x::T) where {T<:ResultType}
+    println(io, T)
+    fields = T |> fieldnames
+    for (i, name) in (fields |> enumerate)
+        prefix = i < (fields |> length) ? " ├ " : " └ "
+        value = getfield(x, name)
+        value_repr = if value isa DateTime
+            value |> string
+        elseif value isa Array{UInt8,1} && (value |> length) > 6
+            compressed_array_repr = [
+                (value[1:3] .|> repr)...,
+                "…",
+                (value[end-2:end] .|> repr)...,
+            ]
+            "UInt8[$(join(compressed_array_repr, ", "))]"
+        else
+            value |> repr
+        end
+        print(io, prefix, "$(name) = $(value_repr)", i < (fields |> length) ? "\n" : "")
+    end
+end
+
+"""
+    Base.show(io::IO, ::MIME"text/plain", x::Array{T,1}) where {T<:ResultType}
+
+Show a pretty-printed representation of an array of [`ResultType`](@ref) types.
+
+# Arguments
+- `io::IO`: The IO stream to write to.
+- `::MIME"text/plain"`: The MIME type for plain text.
+- `x::Array{T,1}`: The array of result types to show.
+
+# Returns
+Nothing, but prints the representation to the IO stream.
+"""
+function Base.show(io::IO, ::MIME"text/plain", x::Array{T,1}) where {T<:ResultType}
+    n = x |> length
+    println(io, "$(n)-element Vector{$(T)}:")
+    if n <= 6
+        for (i, x) in (x |> enumerate)
+            show(io, MIME"text/plain"(), x)
+            if i < n
+                io |> println
+            end
+        end
+    else
+        for i in 1:3
+            show(io, MIME"text/plain"(), x[i])
+            io |> println
+        end
+        io |> println
+        println(io, "  ⋮")
+        io |> println
+        for i in (n-2):n
+            show(io, MIME"text/plain"(), x[i])
+            if i < n
+                io |> println
+            end
+        end
+    end
+end

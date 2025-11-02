@@ -45,4 +45,6 @@ function initialize_database(; database::SQLite.DB=get_database())
 
     DBInterface.execute(database, SQL_CREATE_TAG)
     DBInterface.execute(database, SQL_CREATE_PROJECTTAG)
+
+    @info "Database initialized successfully."
 end

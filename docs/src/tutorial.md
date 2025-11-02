@@ -40,8 +40,9 @@ test_y, test_X = unpack(test, ==(:target))
 Before we start tracking our experiments, we need to initialize the database where the
 experiment data will be stored.
 
-```julia
-DearDiary.initialize_database()
+```julia-repl
+julia> DearDiary.initialize_database()
+[ Info: Database initialized successfully.
 ```
 
 This will create a local SQLite database file named `deardiary.db` in the current
@@ -128,23 +129,49 @@ end
 You can retrieve and check the logged data from the database to ensure everything was
 logged correctly.
 
-```julia
-iteration = last(get_iterations(experiment_id)) # Checking only the last iteration
+```julia-repl
+julia> iteration = last(get_iterations(experiment_id)) # Checking only the last iteration
+DearDiary.Iteration
+ ├ id = 9
+ ├ experiment_id = 3
+ ├ notes = ""
+ ├ created_date = 2025-11-01T18:53:38.409
+ └ end_date = nothing
 ```
 
 ```julia-repl
 julia> get_parameters(iteration.id)
 1-element Vector{DearDiary.Parameter}:
- DearDiary.Parameter(9, 9, "max_depth", "7")
+DearDiary.Parameter
+ ├ id = 9
+ ├ iteration_id = 9
+ ├ key = "max_depth"
+ └ value = "5"
 ```
 
 ```julia-repl
 julia> get_metrics(iteration.id)
 4-element Vector{DearDiary.Metric}:
- DearDiary.Metric(33, 9, "Accuracy", 0.9583333333333334)
- DearDiary.Metric(34, 9, "LogLoss", 1.5018188912132147)
- DearDiary.Metric(35, 9, "MisclassificationRate", 0.041666666666666664)
- DearDiary.Metric(36, 9, "BrierScore", -0.08333333333333333)
+DearDiary.Metric
+ ├ id = 33
+ ├ iteration_id = 9
+ ├ key = "Accuracy"
+ └ value = 0.9500000000000001
+DearDiary.Metric
+ ├ id = 34
+ ├ iteration_id = 9
+ ├ key = "LogLoss"
+ └ value = 1.5109739936187825
+DearDiary.Metric
+ ├ id = 35
+ ├ iteration_id = 9
+ ├ key = "MisclassificationRate"
+ └ value = 0.05000000000000001
+DearDiary.Metric
+ ├ id = 36
+ ├ iteration_id = 9
+ ├ key = "BrierScore"
+ └ value = -0.09074074074074075
 ```
 
 ## Save and load the trained model
@@ -167,7 +194,14 @@ Then you can load the model back when needed.
 
 ```julia-repl
 julia> resource = get_resource(resource_id)
-DearDiary.Resource(1, 1, "Iris DTC MLJ Machine", "", UInt8[...], Dates.DateTime("2025-10-31T15:50:44.120"), nothing)
+ DearDiary.Resource
+ ├ id = 1
+ ├ experiment_id = 3
+ ├ name = "Iris DTC MLJ Machine"
+ ├ description = ""
+ ├ data = UInt8[0x87, 0x7a, 0x00, …, 0x36, 0x34, 0x62]
+ ├ created_date = 2025-11-01T18:56:50.165
+ └ updated_date = nothing
 ```
 
 ```julia

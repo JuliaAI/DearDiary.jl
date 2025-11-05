@@ -12,6 +12,14 @@ To run this tutorial, you need to have the following packages installed:
 
 You can install these packages using Julia's package manager. Open the Julia REPL and run:
 
+```@setup tutorial
+using Pkg
+Pkg.add("MLJ")
+Pkg.add("MLJDecisionTreeInterface")
+Pkg.add("JLSO")
+Pkg.add("DataFrames")
+Pkg.add("DearDiary")
+```
 ```julia
 using Pkg
 Pkg.add("MLJ")
@@ -23,7 +31,7 @@ Pkg.add("DataFrames")
 ## Loading the Data
 First, we need to load the dataset that we will be using for this tutorial.
 
-```julia
+```@example tutorial
 using MLJ
 using JLSO
 using DataFrames
@@ -34,15 +42,15 @@ train, test = partition(iris, 0.8, shuffle=true)
 
 train_y, train_X = unpack(train, ==(:target))
 test_y, test_X = unpack(test, ==(:target))
+nothing # hide
 ```
 
 ## Initializing the database
 Before we start tracking our experiments, we need to initialize the database where the
 experiment data will be stored.
 
-```julia-repl
-julia> DearDiary.initialize_database()
-[ Info: Database initialized successfully.
+```@repl tutorial
+DearDiary.initialize_database()
 ```
 
 This will create a local SQLite database file named `deardiary.db` in the current
@@ -52,16 +60,14 @@ directory.
 Projects help you organize your experiments. Let's create a new project for our iris
 classification experiment.
 
-```julia-repl
-julia> project_id, _ = create_project("Tutorial project")
-(1, DearDiary.Created())
+```@repl tutorial
+project_id, _ = create_project("Tutorial project")
 ```
 
 Once we have a project, we can create an experiment within that project.
 
-```julia-repl
-julia> experiment_id, _ = create_experiment(project_id, DearDiary.IN_PROGRESS, "Iris classification experiment")
-(1, DearDiary.Created())
+```@repl tutorial
+experiment_id, _ = create_experiment(project_id, DearDiary.IN_PROGRESS, "Iris classification experiment")
 ```
 
 !!! note
@@ -74,7 +80,7 @@ julia> experiment_id, _ = create_experiment(project_id, DearDiary.IN_PROGRESS, "
 Now we are ready to train a machine learning model and track the experiment using the
 library. We will use a decision tree classifier for this example.
 
-```julia-repl
+```@example tutorial
 DecisionTreeClassifier = @load DecisionTreeClassifier pkg=DecisionTree
 dtc = DecisionTreeClassifier()
 max_depth_range = range(dtc, :max_depth, lower=2, upper=10, scale=:linear)
@@ -88,30 +94,17 @@ model = TunedModel(
 )
 ```
 
-```julia-repl
-julia> mach = machine(model, train_X, train_y)
-untrained Machine; does not cache data
-  model: ProbabilisticTunedModel(model = DecisionTreeClassifier(max_depth = -1, …), …)
-  args:
-    1:  Source @745 ⏎ Table{AbstractVector{Continuous}}
-    2:  Source @879 ⏎ AbstractVector{Multiclass{3}}
+```@repl tutorial
+mach = machine(model, train_X, train_y)
 ```
 
-```julia-repl
-julia> fit!(mach)
-[ Info: Training machine(ProbabilisticTunedModel(model = DecisionTreeClassifier(max_depth = -1, …), …), …).
-[ Info: Attempting to evaluate 9 models.
-Evaluating over 9 metamodels: 100%[=========================] Time: 0:00:06
-trained Machine; does not cache data
-  model: ProbabilisticTunedModel(model = DecisionTreeClassifier(max_depth = -1, …), …)
-  args:
-    1:  Source @745 ⏎ Table{AbstractVector{Continuous}}
-    2:  Source @879 ⏎ AbstractVector{Multiclass{3}}
+```@repl tutorial
+fit!(mach)
 ```
 
 After training the model, we can log the results of the experiment to the database.
 
-```julia
+```@example tutorial
 model_values = report(mach).history .|> (x -> (x.measure, x.measurement, x.model.max_depth))
 
 for (measure, measurements, max_depth) in model_values
@@ -123,97 +116,54 @@ for (measure, measurements, max_depth) in model_values
         create_metric(iteration_id, name, value)
     end
 end
+nothing # hide
 ```
 
 ## Viewing the logged data
 You can retrieve and check the logged data from the database to ensure everything was
 logged correctly.
 
-```julia-repl
-julia> iteration = last(get_iterations(experiment_id)) # Checking only the last iteration
-DearDiary.Iteration
- ├ id = 9
- ├ experiment_id = 3
- ├ notes = ""
- ├ created_date = 2025-11-01T18:53:38.409
- └ end_date = nothing
+```@repl tutorial
+iteration = last(get_iterations(experiment_id)) # Checking only the last iteration
 ```
 
-```julia-repl
-julia> get_parameters(iteration.id)
-1-element Vector{DearDiary.Parameter}:
-DearDiary.Parameter
- ├ id = 9
- ├ iteration_id = 9
- ├ key = "max_depth"
- └ value = "5"
+```@repl tutorial
+get_parameters(iteration.id)
 ```
 
-```julia-repl
-julia> get_metrics(iteration.id)
-4-element Vector{DearDiary.Metric}:
-DearDiary.Metric
- ├ id = 33
- ├ iteration_id = 9
- ├ key = "Accuracy"
- └ value = 0.9500000000000001
-DearDiary.Metric
- ├ id = 34
- ├ iteration_id = 9
- ├ key = "LogLoss"
- └ value = 1.5109739936187825
-DearDiary.Metric
- ├ id = 35
- ├ iteration_id = 9
- ├ key = "MisclassificationRate"
- └ value = 0.05000000000000001
-DearDiary.Metric
- ├ id = 36
- ├ iteration_id = 9
- ├ key = "BrierScore"
- └ value = -0.09074074074074075
+```@repl tutorial
+get_metrics(iteration.id)
 ```
 
 ## Save and load the trained model
 You can save serialized objects, files, or any other resources related to your experiments.
 
-```julia
+```@example tutorial
 smach = serializable(mach)
 io = IOBuffer()
 JLSO.save(io, :machine => smach)
 
 bytes = take!(io)
+nothing # hide
 ```
 
-```julia-repl
-julia> resource_id, _ = create_resource(experiment_id, "Iris DTC MLJ Machine", bytes)
-(1, DearDiary.Created())
+```@repl tutorial
+resource_id, _ = create_resource(experiment_id, "Iris DTC MLJ Machine", bytes)
 ```
 
 Then you can load the model back when needed.
 
-```julia-repl
-julia> resource = get_resource(resource_id)
- DearDiary.Resource
- ├ id = 1
- ├ experiment_id = 3
- ├ name = "Iris DTC MLJ Machine"
- ├ description = ""
- ├ data = UInt8[0x87, 0x7a, 0x00, …, 0x36, 0x34, 0x62]
- ├ created_date = 2025-11-01T18:56:50.165
- └ updated_date = nothing
+```@repl tutorial
+resource = get_resource(resource_id)
 ```
 
-```julia
+```@example tutorial
 io = IOBuffer(resource.data)
 loaded_mach = JLSO.load(io)[:machine]
 ```
 
-```julia-repl
-julia> restore!(loaded_mach)
-trained Machine; does not cache data
-  model: ProbabilisticTunedModel(model = DecisionTreeClassifier(max_depth = -1, …), …)
-  args:
+```@repl tutorial
+restore!(loaded_mach)
 ```
 
 ## Built-in REST API

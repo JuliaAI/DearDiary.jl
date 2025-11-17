@@ -45,11 +45,11 @@ function create_experiment(
 )::@NamedTuple{id::Optional{<:Int64},status::UpsertResult}
     project = project_id |> get_project
     if project |> isnothing
-        return nothing, Unprocessable()
+        return (id=nothing, status=Unprocessable())
     end
 
     if !(status_id in (Status |> instances .|> Int))
-        return nothing, Unprocessable()
+        return (id=nothing, status=Unprocessable())
     end
 
     experiment_id, experiment_upsert_result = insert(
@@ -59,7 +59,7 @@ function create_experiment(
         name,
     )
     if !(experiment_upsert_result isa Created)
-        return nothing, experiment_upsert_result
+        return (id=nothing, status=experiment_upsert_result)
     end
     return (id=experiment_id, status=experiment_upsert_result)
 end

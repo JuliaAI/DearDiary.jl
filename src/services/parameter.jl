@@ -45,12 +45,12 @@ function create_parameter(
 )::@NamedTuple{id::Optional{<:Int64},status::UpsertResult}
     iteration = iteration_id |> get_iteration
     if iteration |> isnothing
-        return nothing, Unprocessable()
+        return (id=nothing, status=Unprocessable())
     end
 
     parameter_id, parameter_upsert_result = insert(Parameter, iteration_id, key, value)
     if !(parameter_upsert_result isa Created)
-        return nothing, parameter_upsert_result
+        return (id=nothing, status=parameter_upsert_result)
     end
     return (id=parameter_id, status=parameter_upsert_result)
 end

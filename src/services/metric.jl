@@ -43,12 +43,12 @@ function create_metric(
 )::@NamedTuple{id::Optional{<:Int64},status::UpsertResult}
     iteration = iteration_id |> get_iteration
     if iteration |> isnothing
-        return nothing, Unprocessable()
+        return (id=nothing, status=Unprocessable())
     end
 
     metric_id, metric_upsert_result = insert(Metric, iteration_id, key, value)
     if !(metric_upsert_result isa Created)
-        return nothing, metric_upsert_result
+        return (id=nothing, status=metric_upsert_result)
     end
     return (id=metric_id, status=metric_upsert_result)
 end

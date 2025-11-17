@@ -40,20 +40,20 @@ function create_userpermission(
     read_permission::Bool,
     update_permission::Bool,
     delete_permission::Bool,
-)::@NamedTuple{id::Optional{<:Int64},status::UpsertResult}
+)::@NamedTuple{id::Optional{<:Int64}, status::UpsertResult}
     user = user_id |> get_user
     if user |> isnothing
-        return nothing, Unprocessable()
+        return (id=nothing, status=Unprocessable())
     end
 
     project = project_id |> get_project
     if project |> isnothing
-        return nothing, Unprocessable()
+        return (id=nothing, status=Unprocessable())
     end
 
     userpermission_id, insert_result = insert(UserPermission, user_id, project_id)
     if !(insert_result isa Created)
-        return nothing, insert_result
+        return (id=nothing, status=insert_result)
     end
 
     update_result = update(
@@ -65,7 +65,7 @@ function create_userpermission(
     )
     if !(update_result isa Updated)
         delete(UserPermission, userpermission_id)
-        return nothing, update_result
+        return (id=nothing, status=update_result)
     end
 
     return (id=userpermission_id, status=insert_result)

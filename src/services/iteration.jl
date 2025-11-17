@@ -43,12 +43,12 @@ function create_iteration(
 )::@NamedTuple{id::Optional{<:Int64},status::UpsertResult}
     experiment = experiment_id |> get_experiment
     if experiment |> isnothing
-        return nothing, Unprocessable()
+        return (id=nothing, status=Unprocessable())
     end
 
     iteration_id, iteration_upsert_result = insert(Iteration, experiment_id)
     if !(iteration_upsert_result isa Created)
-        return nothing, iteration_upsert_result
+        return (id=nothing, status=iteration_upsert_result)
     end
     return (id=iteration_id, status=iteration_upsert_result)
 end

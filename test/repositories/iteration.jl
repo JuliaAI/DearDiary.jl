@@ -11,17 +11,21 @@
                     "Iteration Test Experiment",
                 )
 
-                @test DearDiary.insert(
+                id, status = DearDiary.insert(
                     DearDiary.Iteration,
                     experiment_id,
-                ) isa Tuple{Integer,DearDiary.Created}
+                )
+                @test id isa Integer
+                @test status isa DearDiary.Created
             end
 
             @testset "with non-existing experiment" begin
-                @test DearDiary.insert(
+                id, status = DearDiary.insert(
                     DearDiary.Iteration,
                     9999,
-                ) isa Tuple{Nothing,DearDiary.Unprocessable}
+                )
+                @test id |> isnothing
+                @test status isa DearDiary.Unprocessable
             end
         end
 

@@ -6,6 +6,7 @@ const Optional{T} = Union{T,Nothing}
 A marker abstract type for the result of an upsert operation.
 """
 abstract type UpsertResult end
+
 """
     Created
 

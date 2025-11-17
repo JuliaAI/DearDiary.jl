@@ -5,33 +5,39 @@
                 user = DearDiary.get_user("default")
                 project_id, _ = DearDiary.create_project(user.id, "Experiment Project")
 
-                @test DearDiary.insert(
+                id, status = DearDiary.insert(
                     DearDiary.Experiment,
                     project_id,
                     DearDiary.IN_PROGRESS |> Integer,
                     "Test Experiment",
-                ) isa Tuple{Integer,DearDiary.Created}
+                )
+                @test id isa Integer
+                @test status isa DearDiary.Created
             end
 
             @testset "with non-existing project" begin
-                @test DearDiary.insert(
+                id, status = DearDiary.insert(
                     DearDiary.Experiment,
                     9999,
                     DearDiary.IN_PROGRESS |> Integer,
                     "Test Experiment",
-                ) isa Tuple{Nothing,DearDiary.Unprocessable}
+                )
+                @test id |> isnothing
+                @test status isa DearDiary.Unprocessable
             end
 
             @testset "with non-allowed status" begin
                 user = DearDiary.get_user("default")
                 project_id, _ = DearDiary.create_project(user.id, "Experiment Project")
 
-                @test DearDiary.insert(
+                id, status = DearDiary.insert(
                     DearDiary.Experiment,
                     project_id,
                     9999,
                     "Test Experiment",
-                ) isa Tuple{Nothing,DearDiary.Unprocessable}
+                )
+                @test id |> isnothing
+                @test status isa DearDiary.Unprocessable
             end
         end
 

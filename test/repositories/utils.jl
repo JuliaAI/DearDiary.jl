@@ -8,10 +8,13 @@
                 last_name="Gala",
                 created_date=now(),
             )
-            @test DearDiary.insert(
+            id, status = DearDiary.insert(
                 DearDiary.SQL_INSERT_USER,
                 first_user,
-            ) isa Tuple{Integer,DearDiary.Created}
+            )
+            @test id isa Integer
+            @test status isa DearDiary.Created
+
             second_user = (
                 username="gala",
                 password="missy",
@@ -19,10 +22,12 @@
                 last_name="Missy",
                 created_date=now(),
             )
-            @test DearDiary.insert(
+            id, status = DearDiary.insert(
                 DearDiary.SQL_INSERT_USER,
                 second_user,
-            ) isa Tuple{Integer,DearDiary.Created}
+            )
+            @test id isa Integer
+            @test status isa DearDiary.Created
         end
 
         @testset verbose = true "fetch" begin

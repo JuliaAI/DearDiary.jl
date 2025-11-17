@@ -13,7 +13,7 @@ end
 
 function insert(
     ::Type{<:Iteration}, experiment_id::Integer
-)::Tuple{Optional{<:Int64},UpsertResult}
+)::@NamedTuple{id::Optional{<:Int64},status::UpsertResult}
     fields = (
         experiment_id=experiment_id,
         created_date=(now() |> string),

@@ -17,7 +17,7 @@ function get_userpermission(
 end
 
 """
-    create_userpermission(user_id::Integer, project_id::Integer, create_permission::Bool, read_permission::Bool, update_permission::Bool, delete_permission::Bool)::Tuple{Optional{<:Int64},UpsertResult}
+    create_userpermission(user_id::Integer, project_id::Integer, create_permission::Bool, read_permission::Bool, update_permission::Bool, delete_permission::Bool)::NamedTuple{id::Optional{<:Int64},status::UpsertResult}
 
 Create a [`UserPermission`](@ref).
 
@@ -30,7 +30,8 @@ Create a [`UserPermission`](@ref).
 - `delete_permission::Bool`: Whether the user has delete permission.
 
 # Returns
-An [`UpsertResult`](@ref). [`Created`](@ref) if the record was successfully created, [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
+- The created userpermission ID. If an error occurs, `nothing` is returned.
+- An [`UpsertResult`](@ref). [`Created`](@ref) if the record was successfully created, [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
 """
 function create_userpermission(
     user_id::Integer,
@@ -39,7 +40,7 @@ function create_userpermission(
     read_permission::Bool,
     update_permission::Bool,
     delete_permission::Bool,
-)::Tuple{Optional{<:Int64},UpsertResult}
+)::@NamedTuple{id::Optional{<:Int64},status::UpsertResult}
     user = user_id |> get_user
     if user |> isnothing
         return nothing, Unprocessable()
@@ -67,7 +68,7 @@ function create_userpermission(
         return nothing, update_result
     end
 
-    return userpermission_id, insert_result
+    return (id=userpermission_id, status=insert_result)
 end
 
 """

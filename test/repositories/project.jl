@@ -1,10 +1,12 @@
 @with_deardiary_test_db begin
     @testset verbose = true "project repository" begin
         @testset verbose = true "insert" begin
-            @test DearDiary.insert(
+            id, status = DearDiary.insert(
                 DearDiary.Project,
                 "Project Missy",
-            ) isa Tuple{Integer,DearDiary.Created}
+            )
+            @test id isa Integer
+            @test status isa DearDiary.Created
         end
 
         @testset verbose = true "fetch" begin

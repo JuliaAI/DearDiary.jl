@@ -10,21 +10,25 @@
                     "Test Experiment",
                 )
 
-                @test DearDiary.insert(
+                id, status = DearDiary.insert(
                     DearDiary.Resource,
                     experiment_id,
                     "Test Resource",
                     UInt8[0x01, 0x02, 0x03, 0x04],
-                ) isa Tuple{Integer,DearDiary.Created}
+                )
+                @test id isa Integer
+                @test status isa DearDiary.Created
             end
 
             @testset "with non-existing experiment" begin
-                @test DearDiary.insert(
+                id, status = DearDiary.insert(
                     DearDiary.Resource,
                     9999,
                     "Test Resource",
                     UInt8[0x01, 0x02, 0x03, 0x04],
-                ) isa Tuple{Nothing,DearDiary.Unprocessable}
+                )
+                @test id |> isnothing
+                @test status isa DearDiary.Unprocessable
             end
         end
 

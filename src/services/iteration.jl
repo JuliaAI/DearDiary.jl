@@ -27,15 +27,20 @@ function get_iterations(experiment_id::Integer)::Array{Iteration,1}
 end
 
 """
-    create_iteration(experiment_id::Integer)::Tuple{Optional{<:Int64},UpsertResult}
+    create_iteration(experiment_id::Integer)::NamedTuple{id::Optional{<:Int64},status::UpsertResult}
+
+Create a [`Iteration`](@ref).
 
 # Arguments
 - `experiment_id::Integer`: The id of the experiment to create the iteration for.
 
 # Returns
-An [`UpsertResult`](@ref). [`Created`](@ref) if the record was successfully created, [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
+- The created iteration ID. If an error occurs, `nothing` is returned.
+- An [`UpsertResult`](@ref). [`Created`](@ref) if the record was successfully created, [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
 """
-function create_iteration(experiment_id::Integer)::Tuple{Optional{<:Int64},UpsertResult}
+function create_iteration(
+    experiment_id::Integer
+)::@NamedTuple{id::Optional{<:Int64},status::UpsertResult}
     experiment = experiment_id |> get_experiment
     if experiment |> isnothing
         return nothing, Unprocessable()
@@ -45,7 +50,7 @@ function create_iteration(experiment_id::Integer)::Tuple{Optional{<:Int64},Upser
     if !(iteration_upsert_result isa Created)
         return nothing, iteration_upsert_result
     end
-    return iteration_id, iteration_upsert_result
+    return (id=iteration_id, status=iteration_upsert_result)
 end
 
 """

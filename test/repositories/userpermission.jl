@@ -5,35 +5,43 @@
             project_id, _ = DearDiary.insert(DearDiary.Project, "Test Project")
 
             @testset "insert with no existing user" begin
-                @test DearDiary.insert(
+                id, status = DearDiary.insert(
                     DearDiary.UserPermission,
                     9999,
                     project_id,
-                ) isa Tuple{Nothing,DearDiary.Unprocessable}
+                )
+                @test id |> isnothing
+                @test status isa DearDiary.Unprocessable
             end
 
             @testset "insert with no existing project" begin
-                @test DearDiary.insert(
+                id, status = DearDiary.insert(
                     DearDiary.UserPermission,
                     user.id,
                     9999,
-                ) isa Tuple{Nothing,DearDiary.Unprocessable}
+                )
+                @test id |> isnothing
+                @test status isa DearDiary.Unprocessable
             end
 
             @testset "insert with existing user and project" begin
-                @test DearDiary.insert(
+                id, status = DearDiary.insert(
                     DearDiary.UserPermission,
                     user.id,
                     project_id,
-                ) isa Tuple{Integer,DearDiary.Created}
+                )
+                @test id isa Integer
+                @test status isa DearDiary.Created
             end
 
             @testset "insert duplicate user permission" begin
-                @test DearDiary.insert(
+                id, status = DearDiary.insert(
                     DearDiary.UserPermission,
                     user.id,
                     project_id,
-                ) isa Tuple{Nothing,DearDiary.Duplicate}
+                )
+                @test id |> isnothing
+                @test status isa DearDiary.Duplicate
             end
         end
 

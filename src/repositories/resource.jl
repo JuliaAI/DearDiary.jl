@@ -16,7 +16,7 @@ function insert(
     experiment_id::Integer,
     name::AbstractString,
     data::AbstractArray{UInt8,1},
-)::Tuple{Optional{<:Int64},UpsertResult}
+)::@NamedTuple{id::Optional{<:Int64},status::UpsertResult}
     fields = (
         experiment_id=experiment_id,
         name=name,

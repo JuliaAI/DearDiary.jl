@@ -22,7 +22,7 @@ An array of [`Project`](@ref) objects.
 get_projects()::Array{Project,1} = Project |> fetch_all
 
 """
-    create_project(user_id::Integer, name::AbstractString)::Tuple{Optional{<:Int64},UpsertResult}
+    create_project(user_id::Integer, name::AbstractString)::NamedTuple{id::Optional{<:Int64},status::UpsertResult}
 
 Create a [`Project`](@ref).
 
@@ -31,11 +31,12 @@ Create a [`Project`](@ref).
 - `name::AbstractString`: The name of the project.
 
 # Returns
-An [`UpsertResult`](@ref). [`Created`](@ref) if the record was successfully created, [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
+- The created project ID. If an error occurs, `nothing` is returned.
+- An [`UpsertResult`](@ref). [`Created`](@ref) if the record was successfully created, [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
 """
 function create_project(
     user_id::Integer, name::AbstractString
-)::Tuple{Optional{<:Int64},UpsertResult}
+)::@NamedTuple{id::Optional{<:Int64},status::UpsertResult}
     user = user_id |> get_user
     if user |> isnothing || user.is_admin == 0
         return nothing, Unprocessable()
@@ -51,11 +52,11 @@ function create_project(
         delete(Project, project_id)
         return nothing, userpermission_upsert_result
     end
-    return project_id, project_upsert_result
+    return (id=project_id, status=project_upsert_result)
 end
 
 """
-    create_project(name::AbstractString)::Tuple{Optional{<:Int64},UpsertResult}
+    create_project(name::AbstractString)::NamedTuple{id::Optional{<:Int64},status::UpsertResult}
 
 Create a [`Project`](@ref). Uses the "default" user to create the project.
 
@@ -63,9 +64,10 @@ Create a [`Project`](@ref). Uses the "default" user to create the project.
 - `name::AbstractString`: The name of the project.
 
 # Returns
-An [`UpsertResult`](@ref). [`Created`](@ref) if the record was successfully created, [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
+- The created project ID. If an error occurs, `nothing` is returned.
+- An [`UpsertResult`](@ref). [`Created`](@ref) if the record was successfully created, [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
 """
-function create_project(name::AbstractString)::Tuple{Optional{<:Int64},UpsertResult}
+function create_project(name::AbstractString)::@NamedTuple{id::Optional{<:Int64},status::UpsertResult}
     default_user = get_user("default")
     return create_project(default_user.id, name)
 end

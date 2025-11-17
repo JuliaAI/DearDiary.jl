@@ -35,7 +35,7 @@ An array of [`User`](@ref) objects.
 get_users()::Array{User,1} = User |> fetch_all
 
 """
-    create_user(first_name::AbstractString, last_name::AbstractString, username::AbstractString, password::AbstractString)::Tuple{Optional{<:Int64},UpsertResult}
+    create_user(first_name::AbstractString, last_name::AbstractString, username::AbstractString, password::AbstractString)::NamedTuple{id::Optional{<:Int64},status::UpsertResult}
 
 Create an [`User`](@ref).
 
@@ -46,14 +46,15 @@ Create an [`User`](@ref).
 - `password::AbstractString`: The password of the user.
 
 # Returns
-An [`UpsertResult`](@ref). [`Created`](@ref) if the record was successfully created, [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
+- The created user ID. If an error occurs, `nothing` is returned.
+- An [`UpsertResult`](@ref). [`Created`](@ref) if the record was successfully created, [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
 """
 function create_user(
     first_name::AbstractString,
     last_name::AbstractString,
     username::AbstractString,
     password::AbstractString,
-)::Tuple{Optional{<:Int64},UpsertResult}
+)::@NamedTuple{id::Optional{<:Int64},status::UpsertResult}
     return insert(
         User,
         first_name,

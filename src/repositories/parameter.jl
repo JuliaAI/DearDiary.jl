@@ -13,7 +13,7 @@ end
 
 function insert(
     ::Type{<:Parameter}, iteration_id::Integer, key::AbstractString, value::AbstractString
-)::Tuple{Optional{<:Int64},UpsertResult}
+)::@NamedTuple{id::Optional{<:Int64},status::UpsertResult}
     fields = (
         iteration_id=iteration_id,
         key=key,

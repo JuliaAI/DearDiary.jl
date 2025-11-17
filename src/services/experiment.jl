@@ -27,7 +27,7 @@ function get_experiments(project_id::Integer)::Array{Experiment,1}
 end
 
 """
-    create_experiment(project_id::Integer, status_id::Integer, name::AbstractString)::Tuple{Optional{<:Int64},UpsertResult}
+    create_experiment(project_id::Integer, status_id::Integer, name::AbstractString)::NamedTuple{id::Optional{<:Int64},status::UpsertResult}
 
 Create a [`Experiment`](@ref).
 
@@ -37,11 +37,12 @@ Create a [`Experiment`](@ref).
 - `name::AbstractString`: The name of the experiment.
 
 # Returns
-An [`UpsertResult`](@ref). [`Created`](@ref) if the record was successfully created, [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
+- The created experiment ID. If an error occurs, `nothing` is returned.
+- An [`UpsertResult`](@ref). [`Created`](@ref) if the record was successfully created, [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
 """
 function create_experiment(
     project_id::Integer, status_id::Integer, name::AbstractString
-)::Tuple{Optional{<:Int64},UpsertResult}
+)::@NamedTuple{id::Optional{<:Int64},status::UpsertResult}
     project = project_id |> get_project
     if project |> isnothing
         return nothing, Unprocessable()
@@ -60,11 +61,11 @@ function create_experiment(
     if !(experiment_upsert_result isa Created)
         return nothing, experiment_upsert_result
     end
-    return experiment_id, experiment_upsert_result
+    return (id=experiment_id, status=experiment_upsert_result)
 end
 
 """
-    create_experiment(project_id::Integer, status::Status, name::AbstractString)::Tuple{Optional{<:Int64},UpsertResult}
+    create_experiment(project_id::Integer, status::Status, name::AbstractString)::NamedTuple{id::Optional{<:Int64},status::UpsertResult}
 
 Create a [`Experiment`](@ref).
 
@@ -74,11 +75,12 @@ Create a [`Experiment`](@ref).
 - `name::AbstractString`: The name of the experiment.
 
 # Returns
-An [`UpsertResult`](@ref). [`Created`](@ref) if the record was successfully created, [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
+- The created experiment ID. If an error occurs, `nothing` is returned.
+- An [`UpsertResult`](@ref). [`Created`](@ref) if the record was successfully created, [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
 """
 function create_experiment(
     project_id::Integer, status::Status, name::AbstractString
-)::Tuple{Optional{<:Int64},UpsertResult}
+)::@NamedTuple{id::Optional{<:Int64},status::UpsertResult}
     return create_experiment(project_id, (status |> Integer), name)
 end
 

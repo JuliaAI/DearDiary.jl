@@ -25,7 +25,7 @@ An array of [`Resource`](@ref) objects.
 get_resources(experiment_id::Integer)::Array{Resource,1} = fetch_all(Resource, experiment_id)
 
 """
-    create_resource(experiment_id::Integer, name::AbstractString, data::AbstractArray{UInt8,1})::Tuple{Optional{<:Int64},UpsertResult}
+    create_resource(experiment_id::Integer, name::AbstractString, data::AbstractArray{UInt8,1})::NamedTuple{id::Optional{<:Int64},status::UpsertResult}
 
 Create a new [`Resource`](@ref) record.
 
@@ -35,11 +35,12 @@ Create a new [`Resource`](@ref) record.
 - `data::AbstractArray{UInt8,1}`: The binary data of the resource.
 
 # Returns
-An [`UpsertResult`](@ref). [`Created`](@ref) if the record was successfully created, [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
+- The created resource ID. If an error occurs, `nothing` is returned.
+- An [`UpsertResult`](@ref). [`Created`](@ref) if the record was successfully created, [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
 """
 function create_resource(
     experiment_id::Integer, name::AbstractString, data::AbstractArray{UInt8,1}
-)::Tuple{Optional{<:Int64},UpsertResult}
+)::@NamedTuple{id::Optional{<:Int64},status::UpsertResult}
     experiment = experiment_id |> get_experiment
     if experiment |> isnothing
         return nothing, Unprocessable()
@@ -49,7 +50,7 @@ function create_resource(
     if !(resource_upsert_result isa Created)
         return nothing, resource_upsert_result
     end
-    return resource_id, resource_upsert_result
+    return (id=resource_id, status=resource_upsert_result)
 end
 
 """

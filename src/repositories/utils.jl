@@ -53,7 +53,7 @@ function fetch_all(
 end
 
 """
-    insert(query::AbstractString, parameters::NamedTuple)::Tuple{Optional{<:Int64},UpsertResult}
+    insert(query::AbstractString, parameters::NamedTuple)::NamedTuple{id::Optional{<:Int64},status::UpsertResult}
 
 Insert a record into the database.
 
@@ -67,20 +67,20 @@ Insert a record into the database.
 """
 function insert(
     query::AbstractString, parameters::NamedTuple
-)::Tuple{Optional{<:Int64},UpsertResult}
+)::@NamedTuple{id::Optional{<:Int64},status::UpsertResult}
     try
         result = DBInterface.execute(get_database(), query, parameters)
         record_id = result |> first |> first
-        return record_id, Created()
+        return (id=record_id, status=Created())
     catch exception
         if occursin("UNIQUE constraint failed", (exception.msg |> string))
-            return nothing, Duplicate()
+            return (id=nothing, status=Duplicate())
         elseif occursin("CHECK constraint failed", (exception.msg |> string))
-            return nothing, Unprocessable()
+            return (id=nothing, status=Unprocessable())
         elseif occursin("FOREIGN KEY constraint failed", (exception.msg |> string))
-            return nothing, Unprocessable()
+            return (id=nothing, status=Unprocessable())
         else
-            return nothing, Error()
+            return (id=nothing, status=Error())
         end
     end
 end
@@ -136,7 +136,7 @@ Delete a record from the database.
 """
 function delete(query::AbstractString, id::Integer)::Bool
     try
-        DBInterface.execute(get_database(),query,(id=id,))
+        DBInterface.execute(get_database(), query, (id=id,))
         return true
     catch _
         return false

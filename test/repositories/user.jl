@@ -2,34 +2,39 @@
     @testset verbose = true "user repository" begin
         @testset verbose = true "insert user" begin
             @testset "insert with no existing username" begin
-                @test DearDiary.insert(
+                id, status = DearDiary.insert(
                     DearDiary.User,
                     "Missy",
                     "Gala",
                     "missy",
                     "gala",
-                ) isa Tuple{Integer,DearDiary.Created}
+                )
+                @test id isa Integer
+                @test status isa DearDiary.Created
             end
 
             @testset "insert with existing username" begin
-                @test DearDiary.insert(
+                id, status = DearDiary.insert(
                     DearDiary.User,
                     "Missy",
                     "Gala",
                     "missy",
                     "gala",
-                ) isa Tuple{Nothing,DearDiary.Duplicate}
-
+                )
+                @test id |> isnothing
+                @test status isa DearDiary.Duplicate
             end
 
             @testset "insert with empty username" begin
-                @test DearDiary.insert(
+                id, status = DearDiary.insert(
                     DearDiary.User,
                     "Missy",
                     "Gala",
                     "",
                     "gala",
-                ) isa Tuple{Nothing,DearDiary.Unprocessable}
+                )
+                @test id |> isnothing
+                @test status isa DearDiary.Unprocessable
             end
         end
 

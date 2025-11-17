@@ -27,7 +27,9 @@ function get_parameters(iteration_id::Integer)::Array{Parameter,1}
 end
 
 """
-    create_parameter(iteration_id::Integer, key::AbstractString, value::AbstractString)::Tuple{Optional{<:Int64},UpsertResult}
+    create_parameter(iteration_id::Integer, key::AbstractString, value::AbstractString)::NamedTuple{id::Optional{<:Int64},status::UpsertResult}
+
+Create a [`Parameter`](@ref).
 
 # Arguments
 - `iteration_id::Integer`: The id of the iteration to create the parameter for.
@@ -35,11 +37,12 @@ end
 - `value::AbstractString`: The value of the parameter.
 
 # Returns
-An [`UpsertResult`](@ref). [`Created`](@ref) if the record was successfully created, [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
+- The created parameter ID. If an error occurs, `nothing` is returned.
+- An [`UpsertResult`](@ref). [`Created`](@ref) if the record was successfully created, [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
 """
 function create_parameter(
     iteration_id::Integer, key::AbstractString, value::AbstractString
-)::Tuple{Optional{<:Int64},UpsertResult}
+)::@NamedTuple{id::Optional{<:Int64},status::UpsertResult}
     iteration = iteration_id |> get_iteration
     if iteration |> isnothing
         return nothing, Unprocessable()
@@ -49,11 +52,26 @@ function create_parameter(
     if !(parameter_upsert_result isa Created)
         return nothing, parameter_upsert_result
     end
-    return parameter_id, parameter_upsert_result
+    return (id=parameter_id, status=parameter_upsert_result)
 end
+
+"""
+    create_parameter(iteration_id::Integer, key::AbstractString, value::Real)::NamedTuple{id::Optional{<:Int64},status::UpsertResult}
+
+Create a [`Parameter`](@ref).
+
+# Arguments
+- `iteration_id::Integer`: The id of the iteration to create the parameter for.
+- `key::AbstractString`: The key of the parameter.
+- `value::Real`: The value of the parameter.
+
+# Returns
+- The created parameter ID. If an error occurs, `nothing` is returned.
+- An [`UpsertResult`](@ref). [`Created`](@ref) if the record was successfully created, [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
+"""
 function create_parameter(
     iteration_id::Integer, key::AbstractString, value::Real
-)::Tuple{Optional{<:Int64},UpsertResult}
+)::@NamedTuple{id::Optional{<:Int64},status::UpsertResult}
     return create_parameter(iteration_id, key, value |> string)
 end
 

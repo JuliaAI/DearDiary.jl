@@ -16,7 +16,7 @@ function insert(
     last_name::AbstractString,
     username::AbstractString,
     password::AbstractString,
-)::Tuple{Optional{<:Int64},UpsertResult}
+)::@NamedTuple{id::Optional{<:Int64},status::UpsertResult}
     fields = (
         first_name=first_name,
         last_name=last_name,

@@ -25,7 +25,9 @@ An array of [`Metric`](@ref) objects.
 get_metrics(iteration_id::Integer)::Array{Metric,1} = fetch_all(Metric, iteration_id)
 
 """
-    create_metric(iteration_id::Integer, key::AbstractString, value::AbstractFloat)::Tuple{Optional{<:Int64},UpsertResult}
+    create_metric(iteration_id::Integer, key::AbstractString, value::AbstractFloat)::NamedTuple{id::Optional{<:Int64},status::UpsertResult}
+
+Create a [`Metric`](@ref).
 
 # Arguments
 - `iteration_id::Integer`: The id of the iteration to create the metric for.
@@ -33,11 +35,12 @@ get_metrics(iteration_id::Integer)::Array{Metric,1} = fetch_all(Metric, iteratio
 - `value::AbstractFloat`: The value of the metric.
 
 # Returns
-An [`UpsertResult`](@ref). [`Created`](@ref) if the record was successfully created, [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
+- The created metric ID. If an error occurs, `nothing` is returned.
+- An [`UpsertResult`](@ref). [`Created`](@ref) if the record was successfully created, [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
 """
 function create_metric(
     iteration_id::Integer, key::AbstractString, value::AbstractFloat
-)::Tuple{Optional{<:Int64},UpsertResult}
+)::@NamedTuple{id::Optional{<:Int64},status::UpsertResult}
     iteration = iteration_id |> get_iteration
     if iteration |> isnothing
         return nothing, Unprocessable()
@@ -47,7 +50,7 @@ function create_metric(
     if !(metric_upsert_result isa Created)
         return nothing, metric_upsert_result
     end
-    return metric_id, metric_upsert_result
+    return (id=metric_id, status=metric_upsert_result)
 end
 
 """

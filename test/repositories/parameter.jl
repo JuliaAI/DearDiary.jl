@@ -11,21 +11,25 @@
                 )
                 iteration_id, _ = DearDiary.create_iteration(experiment_id)
 
-                @test DearDiary.insert(
+                id, status = DearDiary.insert(
                     DearDiary.Parameter,
                     iteration_id,
                     "learning_rate",
                     "0.01",
-                ) isa Tuple{Integer,DearDiary.Created}
+                )
+                @test id isa Integer
+                @test status isa DearDiary.Created
             end
 
             @testset "with non-existing iteration" begin
-                @test DearDiary.insert(
+                id, status = DearDiary.insert(
                     DearDiary.Parameter,
                     9999,
                     "learning_rate",
                     "0.01",
-                ) isa Tuple{Nothing,DearDiary.Unprocessable}
+                )
+                @test id |> isnothing
+                @test status isa DearDiary.Unprocessable
             end
         end
 

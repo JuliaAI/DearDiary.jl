@@ -189,3 +189,9 @@ function Base.show(io::IO, ::MIME"text/plain", x::AbstractArray{T,1}) where {T<:
         end
     end
 end
+
+function Base.show(
+    io::IO, ::MIME"text/plain", x::NamedTuple{(:id, :status),T}
+) where {T<:Tuple{Optional{<:Int64},UpsertResult}}
+    print(io, "(id = $(x.id), status = $(x.status))")
+end

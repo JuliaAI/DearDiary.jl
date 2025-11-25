@@ -82,7 +82,7 @@
                 DearDiary.get_database(),
                 "SELECT name FROM sqlite_schema WHERE type='table' ORDER BY name",
             )
-            row_dict = rows |> first |> DearDiary.Dict
+            row_dict = rows |> first |> DearDiary.row_to_dict
 
             @test row_dict isa Dict
             @test :name in (row_dict |> keys)

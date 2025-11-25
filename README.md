@@ -3,6 +3,7 @@
 
 [![CI](https://github.com/JuliaAI/DearDiary.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/JuliaAI/DearDiary.jl/actions/workflows/CI.yml)
 [![codecov](https://codecov.io/github/JuliaAI/DearDiary.jl/graph/badge.svg?token=Z01WPRJDNR)](https://codecov.io/github/JuliaAI/DearDiary.jl)
+[![Aqua QA](https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg)](https://github.com/JuliaTesting/Aqua.jl)
 
 ## Features
 - A complete experiment tracking solution for Julia.

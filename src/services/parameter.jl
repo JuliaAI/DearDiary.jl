@@ -42,7 +42,7 @@ Create a [`Parameter`](@ref).
 """
 function create_parameter(
     iteration_id::Integer, key::AbstractString, value::AbstractString
-)::@NamedTuple{id::Optional{<:Int64},status::UpsertResult}
+)::@NamedTuple{id::Optional{<:Int64}, status::UpsertResult}
     iteration = iteration_id |> get_iteration
     if iteration |> isnothing
         return (id=nothing, status=Unprocessable())
@@ -71,7 +71,7 @@ Create a [`Parameter`](@ref).
 """
 function create_parameter(
     iteration_id::Integer, key::AbstractString, value::Real
-)::@NamedTuple{id::Optional{<:Int64},status::UpsertResult}
+)::@NamedTuple{id::Optional{<:Int64}, status::UpsertResult}
     return create_parameter(iteration_id, key, value |> string)
 end
 
@@ -103,10 +103,24 @@ function update_parameter(
 
     return update(Parameter, id; key=key, value=value)
 end
+
+"""
+    update_parameter(id::Integer, key::Optional{AbstractString}, value::Real)::UpsertResult
+
+Update a [`Parameter`](@ref) record.
+
+# Arguments
+- `id::Integer`: The id of the parameter to update.
+- `key::Optional{AbstractString}`: The new key for the parameter.
+- `value::Real`: The new value for the parameter.
+
+# Returns
+An [`UpsertResult`](@ref). [`Updated`](@ref) if the record was successfully updated (or no changes were made), [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
+"""
 function update_parameter(
-    id::Integer, key::Optional{AbstractString}, value::Optional{Real}
+    id::Integer, key::Optional{AbstractString}, value::Real
 )::UpsertResult
-    return update_parameter(id, key, (value |> isnothing) ? nothing : string(value))
+    return update_parameter(id, key, (value |> string))
 end
 
 """

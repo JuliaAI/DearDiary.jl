@@ -66,6 +66,9 @@ macro with_deardiary_test_db(expr)
     end
 end
 
+include("Aqua.jl")
+
+
 include("utils.jl")
 
 # Functional tests

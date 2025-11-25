@@ -42,7 +42,7 @@ Create a [`Experiment`](@ref).
 """
 function create_experiment(
     project_id::Integer, status_id::Integer, name::AbstractString
-)::@NamedTuple{id::Optional{<:Int64},status::UpsertResult}
+)::@NamedTuple{id::Optional{<:Int64}, status::UpsertResult}
     project = project_id |> get_project
     if project |> isnothing
         return (id=nothing, status=Unprocessable())
@@ -80,12 +80,12 @@ Create a [`Experiment`](@ref).
 """
 function create_experiment(
     project_id::Integer, status::Status, name::AbstractString
-)::@NamedTuple{id::Optional{<:Int64},status::UpsertResult}
+)::@NamedTuple{id::Optional{<:Int64}, status::UpsertResult}
     return create_experiment(project_id, (status |> Integer), name)
 end
 
 """
-    update_experiment(id::Integer, status::Optional{Integer}, name::Optional{AbstractString}, description::Optional{AbstractString}, end_date::Optional{DateTime})::UpsertResult
+    update_experiment(id::Integer, status_id::Optional{Integer}, name::Optional{AbstractString}, description::Optional{AbstractString}, end_date::Optional{DateTime})::UpsertResult
 
 Update a [`Experiment`](@ref) record.
 
@@ -136,13 +136,13 @@ function update_experiment(
 end
 
 """
-    update_experiment(id::Integer, status::Optional{Status}, name::Optional{AbstractString}, description::Optional{AbstractString}, end_date::Optional{DateTime})::UpsertResult
+    update_experiment(id::Integer, status::Status, name::Optional{AbstractString}, description::Optional{AbstractString}, end_date::Optional{DateTime})::UpsertResult
 
 Update a [`Experiment`](@ref) record.
 
 # Arguments
 - `id::Integer`: The id of the experiment to update.
-- `status_id::Optional{Status}`: The new status of the experiment.
+- `status_id::Status`: The new status of the experiment.
 - `name::Optional{AbstractString}`: The new name of the experiment.
 - `description::Optional{AbstractString}`: The new description of the experiment.
 - `end_date::Optional{DateTime}`: The new end date of the experiment.
@@ -152,18 +152,12 @@ An [`UpsertResult`](@ref). [`Updated`](@ref) if the record was successfully upda
 """
 function update_experiment(
     id::Integer,
-    status::Optional{Status},
+    status::Status,
     name::Optional{AbstractString},
     description::Optional{AbstractString},
     end_date::Optional{DateTime},
 )::UpsertResult
-    return update_experiment(
-        id,
-        (status |> isnothing) ? nothing : (status |> Integer),
-        name,
-        description,
-        end_date,
-    )
+    return update_experiment(id, (status |> Integer), name, description, end_date)
 end
 
 """

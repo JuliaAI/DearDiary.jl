@@ -1,5 +1,5 @@
 """
-    Base.Dict(row::SQLite.Row)::Dict{Symbol,Any}
+    row_to_dict(row::SQLite.Row)::Dict{Symbol,Any}
 
 Transforms a SQLite row into a dictionary.
 
@@ -9,7 +9,7 @@ Transforms a SQLite row into a dictionary.
 # Returns
 A dictionary representation of the row.
 """
-function Base.Dict(row::SQLite.Row)::Dict{Symbol,Any}
+function row_to_dict(row::SQLite.Row)::Dict{Symbol,Any}
     return zip((row |> keys), (row |> values)) |> collect |> Dict
 end
 
@@ -30,7 +30,7 @@ function fetch(query::AbstractString, parameters::NamedTuple)::Optional{Dict{Sym
     if (result |> isempty)
         return nothing
     end
-    return result |> first |> Dict
+    return result |> first |> row_to_dict
 end
 
 """
@@ -49,7 +49,7 @@ function fetch_all(
     query::AbstractString; parameters::NamedTuple=(;)
 )::Array{Dict{Symbol,Any},1}
     results = DBInterface.execute(get_database(), query, parameters)
-    return [(record |> Dict) for record in results]
+    return [(record |> row_to_dict) for record in results]
 end
 
 """
@@ -67,7 +67,7 @@ Insert a record into the database.
 """
 function insert(
     query::AbstractString, parameters::NamedTuple
-)::@NamedTuple{id::Optional{<:Int64},status::UpsertResult}
+)::@NamedTuple{id::Optional{<:Int64}, status::UpsertResult}
     try
         result = DBInterface.execute(get_database(), query, parameters)
         record_id = result |> first |> first

@@ -6,7 +6,7 @@
 [![Aqua QA](https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg)](https://github.com/JuliaTesting/Aqua.jl)
 
 ## Features
-<img src="assets/logo.svg" style="max-height: 200px; max-width: 200px;" align="right" />
+<img src="assets/logo.svg" width="200" align="right" />
 
 - A complete experiment tracking solution for Julia.
 - Built-in REST API server for remote logging and querying.

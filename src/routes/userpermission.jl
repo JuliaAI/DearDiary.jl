@@ -7,9 +7,13 @@ This function sets up the userpermission-related routes for the API.
     This function is intended for internal use. Users should not call this function directly.
 """
 function setup_userpermission_routes()
-    root = router("/userpermission", tags=["userpermission"])
+    root = router(
+        "/userpermission",
+        tags=["userpermission"],
+        middleware=[AdminRequiredMiddleware],
+    )
 
-    @get root("/user/{user_id}/project/{project_id}") @admin_required function (
+    @get root("/user/{user_id}/project/{project_id}") function (
         request::HTTP.Request, user_id::Integer, project_id::Integer
     )
         response_userpermission = get_userpermission(user_id, project_id)
@@ -23,7 +27,7 @@ function setup_userpermission_routes()
         return json(response_userpermission; status=HTTP.StatusCodes.OK)
     end
 
-    @post root("/user/{user_id}/project/{project_id}") @admin_required function (
+    @post root("/user/{user_id}/project/{project_id}") function (
         request::HTTP.Request,
         user_id::Integer,
         project_id::Integer,
@@ -41,7 +45,7 @@ function setup_userpermission_routes()
         return json(("userpermission_id" => userpermission_id); status=upsert_status)
     end
 
-    @patch root("/{id}") @admin_required function (
+    @patch root("/{id}") function (
         request::HTTP.Request, id::Integer, parameters::Json{UserPermissionUpdatePayload}
     )
         upsert_result = update_userpermission(
@@ -55,7 +59,7 @@ function setup_userpermission_routes()
         return json(("message" => (upsert_result |> String)); status=upsert_status)
     end
 
-    @delete root("/{id}") @admin_required function (request::HTTP.Request, id::Integer)
+    @delete root("/{id}") function (request::HTTP.Request, id::Integer)
         success = id |> delete_userpermission
 
         if !success

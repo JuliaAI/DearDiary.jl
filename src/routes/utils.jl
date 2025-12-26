@@ -32,20 +32,15 @@ function Base.String(upsert_result::UpsertResult)::String
 end
 
 """
-    @admin_required function_name(::HTTP.Request, args...)::HTTP.Response
+    AdminRequiredMiddleware(handle::Function)::Function
 
-A macro to enforce that the user making the request has administrative privileges.
+A middleware function to enforce that the user making the request has administrative privileges.
 """
-macro admin_required(function_definition)
-    @assert function_definition.head == :function "The @admin_required macro can only be applied to functions."
-    function_signature = function_definition.args[1]
-    function_body = function_definition.args[2]
-
-    wrapped_body = quote
+function AdminRequiredMiddleware(handle::Function)::Function
+    function (request::HTTP.Request)
         global _DEARDIARY_APICONFIG
         if _DEARDIARY_APICONFIG.enable_auth
-            user = request.context[:user]
-            if !user.is_admin
+            if !(request.context[:user].is_admin)
                 return json(
                     ("message" => "Admin privileges required");
                     status=HTTP.StatusCodes.FORBIDDEN,
@@ -53,41 +48,34 @@ macro admin_required(function_definition)
             end
         else
             @warn "Authentication is disabled. Handlers will be injected with the default admin user."
-            user = get_user("default")
+            request.context[:user] = get(request.context, :user, get_user("default"))
         end
-        $(function_body)
+        return request |> handle
     end
-
-    new_function = Expr(:function, function_signature, wrapped_body)
-    return esc(new_function)
 end
 
 """
-    @same_user_or_admin_required function_name(::HTTP.Request, id::Int, args...)::HTTP.Response
+    SameUserOrAdminRequiredMiddleware(handle::Function)::Function
 
-A macro to enforce that the user making the request is either an administrator or the owner of the resource being accessed.
+A middleware function to enforce that the indicated user is the same user making the request, or that the user has administrative privileges.
 """
-macro same_user_or_admin_required(function_definition)
-    @assert function_definition.head == :function "The @owner_or_admin_required macro can only be applied to functions."
-    function_signature = function_definition.args[1]
-    function_body = function_definition.args[2]
-
-    wrapped_body = quote
+function SameUserOrAdminRequiredMiddleware(handle::Function)::Function
+    function (request::HTTP.Request)
         global _DEARDIARY_APICONFIG
         if _DEARDIARY_APICONFIG.enable_auth
             user = request.context[:user]
-            if !user.is_admin && user.id != id
+            if !user.is_admin && user.id != (request|>queryparams)[:id]
                 return json(
-                    ("message" => "Access denied: Admin privileges or resource ownership required");
+                    ("message" => "Same user required");
                     status=HTTP.StatusCodes.FORBIDDEN,
                 )
             end
+        else
+            @warn "Authentication is disabled. Handlers will be injected with the default admin user."
+            request.context[:user] = get(request.context, :user, get_user("default"))
         end
-        $(function_body)
+        return request |> handle
     end
-
-    new_function = Expr(:function, function_signature, wrapped_body)
-    return esc(new_function)
 end
 
 """

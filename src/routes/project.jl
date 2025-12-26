@@ -25,10 +25,13 @@ function setup_project_routes()
         return json(get_projects(); status=HTTP.StatusCodes.OK)
     end
 
-    @post root("/") @admin_required function (
+    @post root("/", middleware=[AdminRequiredMiddleware]) function (
         request::HTTP.Request, parameters::Json{ProjectCreatePayload}
     )
-        project_id, upsert_result = create_project(user.id, parameters.payload.name)
+        project_id, upsert_result = create_project(
+            request.context[:user].id,
+            parameters.payload.name,
+        )
         upsert_status = upsert_result |> get_status_by_upsert_result
         return json(("project_id" => project_id); status=upsert_status)
     end

@@ -9,7 +9,7 @@ This function sets up the user-related routes for the API.
 function setup_user_routes()
     root = router("/user", tags=["user"])
 
-    @get root("/{id}") @same_user_or_admin_required function (
+    @get root("/{id}", middleware=[SameUserOrAdminRequiredMiddleware]) function (
         request::HTTP.Request, id::Integer
     )
         response_user = id |> get_user
@@ -23,11 +23,11 @@ function setup_user_routes()
         return json(response_user; status=HTTP.StatusCodes.OK)
     end
 
-    @get root("/") @admin_required function (request::HTTP.Request)
+    @get root("/", middleware=[AdminRequiredMiddleware]) function (request::HTTP.Request)
         return json(get_users(); status=HTTP.StatusCodes.OK)
     end
 
-    @post root("/") @admin_required function (
+    @post root("/", middleware=[AdminRequiredMiddleware]) function (
         request::HTTP.Request, parameters::Json{UserCreatePayload}
     )
         user_id, upsert_result = create_user(
@@ -40,7 +40,7 @@ function setup_user_routes()
         return json(("user_id" => user_id); status=upsert_status)
     end
 
-    @patch root("/{id}") @same_user_or_admin_required function (
+    @patch root("/{id}", middleware=[SameUserOrAdminRequiredMiddleware]) function (
         request::HTTP.Request, id::Integer, parameters::Json{UserUpdatePayload}
     )
         upsert_result = update_user(
@@ -54,7 +54,7 @@ function setup_user_routes()
         return json(("message" => (upsert_result |> String)); status=upsert_status)
     end
 
-    @delete root("/{id}") @same_user_or_admin_required function (
+    @delete root("/{id}", middleware=[SameUserOrAdminRequiredMiddleware]) function (
         request::HTTP.Request, id::Integer
     )
         success = id |> delete_user

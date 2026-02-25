@@ -36,7 +36,7 @@ function setup_project_routes()
         return json(("project_id" => project_id); status=upsert_status)
     end
 
-    @patch root("/{id}") function (
+    @patch root("/{id}", middleware=[AdminRequiredMiddleware]) function (
         request::HTTP.Request, id::Integer, parameters::Json{ProjectUpdatePayload}
     )
         upsert_result = update_project(
@@ -48,7 +48,9 @@ function setup_project_routes()
         return json(("message" => (upsert_result |> String)); status=upsert_status)
     end
 
-    @delete root("/{id}") function (request::HTTP.Request, id::Integer)
+    @delete root("/{id}", middleware=[AdminRequiredMiddleware]) function (
+        request::HTTP.Request, id::Integer
+    )
         success = id |> delete_project
 
         if !success

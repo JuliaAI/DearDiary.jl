@@ -22,6 +22,7 @@ include("types/iteration.jl")
 include("types/parameter.jl")
 include("types/metric.jl")
 include("types/resource.jl")
+include("types/tag.jl")
 
 include("repositories/sql/database.jl")
 include("repositories/sql/user.jl")

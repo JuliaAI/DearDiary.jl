@@ -43,6 +43,8 @@ function initialize_database(; file_name::String="deardiary.db")
 
     DBInterface.execute(_DEARDIARY_DATABASE, SQL_CREATE_TAG)
     DBInterface.execute(_DEARDIARY_DATABASE, SQL_CREATE_PROJECTTAG)
+    DBInterface.execute(_DEARDIARY_DATABASE, SQL_CREATE_EXPERIMENTTAG)
+    DBInterface.execute(_DEARDIARY_DATABASE, SQL_CREATE_ITERATIONTAG)
 
     @info "Database initialized successfully."
 end

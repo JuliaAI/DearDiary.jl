@@ -132,3 +132,23 @@ const SQL_CREATE_PROJECTTAG = """
         FOREIGN KEY(tag_id) REFERENCES tag(id)
     )
     """
+
+const SQL_CREATE_EXPERIMENTTAG = """
+    CREATE TABLE IF NOT EXISTS experiment_tag (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        experiment_id INTEGER NOT NULL,
+        tag_id INTEGER NOT NULL,
+        FOREIGN KEY(experiment_id) REFERENCES experiment(id),
+        FOREIGN KEY(tag_id) REFERENCES tag(id)
+    )
+    """
+
+const SQL_CREATE_ITERATIONTAG = """
+    CREATE TABLE IF NOT EXISTS iteration_tag (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        iteration_id INTEGER NOT NULL,
+        tag_id INTEGER NOT NULL,
+        FOREIGN KEY(iteration_id) REFERENCES iteration(id),
+        FOREIGN KEY(tag_id) REFERENCES tag(id)
+    )
+    """

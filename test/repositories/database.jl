@@ -34,15 +34,16 @@
                 table_names = [
                     ["user"],
                     ["project"],
-                    ["user_project"],
+                    ["user_permission"],
                     ["tag"],
                     ["project_tag"],
-                    ["user_permission"],
                     ["experiment"],
                     ["iteration"],
                     ["parameter"],
                     ["metric"],
                     ["resource"],
+                    ["experiment_tag"],
+                    ["iteration_tag"],
                     ["sqlite_sequence"],
                 ]
                 @test values(row) in table_names

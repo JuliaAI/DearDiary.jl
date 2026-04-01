@@ -32,8 +32,8 @@ This project encourages the use of AI tools to **assist** in the development pro
 ## Code style
 The project follows the [BlueStyle](https://github.com/JuliaDiff/BlueStyle) guidelines, but with slight modifications.
 
-!!! note
-    The following rules are not enforced, so keep in mind that they are just recommendations, not strict requirements.
+> [!NOTE]
+> The following rules are not enforced, so keep in mind that they are just recommendations, not strict requirements.
 
 ### Pipeline operators first
 Always use the pipe operator (`|>`) when chaining function calls with a single argument. Inside complex expressions, use parentheses to clarify the order of operations and improve readability.

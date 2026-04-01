@@ -40,7 +40,7 @@ Create a [`Iteration`](@ref).
 """
 function create_iteration(
     experiment_id::Integer
-)::@NamedTuple{id::Optional{<:Int64},status::UpsertResult}
+)::@NamedTuple{id::Optional{<:Int64}, status::UpsertResult}
     experiment = experiment_id |> get_experiment
     if experiment |> isnothing
         return (id=nothing, status=Unprocessable())

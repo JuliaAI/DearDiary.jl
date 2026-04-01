@@ -40,7 +40,7 @@ Create a new [`Resource`](@ref) record.
 """
 function create_resource(
     experiment_id::Integer, name::AbstractString, data::AbstractArray{UInt8,1}
-)::@NamedTuple{id::Optional{<:Int64},status::UpsertResult}
+)::@NamedTuple{id::Optional{<:Int64}, status::UpsertResult}
     experiment = experiment_id |> get_experiment
     if experiment |> isnothing
         return (id=nothing, status=Unprocessable())

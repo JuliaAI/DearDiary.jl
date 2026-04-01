@@ -129,7 +129,8 @@ const SQL_CREATE_PROJECTTAG = """
         project_id INTEGER NOT NULL,
         tag_id INTEGER NOT NULL,
         FOREIGN KEY(project_id) REFERENCES project(id),
-        FOREIGN KEY(tag_id) REFERENCES tag(id)
+        FOREIGN KEY(tag_id) REFERENCES tag(id),
+        UNIQUE(project_id, tag_id)
     )
     """
 
@@ -139,7 +140,8 @@ const SQL_CREATE_EXPERIMENTTAG = """
         experiment_id INTEGER NOT NULL,
         tag_id INTEGER NOT NULL,
         FOREIGN KEY(experiment_id) REFERENCES experiment(id),
-        FOREIGN KEY(tag_id) REFERENCES tag(id)
+        FOREIGN KEY(tag_id) REFERENCES tag(id),
+        UNIQUE(experiment_id, tag_id)
     )
     """
 
@@ -149,6 +151,7 @@ const SQL_CREATE_ITERATIONTAG = """
         iteration_id INTEGER NOT NULL,
         tag_id INTEGER NOT NULL,
         FOREIGN KEY(iteration_id) REFERENCES iteration(id),
-        FOREIGN KEY(tag_id) REFERENCES tag(id)
+        FOREIGN KEY(tag_id) REFERENCES tag(id),
+        UNIQUE(iteration_id, tag_id)
     )
     """

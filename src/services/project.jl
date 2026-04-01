@@ -36,7 +36,7 @@ Create a [`Project`](@ref).
 """
 function create_project(
     user_id::Integer, name::AbstractString
-)::@NamedTuple{id::Optional{<:Int64},status::UpsertResult}
+)::@NamedTuple{id::Optional{<:Int64}, status::UpsertResult}
     user = user_id |> get_user
     if user |> isnothing || user.is_admin == 0
         return (id=nothing, status=Unprocessable())
@@ -67,7 +67,7 @@ Create a [`Project`](@ref). Uses the "default" user to create the project.
 - The created project ID. If an error occurs, `nothing` is returned.
 - An [`UpsertResult`](@ref). [`Created`](@ref) if the record was successfully created, [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
 """
-function create_project(name::AbstractString)::@NamedTuple{id::Optional{<:Int64},status::UpsertResult}
+function create_project(name::AbstractString)::@NamedTuple{id::Optional{<:Int64}, status::UpsertResult}
     default_user = get_user("default")
     return create_project(default_user.id, name)
 end

@@ -54,7 +54,7 @@ function create_user(
     last_name::AbstractString,
     username::AbstractString,
     password::AbstractString,
-)::@NamedTuple{id::Optional{<:Int64},status::UpsertResult}
+)::@NamedTuple{id::Optional{<:Int64}, status::UpsertResult}
     return insert(
         User,
         first_name,

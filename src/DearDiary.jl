@@ -56,6 +56,7 @@ include("services/iteration.jl")
 include("services/parameter.jl")
 include("services/metric.jl")
 include("services/resource.jl")
+include("services/tag.jl")
 
 include("routes/utils.jl")
 include("routes/user.jl")
@@ -76,6 +77,7 @@ export get_iteration, get_iterations, create_iteration, update_iteration, delete
 export get_parameter, get_parameters, create_parameter, update_parameter, delete_parameter
 export get_metric, get_metrics, create_metric, update_metric, delete_metric
 export get_resource, get_resources, create_resource, update_resource, delete_resource
+export get_tag, get_tags, create_tag, add_tag, delete_tag
 
 _DEARDIARY_APICONFIG = nothing
 

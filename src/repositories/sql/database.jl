@@ -119,7 +119,7 @@ const SQL_CREATE_RESOURCE = """
 const SQL_CREATE_TAG = """
     CREATE TABLE IF NOT EXISTS tag (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        value TEXT NOT NULL CHECK (value <> '')
+        value TEXT NOT NULL UNIQUE CHECK (value <> '')
     )
     """
 

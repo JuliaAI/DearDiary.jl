@@ -56,7 +56,7 @@
     @testset verbose = true "get database singleton" begin
         @testset "before initialization" begin
             db = DearDiary.get_database()
-            @test db === nothing
+            @test db |> isnothing
         end
 
         @testset "after initialization" begin

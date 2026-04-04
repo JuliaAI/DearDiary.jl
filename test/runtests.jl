@@ -97,6 +97,7 @@ include("services/iteration.jl")
 include("services/parameter.jl")
 include("services/metric.jl")
 include("services/resource.jl")
+include("services/tag.jl")
 
 # Auth tests
 file = create_test_env_file(; enable_auth=true)

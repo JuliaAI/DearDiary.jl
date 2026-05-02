@@ -9,7 +9,7 @@ This function sets up the iteration-related routes for the API.
 function setup_iteration_routes()
     root = router("/iteration", tags=["iteration"])
 
-    @get root("/{id}") function (request::HTTP.Request, id::Integer)
+    @get root("/{id}") function (::HTTP.Request, id::Integer)
         response_iteration = id |> get_iteration
 
         if (response_iteration |> isnothing)
@@ -22,13 +22,13 @@ function setup_iteration_routes()
     end
 
     @get root("/experiment/{experiment_id}") function (
-        request::HTTP.Request, experiment_id::Integer
+        ::HTTP.Request, experiment_id::Integer
     )
         return json((experiment_id |> get_iterations); status=HTTP.StatusCodes.OK)
     end
 
     @post root("/experiment/{experiment_id}") function (
-        request::HTTP.Request, experiment_id::Integer
+        ::HTTP.Request, experiment_id::Integer
     )
         iteration_id, upsert_result = experiment_id |> create_iteration
         upsert_status = upsert_result |> get_status_by_upsert_result
@@ -36,7 +36,7 @@ function setup_iteration_routes()
     end
 
     @patch root("/{id}") function (
-        request::HTTP.Request, id::Integer, parameters::Json{IterationUpdatePayload}
+        ::HTTP.Request, id::Integer, parameters::Json{IterationUpdatePayload}
     )
         upsert_result = update_iteration(
             id,
@@ -47,7 +47,7 @@ function setup_iteration_routes()
         return json(("message" => (upsert_result |> String)); status=upsert_status)
     end
 
-    @delete root("/{id}") function (request::HTTP.Request, id::Integer)
+    @delete root("/{id}") function (::HTTP.Request, id::Integer)
         success = id |> delete_iteration
 
         if !success

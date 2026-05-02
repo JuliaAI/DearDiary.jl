@@ -9,7 +9,7 @@ This function sets up the resource-related routes for the API.
 function setup_resource_routes()
     root = router("/resource", tags=["resource"])
 
-    @get root("/{id}") function (request::HTTP.Request, id::Integer)
+    @get root("/{id}") function (::HTTP.Request, id::Integer)
         response_resource = id |> get_resource
 
         if (response_resource |> isnothing)
@@ -22,14 +22,13 @@ function setup_resource_routes()
     end
 
     @get root("/experiment/{experiment_id}") function (
-        request::HTTP.Request, experiment_id::Integer
+        ::HTTP.Request, experiment_id::Integer
     )
         return json((experiment_id |> get_resources); status=HTTP.StatusCodes.OK)
     end
 
     @post root("/experiment/{experiment_id}") function (
-        request::HTTP.Request,
-        experiment_id::Integer,
+        request::HTTP.Request, experiment_id::Integer
     )
         form_data = request |> HTTP.parse_multipart_form
         name = find(form_data, "name").data
@@ -64,7 +63,7 @@ function setup_resource_routes()
         return json(("message" => (upsert_result |> String)); status=upsert_status)
     end
 
-    @delete root("/{id}") function (request::HTTP.Request, id::Integer)
+    @delete root("/{id}") function (::HTTP.Request, id::Integer)
         success = id |> delete_resource
 
         if !success

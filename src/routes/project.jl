@@ -9,7 +9,7 @@ This function sets up the project-related routes for the API.
 function setup_project_routes()
     root = router("/project", tags=["project"])
 
-    @get root("/{id}") function (request::HTTP.Request, id::Integer)
+    @get root("/{id}") function (::HTTP.Request, id::Integer)
         response_project = id |> get_project
 
         if (response_project |> isnothing)
@@ -21,7 +21,7 @@ function setup_project_routes()
         return json(response_project; status=HTTP.StatusCodes.OK)
     end
 
-    @get root("/") function (request::HTTP.Request)
+    @get root("/") function (::HTTP.Request)
         return json(get_projects(); status=HTTP.StatusCodes.OK)
     end
 
@@ -37,7 +37,7 @@ function setup_project_routes()
     end
 
     @patch root("/{id}", middleware=[AdminRequiredMiddleware]) function (
-        request::HTTP.Request, id::Integer, parameters::Json{ProjectUpdatePayload}
+        ::HTTP.Request, id::Integer, parameters::Json{ProjectUpdatePayload}
     )
         upsert_result = update_project(
             id,
@@ -49,7 +49,7 @@ function setup_project_routes()
     end
 
     @delete root("/{id}", middleware=[AdminRequiredMiddleware]) function (
-        request::HTTP.Request, id::Integer
+        ::HTTP.Request, id::Integer
     )
         success = id |> delete_project
 

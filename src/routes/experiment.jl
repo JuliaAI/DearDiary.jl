@@ -9,7 +9,7 @@ This function sets up the experiment-related routes for the API.
 function setup_experiment_routes()
     root = router("/experiment", tags=["experiment"])
 
-    @get root("/{id}") function (request::HTTP.Request, id::Integer)
+    @get root("/{id}") function (::HTTP.Request, id::Integer)
         response_experiment = id |> get_experiment
 
         if (response_experiment |> isnothing)
@@ -21,16 +21,12 @@ function setup_experiment_routes()
         return json(response_experiment; status=HTTP.StatusCodes.OK)
     end
 
-    @get root("/project/{project_id}") function (
-        request::HTTP.Request, project_id::Integer
-    )
+    @get root("/project/{project_id}") function (::HTTP.Request, project_id::Integer)
         return json((project_id |> get_experiments); status=HTTP.StatusCodes.OK)
     end
 
     @post root("/project/{project_id}") function (
-        request::HTTP.Request,
-        project_id::Integer,
-        parameters::Json{ExperimentCreatePayload},
+        ::HTTP.Request, project_id::Integer, parameters::Json{ExperimentCreatePayload}
     )
         experiment_id, upsert_result = create_experiment(
             project_id,
@@ -42,7 +38,7 @@ function setup_experiment_routes()
     end
 
     @patch root("/{id}") function (
-        request::HTTP.Request, id::Integer, parameters::Json{ExperimentUpdatePayload}
+        ::HTTP.Request, id::Integer, parameters::Json{ExperimentUpdatePayload}
     )
         upsert_result = update_experiment(
             id,
@@ -55,7 +51,7 @@ function setup_experiment_routes()
         return json(("message" => (upsert_result |> String)); status=upsert_status)
     end
 
-    @delete root("/{id}") function (request::HTTP.Request, id::Integer)
+    @delete root("/{id}") function (::HTTP.Request, id::Integer)
         success = id |> delete_experiment
 
         if !success

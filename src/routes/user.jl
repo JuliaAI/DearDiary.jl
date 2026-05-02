@@ -10,7 +10,7 @@ function setup_user_routes()
     root = router("/user", tags=["user"])
 
     @get root("/{id}", middleware=[SameUserOrAdminRequiredMiddleware]) function (
-        request::HTTP.Request, id::Integer
+        ::HTTP.Request, id::Integer
     )
         response_user = id |> get_user
 
@@ -23,12 +23,12 @@ function setup_user_routes()
         return json(response_user; status=HTTP.StatusCodes.OK)
     end
 
-    @get root("/", middleware=[AdminRequiredMiddleware]) function (request::HTTP.Request)
+    @get root("/", middleware=[AdminRequiredMiddleware]) function (::HTTP.Request)
         return json(get_users(); status=HTTP.StatusCodes.OK)
     end
 
     @post root("/", middleware=[AdminRequiredMiddleware]) function (
-        request::HTTP.Request, parameters::Json{UserCreatePayload}
+        ::HTTP.Request, parameters::Json{UserCreatePayload}
     )
         user_id, upsert_result = create_user(
             parameters.payload.first_name,
@@ -41,7 +41,7 @@ function setup_user_routes()
     end
 
     @patch root("/{id}", middleware=[SameUserOrAdminRequiredMiddleware]) function (
-        request::HTTP.Request, id::Integer, parameters::Json{UserUpdatePayload}
+        ::HTTP.Request, id::Integer, parameters::Json{UserUpdatePayload}
     )
         upsert_result = update_user(
             id,
@@ -55,7 +55,7 @@ function setup_user_routes()
     end
 
     @delete root("/{id}", middleware=[SameUserOrAdminRequiredMiddleware]) function (
-        request::HTTP.Request, id::Integer
+        ::HTTP.Request, id::Integer
     )
         success = id |> delete_user
 

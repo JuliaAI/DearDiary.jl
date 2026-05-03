@@ -296,5 +296,96 @@
                 @test response.status == HTTP.StatusCodes.NOT_FOUND
             end
         end
+
+        @testset verbose = true "get_project_id resolvers" begin
+            user = DearDiary.get_user("default")
+            project_id, _ = DearDiary.create_project(user.id, "Resolver Project")
+            experiment_id, _ = DearDiary.create_experiment(
+                project_id, DearDiary.IN_PROGRESS, "Resolver Experiment",
+            )
+            iteration_id, _ = DearDiary.create_iteration(experiment_id)
+            metric_id, _ = DearDiary.create_metric(iteration_id, "loss", 0.42)
+            parameter_id, _ = DearDiary.create_parameter(iteration_id, "lr", "0.001")
+            resource_id, _ = DearDiary.create_resource(
+                experiment_id, "model.bin", UInt8[0x01, 0x02, 0x03],
+            )
+
+            req(target::AbstractString)::HTTP.Request = HTTP.Request("GET", target)
+
+            @testset verbose = true "Iteration" begin
+                @test DearDiary.get_project_id(
+                    DearDiary.Iteration, req("/iteration/experiment/$(experiment_id)"),
+                ) == project_id
+                @test DearDiary.get_project_id(
+                    DearDiary.Iteration, req("/iteration/$(iteration_id)"),
+                ) == project_id
+                @test DearDiary.get_project_id(
+                    DearDiary.Iteration, req("/iteration/9999"),
+                ) |> isnothing
+                @test DearDiary.get_project_id(
+                    DearDiary.Iteration, req("/iteration/experiment/9999"),
+                ) |> isnothing
+                @test DearDiary.get_project_id(
+                    DearDiary.Iteration, req("/iteration/not-a-number"),
+                ) |> isnothing
+                @test DearDiary.get_project_id(
+                    DearDiary.Iteration, req("/iteration"),
+                ) |> isnothing
+            end
+
+            @testset verbose = true "Metric" begin
+                @test DearDiary.get_project_id(
+                    DearDiary.Metric, req("/metric/iteration/$(iteration_id)"),
+                ) == project_id
+                @test DearDiary.get_project_id(
+                    DearDiary.Metric, req("/metric/$(metric_id)"),
+                ) == project_id
+                @test DearDiary.get_project_id(
+                    DearDiary.Metric, req("/metric/9999"),
+                ) |> isnothing
+                @test DearDiary.get_project_id(
+                    DearDiary.Metric, req("/metric/iteration/9999"),
+                ) |> isnothing
+                @test DearDiary.get_project_id(
+                    DearDiary.Metric, req("/metric/not-a-number"),
+                ) |> isnothing
+            end
+
+            @testset verbose = true "Parameter" begin
+                @test DearDiary.get_project_id(
+                    DearDiary.Parameter, req("/parameter/iteration/$(iteration_id)"),
+                ) == project_id
+                @test DearDiary.get_project_id(
+                    DearDiary.Parameter, req("/parameter/$(parameter_id)"),
+                ) == project_id
+                @test DearDiary.get_project_id(
+                    DearDiary.Parameter, req("/parameter/9999"),
+                ) |> isnothing
+                @test DearDiary.get_project_id(
+                    DearDiary.Parameter, req("/parameter/iteration/9999"),
+                ) |> isnothing
+                @test DearDiary.get_project_id(
+                    DearDiary.Parameter, req("/parameter/not-a-number"),
+                ) |> isnothing
+            end
+
+            @testset verbose = true "Resource" begin
+                @test DearDiary.get_project_id(
+                    DearDiary.Resource, req("/resource/experiment/$(experiment_id)"),
+                ) == project_id
+                @test DearDiary.get_project_id(
+                    DearDiary.Resource, req("/resource/$(resource_id)"),
+                ) == project_id
+                @test DearDiary.get_project_id(
+                    DearDiary.Resource, req("/resource/9999"),
+                ) |> isnothing
+                @test DearDiary.get_project_id(
+                    DearDiary.Resource, req("/resource/experiment/9999"),
+                ) |> isnothing
+                @test DearDiary.get_project_id(
+                    DearDiary.Resource, req("/resource/not-a-number"),
+                ) |> isnothing
+            end
+        end
     end
 end

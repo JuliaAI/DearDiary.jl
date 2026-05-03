@@ -9,7 +9,9 @@ This function sets up the iteration-related routes for the API.
 function setup_iteration_routes()
     root = router("/iteration", tags=["iteration"])
 
-    @get root("/{id}") function (::HTTP.Request, id::Integer)
+    @get root("/{id}", middleware=[
+        ProjectPermissionRequiredMiddleware(Iteration, ReadPermission),
+    ]) function (::HTTP.Request, id::Integer)
         response_iteration = id |> get_iteration
 
         if (response_iteration |> isnothing)
@@ -21,21 +23,23 @@ function setup_iteration_routes()
         return json(response_iteration; status=HTTP.StatusCodes.OK)
     end
 
-    @get root("/experiment/{experiment_id}") function (
-        ::HTTP.Request, experiment_id::Integer
-    )
+    @get root("/experiment/{experiment_id}", middleware=[
+        ProjectPermissionRequiredMiddleware(Iteration, ReadPermission),
+    ]) function (::HTTP.Request, experiment_id::Integer)
         return json((experiment_id |> get_iterations); status=HTTP.StatusCodes.OK)
     end
 
-    @post root("/experiment/{experiment_id}") function (
-        ::HTTP.Request, experiment_id::Integer
-    )
+    @post root("/experiment/{experiment_id}", middleware=[
+        ProjectPermissionRequiredMiddleware(Iteration, CreatePermission),
+    ]) function (::HTTP.Request, experiment_id::Integer)
         iteration_id, upsert_result = experiment_id |> create_iteration
         upsert_status = upsert_result |> get_status_by_upsert_result
         return json(("iteration_id" => iteration_id); status=upsert_status)
     end
 
-    @patch root("/{id}") function (
+    @patch root("/{id}", middleware=[
+        ProjectPermissionRequiredMiddleware(Iteration, UpdatePermission),
+    ]) function (
         ::HTTP.Request, id::Integer, parameters::Json{IterationUpdatePayload}
     )
         upsert_result = update_iteration(
@@ -47,7 +51,9 @@ function setup_iteration_routes()
         return json(("message" => (upsert_result |> String)); status=upsert_status)
     end
 
-    @delete root("/{id}") function (::HTTP.Request, id::Integer)
+    @delete root("/{id}", middleware=[
+        ProjectPermissionRequiredMiddleware(Iteration, DeletePermission),
+    ]) function (::HTTP.Request, id::Integer)
         success = id |> delete_iteration
 
         if !success

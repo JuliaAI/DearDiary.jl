@@ -130,3 +130,21 @@ Delete a [`UserPermission`](@ref).
 `true` if the record was successfully deleted, `false` otherwise.
 """
 delete_userpermission(id::Integer)::Bool = delete(UserPermission, id)
+
+"""
+    has_permission(permission::UserPermission, ::Type{<:PermissionAction})::Bool
+
+Return whether `permission` grants the given [`PermissionAction`](@ref) on its
+[`Project`](@ref).
+
+# Arguments
+- `permission::UserPermission`: The user permission record.
+- `::Type{<:PermissionAction}`: The CRUD action being requested, passed as a type tag.
+
+# Returns
+`true` if the action is allowed by the permission, `false` otherwise.
+"""
+has_permission(permission::UserPermission, ::Type{CreatePermission})::Bool = permission.create_permission
+has_permission(permission::UserPermission, ::Type{ReadPermission})::Bool = permission.read_permission
+has_permission(permission::UserPermission, ::Type{UpdatePermission})::Bool = permission.update_permission
+has_permission(permission::UserPermission, ::Type{DeletePermission})::Bool = permission.delete_permission

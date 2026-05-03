@@ -35,3 +35,40 @@ struct UserPermissionUpdatePayload <: UpsertType
     update_permission::Optional{Bool}
     delete_permission::Optional{Bool}
 end
+
+"""
+    PermissionAction
+
+Abstract supertype representing a CRUD action that a [`UserPermission`](@ref) can grant on a
+[`Project`](@ref). Concrete subtypes are dispatched on by [`has_permission`](@ref) to read the
+matching boolean field.
+"""
+abstract type PermissionAction end
+
+"""
+    CreatePermission <: PermissionAction
+
+Action that requires `create_permission` on the target [`Project`](@ref).
+"""
+struct CreatePermission <: PermissionAction end
+
+"""
+    ReadPermission <: PermissionAction
+
+Action that requires `read_permission` on the target [`Project`](@ref).
+"""
+struct ReadPermission <: PermissionAction end
+
+"""
+    UpdatePermission <: PermissionAction
+
+Action that requires `update_permission` on the target [`Project`](@ref).
+"""
+struct UpdatePermission <: PermissionAction end
+
+"""
+    DeletePermission <: PermissionAction
+
+Action that requires `delete_permission` on the target [`Project`](@ref).
+"""
+struct DeletePermission <: PermissionAction end

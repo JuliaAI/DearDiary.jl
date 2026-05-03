@@ -148,3 +148,20 @@ Delete all [`Parameter`](@ref) records associated with a given [`Iteration`](@re
 `true` if the records were successfully deleted, `false` otherwise.
 """
 delete_parameters(iteration::Iteration)::Bool = delete(Parameter, iteration)
+
+"""
+    get_project_id(parameter::Parameter)::Optional{Int64}
+
+Return the [`Project`](@ref) id that owns the given [`Parameter`](@ref) by walking up to its
+parent [`Iteration`](@ref) and [`Experiment`](@ref).
+
+# Arguments
+- `parameter::Parameter`: The parameter to inspect.
+
+# Returns
+The owning project id, or `nothing` if any ancestor is missing.
+"""
+function get_project_id(parameter::Parameter)::Optional{Int64}
+    iteration = parameter.iteration_id |> get_iteration
+    return iteration |> isnothing ? nothing : (iteration |> get_project_id)
+end

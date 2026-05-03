@@ -165,5 +165,18 @@
             @test DearDiary.delete_experiment(experiment_id)
             @test (experiment_id |> DearDiary.get_experiment) |> isnothing
         end
+
+        @testset verbose = true "get project id" begin
+            user = DearDiary.get_user("default")
+            project_id, _ = DearDiary.create_project(user.id, "Test Project")
+            experiment_id, _ = DearDiary.create_experiment(
+                project_id,
+                DearDiary.IN_PROGRESS,
+                "Test experiment",
+            )
+
+            experiment = experiment_id |> DearDiary.get_experiment
+            @test (experiment |> DearDiary.get_project_id) == project_id
+        end
     end
 end

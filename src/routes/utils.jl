@@ -79,6 +79,180 @@ function SameUserOrAdminRequiredMiddleware(handle::Function)::Function
 end
 
 """
+    path_segments(request::HTTP.Request)::Vector{String}
+
+Return the URL path segments of `request`, stripped of any query string.
+
+Route-specific middleware runs before Oxygen binds path params to `request.context`, so
+`HTTP.getparams` is not yet populated. Parsing `request.target` directly keeps this
+middleware decoupled from Oxygen's request lifecycle.
+
+# Arguments
+- `request::HTTP.Request`: The incoming HTTP request.
+
+# Returns
+The non-empty `/`-separated segments of the request path.
+"""
+function path_segments(request::HTTP.Request)::Vector{String}
+    target = request.target
+    query_index = findfirst('?', target)
+    path_only = (query_index |> isnothing) ? target : target[1:(query_index - 1)]
+    return split(path_only, '/'; keepempty=false) .|> string
+end
+
+"""
+    get_project_id(::Type{T}, request::HTTP.Request)::Optional{Int64} where {T}
+
+Resolve the [`Project`](@ref) id that scopes a request to entity type `T`. Each method matches
+the URL pattern of the route family (`/experiment/...`, `/iteration/...`, etc.) and walks the
+entity hierarchy via the service-layer [`get_project_id`](@ref) overloads.
+
+# Arguments
+- `::Type{T}`: The entity type the route operates on (`Experiment`, `Iteration`, `Metric`,
+  `Parameter`, or `Resource`).
+- `request::HTTP.Request`: The incoming HTTP request.
+
+# Returns
+The owning project id, or `nothing` if it cannot be resolved (URL does not match a known
+pattern, malformed id, or an ancestor record that no longer exists).
+"""
+function get_project_id(::Type{Experiment}, request::HTTP.Request)::Optional{Int64}
+    segments = request |> path_segments
+    n = segments |> length
+    n >= 3 && segments[2] == "project" && return tryparse(Int64, segments[3])
+    n >= 2 || return nothing
+
+    experiment_id = tryparse(Int64, segments[2])
+    experiment_id |> isnothing && return nothing
+    experiment = experiment_id |> get_experiment
+    return experiment |> isnothing ? nothing : (experiment |> get_project_id)
+end
+
+function get_project_id(::Type{Iteration}, request::HTTP.Request)::Optional{Int64}
+    segments = request |> path_segments
+    n = segments |> length
+    if n >= 3 && segments[2] == "experiment"
+        experiment_id = tryparse(Int64, segments[3])
+        experiment_id |> isnothing && return nothing
+        experiment = experiment_id |> get_experiment
+        return experiment |> isnothing ? nothing : (experiment |> get_project_id)
+    end
+    n >= 2 || return nothing
+
+    iteration_id = tryparse(Int64, segments[2])
+    iteration_id |> isnothing && return nothing
+    iteration = iteration_id |> get_iteration
+    return iteration |> isnothing ? nothing : (iteration |> get_project_id)
+end
+
+function get_project_id(::Type{Metric}, request::HTTP.Request)::Optional{Int64}
+    segments = request |> path_segments
+    n = segments |> length
+    if n >= 3 && segments[2] == "iteration"
+        iteration_id = tryparse(Int64, segments[3])
+        iteration_id |> isnothing && return nothing
+        iteration = iteration_id |> get_iteration
+        return iteration |> isnothing ? nothing : (iteration |> get_project_id)
+    end
+    n >= 2 || return nothing
+
+    metric_id = tryparse(Int64, segments[2])
+    metric_id |> isnothing && return nothing
+    metric = metric_id |> get_metric
+    return metric |> isnothing ? nothing : (metric |> get_project_id)
+end
+
+function get_project_id(::Type{Parameter}, request::HTTP.Request)::Optional{Int64}
+    segments = request |> path_segments
+    n = segments |> length
+    if n >= 3 && segments[2] == "iteration"
+        iteration_id = tryparse(Int64, segments[3])
+        iteration_id |> isnothing && return nothing
+        iteration = iteration_id |> get_iteration
+        return iteration |> isnothing ? nothing : (iteration |> get_project_id)
+    end
+    n >= 2 || return nothing
+
+    parameter_id = tryparse(Int64, segments[2])
+    parameter_id |> isnothing && return nothing
+    parameter = parameter_id |> get_parameter
+    return parameter |> isnothing ? nothing : (parameter |> get_project_id)
+end
+
+function get_project_id(::Type{Resource}, request::HTTP.Request)::Optional{Int64}
+    segments = request |> path_segments
+    n = segments |> length
+    if n >= 3 && segments[2] == "experiment"
+        experiment_id = tryparse(Int64, segments[3])
+        experiment_id |> isnothing && return nothing
+        experiment = experiment_id |> get_experiment
+        return experiment |> isnothing ? nothing : (experiment |> get_project_id)
+    end
+    n >= 2 || return nothing
+
+    resource_id = tryparse(Int64, segments[2])
+    resource_id |> isnothing && return nothing
+    resource = resource_id |> get_resource
+    return resource |> isnothing ? nothing : (resource |> get_project_id)
+end
+
+"""
+    ProjectPermissionRequiredMiddleware(::Type{T}, ::Type{A})::Function where {T, A<:PermissionAction}
+
+Build a middleware that enforces a [`PermissionAction`](@ref) against the [`UserPermission`](@ref)
+record tying the current user to the [`Project`](@ref) that owns the entity of type `T`.
+
+The entity type drives [`get_project_id`](@ref) via multiple dispatch to walk the path params
+and entity hierarchy. The action type drives [`has_permission`](@ref) via multiple dispatch to
+read the matching boolean field on `UserPermission`.
+
+Admins bypass the check. When auth is disabled, the default admin user is injected — the same
+fallback used by [`AdminRequiredMiddleware`](@ref).
+
+# Arguments
+- `::Type{T}`: The entity type the route operates on.
+- `::Type{A}`: The CRUD action the route requires, passed as a type tag
+  (`CreatePermission`, `ReadPermission`, `UpdatePermission`, `DeletePermission`).
+
+# Returns
+A middleware function with the signature `(handle::Function) -> (HTTP.Request) -> response`,
+shaped like [`AdminRequiredMiddleware`](@ref).
+"""
+function ProjectPermissionRequiredMiddleware(
+    ::Type{T}, ::Type{A},
+)::Function where {T, A<:PermissionAction}
+    function (handle::Function)
+        function (request::HTTP.Request)
+            global _DEARDIARY_APICONFIG
+            if _DEARDIARY_APICONFIG.enable_auth
+                user = request.context[:user]
+                if !user.is_admin
+                    project_id = get_project_id(T, request)
+                    if project_id |> isnothing
+                        return json(
+                            ("message" => (HTTP.StatusCodes.NOT_FOUND |> HTTP.statustext));
+                            status=HTTP.StatusCodes.NOT_FOUND,
+                        )
+                    end
+
+                    permission = get_userpermission(user.id, project_id)
+                    if (permission |> isnothing) || !has_permission(permission, A)
+                        return json(
+                            ("message" => "Project permission required");
+                            status=HTTP.StatusCodes.FORBIDDEN,
+                        )
+                    end
+                end
+            else
+                @warn "Authentication is disabled. Handlers will be injected with the default admin user."
+                request.context[:user] = get(request.context, :user, get_user("default"))
+            end
+            return request |> handle
+        end
+    end
+end
+
+"""
     find(form_data::AbstractArray{HTTP.Multipart,1}, field_name::AbstractString)::Union{HTTP.Multipart,Nothing}
 
 Find a part in the multipart form data by its field name.

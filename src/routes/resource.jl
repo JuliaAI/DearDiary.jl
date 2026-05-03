@@ -9,7 +9,9 @@ This function sets up the resource-related routes for the API.
 function setup_resource_routes()
     root = router("/resource", tags=["resource"])
 
-    @get root("/{id}") function (::HTTP.Request, id::Integer)
+    @get root("/{id}", middleware=[
+        ProjectPermissionRequiredMiddleware(Resource, ReadPermission),
+    ]) function (::HTTP.Request, id::Integer)
         response_resource = id |> get_resource
 
         if (response_resource |> isnothing)
@@ -21,15 +23,15 @@ function setup_resource_routes()
         return json(response_resource; status=HTTP.StatusCodes.OK)
     end
 
-    @get root("/experiment/{experiment_id}") function (
-        ::HTTP.Request, experiment_id::Integer
-    )
+    @get root("/experiment/{experiment_id}", middleware=[
+        ProjectPermissionRequiredMiddleware(Resource, ReadPermission),
+    ]) function (::HTTP.Request, experiment_id::Integer)
         return json((experiment_id |> get_resources); status=HTTP.StatusCodes.OK)
     end
 
-    @post root("/experiment/{experiment_id}") function (
-        request::HTTP.Request, experiment_id::Integer
-    )
+    @post root("/experiment/{experiment_id}", middleware=[
+        ProjectPermissionRequiredMiddleware(Resource, CreatePermission),
+    ]) function (request::HTTP.Request, experiment_id::Integer)
         form_data = request |> HTTP.parse_multipart_form
         name = find(form_data, "name").data
         data = find(form_data, "data").data
@@ -47,7 +49,9 @@ function setup_resource_routes()
         return json(("resource_id" => resource_id); status=upsert_status)
     end
 
-    @patch root("/{id}") function (request::HTTP.Request, id::Integer)
+    @patch root("/{id}", middleware=[
+        ProjectPermissionRequiredMiddleware(Resource, UpdatePermission),
+    ]) function (request::HTTP.Request, id::Integer)
         form_data = request |> HTTP.parse_multipart_form
         name = find(form_data, "name").data
         description = find(form_data, "description").data
@@ -63,7 +67,9 @@ function setup_resource_routes()
         return json(("message" => (upsert_result |> String)); status=upsert_status)
     end
 
-    @delete root("/{id}") function (::HTTP.Request, id::Integer)
+    @delete root("/{id}", middleware=[
+        ProjectPermissionRequiredMiddleware(Resource, DeletePermission),
+    ]) function (::HTTP.Request, id::Integer)
         success = id |> delete_resource
 
         if !success

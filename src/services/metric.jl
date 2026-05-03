@@ -107,3 +107,20 @@ Delete all [`Metric`](@ref) records associated with a given [`Iteration`](@ref).
 `true` if the records were successfully deleted, `false` otherwise.
 """
 delete_metrics(iteration::Iteration)::Bool = delete(Metric, iteration)
+
+"""
+    get_project_id(metric::Metric)::Optional{Int64}
+
+Return the [`Project`](@ref) id that owns the given [`Metric`](@ref) by walking up to its parent
+[`Iteration`](@ref) and [`Experiment`](@ref).
+
+# Arguments
+- `metric::Metric`: The metric to inspect.
+
+# Returns
+The owning project id, or `nothing` if any ancestor is missing.
+"""
+function get_project_id(metric::Metric)::Optional{Int64}
+    iteration = metric.iteration_id |> get_iteration
+    return iteration |> isnothing ? nothing : (iteration |> get_project_id)
+end

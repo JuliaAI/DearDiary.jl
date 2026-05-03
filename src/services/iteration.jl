@@ -101,3 +101,20 @@ function delete_iteration(id::Integer)::Bool
 
     return delete(Iteration, id)
 end
+
+"""
+    get_project_id(iteration::Iteration)::Optional{Int64}
+
+Return the [`Project`](@ref) id that owns the given [`Iteration`](@ref) by walking up to its
+parent [`Experiment`](@ref).
+
+# Arguments
+- `iteration::Iteration`: The iteration to inspect.
+
+# Returns
+The owning project id, or `nothing` if the parent experiment is missing.
+"""
+function get_project_id(iteration::Iteration)::Optional{Int64}
+    experiment = iteration.experiment_id |> get_experiment
+    return experiment |> isnothing ? nothing : (experiment |> get_project_id)
+end

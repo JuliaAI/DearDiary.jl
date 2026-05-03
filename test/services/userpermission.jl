@@ -137,5 +137,20 @@
             @test DearDiary.delete_userpermission(userpermission.id)
             @test DearDiary.get_userpermission(user.id, project_id) |> isnothing
         end
+
+        @testset verbose = true "has permission" begin
+            permission = DearDiary.UserPermission(1, 1, 1, true, false, true, false)
+
+            @test DearDiary.has_permission(permission, DearDiary.CreatePermission) == true
+            @test DearDiary.has_permission(permission, DearDiary.ReadPermission) == false
+            @test DearDiary.has_permission(permission, DearDiary.UpdatePermission) == true
+            @test DearDiary.has_permission(permission, DearDiary.DeletePermission) == false
+
+            denied = DearDiary.UserPermission(2, 1, 1, false, false, false, false)
+            @test DearDiary.has_permission(denied, DearDiary.CreatePermission) == false
+            @test DearDiary.has_permission(denied, DearDiary.ReadPermission) == false
+            @test DearDiary.has_permission(denied, DearDiary.UpdatePermission) == false
+            @test DearDiary.has_permission(denied, DearDiary.DeletePermission) == false
+        end
     end
 end

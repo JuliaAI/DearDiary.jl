@@ -179,5 +179,28 @@
                 @test DearDiary.get_parameters(iteration_id) |> isempty
             end
         end
+
+        @testset verbose = true "get project id" begin
+            user = DearDiary.get_user("default")
+            project_id, _ = DearDiary.create_project(user.id, "Test Project")
+            experiment_id, _ = DearDiary.create_experiment(
+                project_id,
+                DearDiary.IN_PROGRESS,
+                "Test experiment",
+            )
+            iteration_id, _ = DearDiary.create_iteration(experiment_id)
+            parameter_id, _ = DearDiary.create_parameter(iteration_id, "lr", "0.001")
+
+            @testset "with full ancestor chain" begin
+                parameter = parameter_id |> DearDiary.get_parameter
+                @test (parameter |> DearDiary.get_project_id) == project_id
+            end
+
+            @testset "with deleted ancestor iteration" begin
+                parameter = parameter_id |> DearDiary.get_parameter
+                DearDiary.delete_iteration(iteration_id)
+                @test (parameter |> DearDiary.get_project_id) |> isnothing
+            end
+        end
     end
 end

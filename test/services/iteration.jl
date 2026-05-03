@@ -124,5 +124,27 @@
             @test DearDiary.delete_iteration(iteration_id)
             @test (iteration_id |> DearDiary.get_iteration) |> isnothing
         end
+
+        @testset verbose = true "get project id" begin
+            user = DearDiary.get_user("default")
+            project_id, _ = DearDiary.create_project(user.id, "Test Project")
+            experiment_id, _ = DearDiary.create_experiment(
+                project_id,
+                DearDiary.IN_PROGRESS,
+                "Test experiment",
+            )
+            iteration_id, _ = DearDiary.create_iteration(experiment_id)
+
+            @testset "with existing parent experiment" begin
+                iteration = iteration_id |> DearDiary.get_iteration
+                @test (iteration |> DearDiary.get_project_id) == project_id
+            end
+
+            @testset "with deleted parent experiment" begin
+                iteration = iteration_id |> DearDiary.get_iteration
+                DearDiary.delete_experiment(experiment_id)
+                @test (iteration |> DearDiary.get_project_id) |> isnothing
+            end
+        end
     end
 end

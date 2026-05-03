@@ -103,3 +103,20 @@ Delete a [`Resource`](@ref) record.
 `true` if the record was successfully deleted, `false` otherwise.
 """
 delete_resource(id::Integer)::Bool = delete(Resource, id)
+
+"""
+    get_project_id(resource::Resource)::Optional{Int64}
+
+Return the [`Project`](@ref) id that owns the given [`Resource`](@ref) by walking up to its
+parent [`Experiment`](@ref).
+
+# Arguments
+- `resource::Resource`: The resource to inspect.
+
+# Returns
+The owning project id, or `nothing` if the parent experiment is missing.
+"""
+function get_project_id(resource::Resource)::Optional{Int64}
+    experiment = resource.experiment_id |> get_experiment
+    return experiment |> isnothing ? nothing : (experiment |> get_project_id)
+end

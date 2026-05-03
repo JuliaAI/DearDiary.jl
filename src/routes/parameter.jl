@@ -9,7 +9,9 @@ This function sets up the parameter-related routes for the API.
 function setup_parameter_routes()
     root = router("/parameter", tags=["parameter"])
 
-    @get root("/{id}") function (::HTTP.Request, id::Integer)
+    @get root("/{id}", middleware=[
+        ProjectPermissionRequiredMiddleware(Parameter, ReadPermission),
+    ]) function (::HTTP.Request, id::Integer)
         response_parameter = id |> get_parameter
 
         if (response_parameter |> isnothing)
@@ -21,12 +23,18 @@ function setup_parameter_routes()
         return json(response_parameter; status=HTTP.StatusCodes.OK)
     end
 
-    @get root("/iteration/{iteration_id}") function (::HTTP.Request, iteration_id::Integer)
+    @get root("/iteration/{iteration_id}", middleware=[
+        ProjectPermissionRequiredMiddleware(Parameter, ReadPermission),
+    ]) function (::HTTP.Request, iteration_id::Integer)
         return json((iteration_id |> get_parameters); status=HTTP.StatusCodes.OK)
     end
 
-    @post root("/iteration/{iteration_id}") function (
-        ::HTTP.Request, iteration_id::Integer, parameters::Json{ParameterCreatePayload}
+    @post root("/iteration/{iteration_id}", middleware=[
+        ProjectPermissionRequiredMiddleware(Parameter, CreatePermission),
+    ]) function (
+        ::HTTP.Request,
+        iteration_id::Integer,
+        parameters::Json{ParameterCreatePayload},
     )
         parameter_id, upsert_result = create_parameter(
             iteration_id,
@@ -37,7 +45,9 @@ function setup_parameter_routes()
         return json(("parameter_id" => parameter_id); status=upsert_status)
     end
 
-    @patch root("/{id}") function (
+    @patch root("/{id}", middleware=[
+        ProjectPermissionRequiredMiddleware(Parameter, UpdatePermission),
+    ]) function (
         ::HTTP.Request, id::Integer, parameters::Json{ParameterUpdatePayload}
     )
         upsert_result = update_parameter(
@@ -49,7 +59,9 @@ function setup_parameter_routes()
         return json(("message" => (upsert_result |> String)); status=upsert_status)
     end
 
-    @delete root("/{id}") function (::HTTP.Request, id::Integer)
+    @delete root("/{id}", middleware=[
+        ProjectPermissionRequiredMiddleware(Parameter, DeletePermission),
+    ]) function (::HTTP.Request, id::Integer)
         success = id |> delete_parameter
 
         if !success

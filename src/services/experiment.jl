@@ -182,3 +182,16 @@ function delete_experiment(id::Integer)::Bool
     end
     return delete(Experiment, id)
 end
+
+"""
+    get_project_id(experiment::Experiment)::Int64
+
+Return the [`Project`](@ref) id that owns the given [`Experiment`](@ref).
+
+# Arguments
+- `experiment::Experiment`: The experiment to inspect.
+
+# Returns
+The owning project id.
+"""
+get_project_id(experiment::Experiment)::Int64 = experiment.project_id

@@ -151,5 +151,31 @@
             @test resource_id |> DearDiary.delete_resource
             @test (resource_id |> DearDiary.get_resource) |> isnothing
         end
+
+        @testset verbose = true "get project id" begin
+            user = DearDiary.get_user("default")
+            project_id, _ = DearDiary.create_project(user.id, "Test Project")
+            experiment_id, _ = DearDiary.create_experiment(
+                project_id,
+                DearDiary.IN_PROGRESS,
+                "Test Experiment",
+            )
+            resource_id, _ = DearDiary.create_resource(
+                experiment_id,
+                "Test Resource",
+                UInt8[0x01, 0x02, 0x03, 0x04],
+            )
+
+            @testset "with existing parent experiment" begin
+                resource = resource_id |> DearDiary.get_resource
+                @test (resource |> DearDiary.get_project_id) == project_id
+            end
+
+            @testset "with deleted parent experiment" begin
+                resource = resource_id |> DearDiary.get_resource
+                DearDiary.delete_experiment(experiment_id)
+                @test (resource |> DearDiary.get_project_id) |> isnothing
+            end
+        end
     end
 end

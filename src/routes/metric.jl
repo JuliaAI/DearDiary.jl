@@ -9,7 +9,9 @@ This function sets up the metric-related routes for the API.
 function setup_metric_routes()
     root = router("/metric", tags=["metric"])
 
-    @get root("/{id}") function (::HTTP.Request, id::Integer)
+    @get root("/{id}", middleware=[
+        ProjectPermissionRequiredMiddleware(Metric, ReadPermission),
+    ]) function (::HTTP.Request, id::Integer)
         response_metric = id |> get_metric
 
         if (response_metric |> isnothing)
@@ -21,11 +23,15 @@ function setup_metric_routes()
         return json(response_metric; status=HTTP.StatusCodes.OK)
     end
 
-    @get root("/iteration/{iteration_id}") function (::HTTP.Request, iteration_id::Integer)
+    @get root("/iteration/{iteration_id}", middleware=[
+        ProjectPermissionRequiredMiddleware(Metric, ReadPermission),
+    ]) function (::HTTP.Request, iteration_id::Integer)
         return json((iteration_id |> get_metrics); status=HTTP.StatusCodes.OK)
     end
 
-    @post root("/iteration/{iteration_id}") function (
+    @post root("/iteration/{iteration_id}", middleware=[
+        ProjectPermissionRequiredMiddleware(Metric, CreatePermission),
+    ]) function (
         ::HTTP.Request, iteration_id::Integer, parameters::Json{MetricCreatePayload}
     )
         metric_id, upsert_result = create_metric(
@@ -37,7 +43,9 @@ function setup_metric_routes()
         return json(("metric_id" => metric_id); status=upsert_status)
     end
 
-    @patch root("/{id}") function (
+    @patch root("/{id}", middleware=[
+        ProjectPermissionRequiredMiddleware(Metric, UpdatePermission),
+    ]) function (
         ::HTTP.Request, id::Integer, parameters::Json{MetricUpdatePayload}
     )
         upsert_result = update_metric(
@@ -49,7 +57,9 @@ function setup_metric_routes()
         return json(("message" => (upsert_result |> String)); status=upsert_status)
     end
 
-    @delete root("/{id}") function (::HTTP.Request, id::Integer)
+    @delete root("/{id}", middleware=[
+        ProjectPermissionRequiredMiddleware(Metric, DeletePermission),
+    ]) function (::HTTP.Request, id::Integer)
         success = id |> delete_metric
 
         if !success

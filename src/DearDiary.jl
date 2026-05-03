@@ -87,10 +87,11 @@ function AuthMiddleware(handler)
         global _DEARDIARY_APICONFIG
 
         if _DEARDIARY_APICONFIG.enable_auth
-            is_auth_route = request.target |> startswith("/auth") && request.method == "POST"
+            is_login_route = request.target in ("/auth", "/auth/") &&
+                             request.method == "POST"
             is_health_route = request.target |> startswith("/health") && request.method == "GET"
 
-            if !(is_auth_route || is_health_route)
+            if !(is_login_route || is_health_route)
                 auth_header = get(request.headers |> Dict, "Authorization", missing)
 
                 if auth_header |> ismissing
@@ -183,6 +184,17 @@ By default, the server will run on `127.0.0.1:9000`. You can change both the hos
 """
 function run(; env_file::String=".env")
     global _DEARDIARY_APICONFIG = env_file |> load_config
+
+    if _DEARDIARY_APICONFIG.enable_auth &&
+       _DEARDIARY_APICONFIG.jwt_secret == "deardiary_secret"
+        throw(
+            ArgumentError(
+                "Authentication is enabled but DEARDIARY_JWT_SECRET is set to the " *
+                "built-in default. Set a strong, unique secret via the " *
+                "DEARDIARY_JWT_SECRET environment variable before starting the server.",
+            ),
+        )
+    end
 
     initialize_database(; file_name=_DEARDIARY_APICONFIG.db_file)
 

@@ -20,3 +20,12 @@
         @test config.host == "localhost"
     end
 end
+
+@testset verbose = true "run refuses default JWT secret with auth enabled" begin
+    file = create_test_env_file(; enable_auth=true)
+    try
+        @test_throws ArgumentError DearDiary.run(; env_file=file)
+    finally
+        file |> isfile && (file |> rm)
+    end
+end

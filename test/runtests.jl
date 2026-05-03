@@ -100,7 +100,7 @@ include("services/resource.jl")
 include("services/tag.jl")
 
 # Auth tests
-file = create_test_env_file(; enable_auth=true)
+file = create_test_env_file(; enable_auth=true, jwt_secret="testsecret")
 DearDiary.run(; env_file=file)
 
 include("routes/auth.jl")

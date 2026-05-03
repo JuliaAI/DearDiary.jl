@@ -27,6 +27,24 @@ function get_iterations(experiment_id::Integer)::Array{Iteration,1}
 end
 
 """
+    get_iterations(experiment_id::Integer, page::Pagination)::PaginatedResponse{Iteration}
+
+Get a page of [`Iteration`](@ref) records for an experiment, with `total` count populated.
+
+# Arguments
+- `experiment_id::Integer`: The id of the experiment to query.
+- `page::Pagination`: The page bounds (limit + offset).
+
+# Returns
+A [`PaginatedResponse`](@ref) of `Iteration`.
+"""
+function get_iterations(
+    experiment_id::Integer, page::Pagination,
+)::PaginatedResponse{Iteration}
+    return fetch_page(Iteration, experiment_id, page)
+end
+
+"""
     create_iteration(experiment_id::Integer)::NamedTuple{id::Optional{<:Int64},status::UpsertResult}
 
 Create a [`Iteration`](@ref).

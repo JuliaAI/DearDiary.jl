@@ -25,8 +25,9 @@ function setup_metric_routes()
 
     @get root("/iteration/{iteration_id}", middleware=[
         ProjectPermissionRequiredMiddleware(Metric, ReadPermission),
-    ]) function (::HTTP.Request, iteration_id::Integer)
-        return json((iteration_id |> get_metrics); status=HTTP.StatusCodes.OK)
+    ]) function (request::HTTP.Request, iteration_id::Integer)
+        page = request |> parse_pagination
+        return json(get_metrics(iteration_id, page); status=HTTP.StatusCodes.OK)
     end
 
     @post root("/iteration/{iteration_id}", middleware=[

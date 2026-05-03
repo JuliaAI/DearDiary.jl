@@ -22,6 +22,10 @@ const SQL_SELECT_EXPERIMENTS_BY_PROJECT_ID = """
     FROM experiment e WHERE e.project_id = :id
     """
 
+const SQL_COUNT_EXPERIMENTS_BY_PROJECT_ID = """
+    SELECT COUNT(*) AS count FROM experiment WHERE project_id = :id
+    """
+
 const SQL_INSERT_EXPERIMENT = """
     INSERT INTO experiment (project_id, status_id, name, created_date)
         VALUES (:project_id, :status_id, :name, :created_date) RETURNING id

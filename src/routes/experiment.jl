@@ -25,8 +25,9 @@ function setup_experiment_routes()
 
     @get root("/project/{project_id}", middleware=[
         ProjectPermissionRequiredMiddleware(Experiment, ReadPermission),
-    ]) function (::HTTP.Request, project_id::Integer)
-        return json((project_id |> get_experiments); status=HTTP.StatusCodes.OK)
+    ]) function (request::HTTP.Request, project_id::Integer)
+        page = request |> parse_pagination
+        return json(get_experiments(project_id, page); status=HTTP.StatusCodes.OK)
     end
 
     @post root("/project/{project_id}", middleware=[

@@ -63,8 +63,11 @@
             )
 
             @test response.status == HTTP.StatusCodes.OK
-            data = JSON.parse(response.body |> String, Array{Dict{String,Any},1})
-            iterations = data .|> DearDiary.Iteration
+            data = JSON.parse(response.body |> String, Dict{String,Any})
+            @test data["total"] == 2
+            @test data["limit"] == 50
+            @test data["offset"] == 0
+            iterations = data["data"] .|> DearDiary.Iteration
 
             @test iterations isa Array{DearDiary.Iteration,1}
             @test (iterations |> length) == 2

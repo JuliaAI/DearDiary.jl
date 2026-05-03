@@ -27,6 +27,24 @@ function get_parameters(iteration_id::Integer)::Array{Parameter,1}
 end
 
 """
+    get_parameters(iteration_id::Integer, page::Pagination)::PaginatedResponse{Parameter}
+
+Get a page of [`Parameter`](@ref) records for an iteration, with `total` count populated.
+
+# Arguments
+- `iteration_id::Integer`: The id of the iteration to query.
+- `page::Pagination`: The page bounds (limit + offset).
+
+# Returns
+A [`PaginatedResponse`](@ref) of `Parameter`.
+"""
+function get_parameters(
+    iteration_id::Integer, page::Pagination,
+)::PaginatedResponse{Parameter}
+    return fetch_page(Parameter, iteration_id, page)
+end
+
+"""
     create_parameter(iteration_id::Integer, key::AbstractString, value::AbstractString)::NamedTuple{id::Optional{<:Int64},status::UpsertResult}
 
 Create a [`Parameter`](@ref).

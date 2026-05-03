@@ -27,6 +27,24 @@ function get_experiments(project_id::Integer)::Array{Experiment,1}
 end
 
 """
+    get_experiments(project_id::Integer, page::Pagination)::PaginatedResponse{Experiment}
+
+Get a page of [`Experiment`](@ref) records for a project, with `total` count populated.
+
+# Arguments
+- `project_id::Integer`: The id of the project to query.
+- `page::Pagination`: The page bounds (limit + offset).
+
+# Returns
+A [`PaginatedResponse`](@ref) of `Experiment`.
+"""
+function get_experiments(
+    project_id::Integer, page::Pagination,
+)::PaginatedResponse{Experiment}
+    return fetch_page(Experiment, project_id, page)
+end
+
+"""
     create_experiment(project_id::Integer, status_id::Integer, name::AbstractString)::NamedTuple{id::Optional{<:Int64},status::UpsertResult}
 
 Create a [`Experiment`](@ref).

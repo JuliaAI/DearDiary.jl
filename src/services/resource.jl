@@ -25,6 +25,24 @@ An array of [`Resource`](@ref) objects.
 get_resources(experiment_id::Integer)::Array{Resource,1} = fetch_all(Resource, experiment_id)
 
 """
+    get_resources(experiment_id::Integer, page::Pagination)::PaginatedResponse{Resource}
+
+Get a page of [`Resource`](@ref) records for an experiment, with `total` count populated.
+
+# Arguments
+- `experiment_id::Integer`: The id of the experiment to query.
+- `page::Pagination`: The page bounds (limit + offset).
+
+# Returns
+A [`PaginatedResponse`](@ref) of `Resource`.
+"""
+function get_resources(
+    experiment_id::Integer, page::Pagination,
+)::PaginatedResponse{Resource}
+    return fetch_page(Resource, experiment_id, page)
+end
+
+"""
     create_resource(experiment_id::Integer, name::AbstractString, data::AbstractArray{UInt8,1})::NamedTuple{id::Optional{<:Int64},status::UpsertResult}
 
 Create a new [`Resource`](@ref) record.

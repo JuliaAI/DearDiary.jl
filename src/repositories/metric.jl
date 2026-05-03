@@ -11,6 +11,19 @@ function fetch_all(::Type{<:Metric}, iteration_id::Integer)::Array{Metric,1}
     return metrics .|> Metric
 end
 
+function fetch_page(
+    ::Type{<:Metric}, iteration_id::Integer, page::Pagination,
+)::PaginatedResponse{Metric}
+    paged = fetch_page(
+        SQL_SELECT_METRICS_BY_ITERATION_ID,
+        SQL_COUNT_METRICS_BY_ITERATION_ID;
+        parameters=(id=iteration_id,), page=page,
+    )
+    return PaginatedResponse{Metric}(
+        paged.rows .|> Metric, paged.total, page.limit, page.offset,
+    )
+end
+
 function insert(
     ::Type{<:Metric}, iteration_id::Integer, key::AbstractString, value::AbstractFloat
 )::@NamedTuple{id::Optional{<:Int64}, status::UpsertResult}

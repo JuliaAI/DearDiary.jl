@@ -178,5 +178,31 @@
             experiment = experiment_id |> DearDiary.get_experiment
             @test (experiment |> DearDiary.get_project_id) == project_id
         end
+
+        @testset verbose = true "get experiments paginated" begin
+            user = DearDiary.get_user("default")
+            project_id, _ = DearDiary.create_project(user.id, "Pagination Project")
+            for i in 1:5
+                DearDiary.create_experiment(
+                    project_id, DearDiary.IN_PROGRESS, "Exp $(i)",
+                )
+            end
+
+            page = DearDiary.get_experiments(project_id, DearDiary.Pagination(2, 0))
+            @test page isa DearDiary.PaginatedResponse{DearDiary.Experiment}
+            @test (page.data |> length) == 2
+            @test page.total == 5
+            @test page.limit == 2
+            @test page.offset == 0
+
+            page2 = DearDiary.get_experiments(project_id, DearDiary.Pagination(2, 2))
+            @test (page2.data |> length) == 2
+            @test page2.offset == 2
+            @test page.data[1].id != page2.data[1].id
+
+            beyond = DearDiary.get_experiments(project_id, DearDiary.Pagination(10, 99))
+            @test beyond.data |> isempty
+            @test beyond.total == 5
+        end
     end
 end

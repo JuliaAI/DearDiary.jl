@@ -16,6 +16,10 @@ const SQL_SELECT_METRICS_BY_ITERATION_ID = """
     FROM metric p WHERE p.iteration_id = :id
     """
 
+const SQL_COUNT_METRICS_BY_ITERATION_ID = """
+    SELECT COUNT(*) AS count FROM metric WHERE iteration_id = :id
+    """
+
 const SQL_INSERT_METRIC = """
     INSERT INTO metric (iteration_id, key, value)
         VALUES (:iteration_id, :key, :value) RETURNING id

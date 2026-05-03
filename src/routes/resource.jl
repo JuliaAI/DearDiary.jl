@@ -25,8 +25,9 @@ function setup_resource_routes()
 
     @get root("/experiment/{experiment_id}", middleware=[
         ProjectPermissionRequiredMiddleware(Resource, ReadPermission),
-    ]) function (::HTTP.Request, experiment_id::Integer)
-        return json((experiment_id |> get_resources); status=HTTP.StatusCodes.OK)
+    ]) function (request::HTTP.Request, experiment_id::Integer)
+        page = request |> parse_pagination
+        return json(get_resources(experiment_id, page); status=HTTP.StatusCodes.OK)
     end
 
     @post root("/experiment/{experiment_id}", middleware=[

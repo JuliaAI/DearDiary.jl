@@ -21,6 +21,10 @@ const SQL_SELECT_RESOURCES_BY_EXPERIMENT_ID = """
     FROM resource r WHERE r.experiment_id = :id
     """
 
+const SQL_COUNT_RESOURCES_BY_EXPERIMENT_ID = """
+    SELECT COUNT(*) AS count FROM resource WHERE experiment_id = :id
+    """
+
 const SQL_INSERT_RESOURCE = """
     INSERT INTO resource (experiment_id, name, data, created_date)
         VALUES (:experiment_id, :name, :data, :created_date) RETURNING id

@@ -56,6 +56,38 @@ A marker abstract type for upsert types.
 """
 abstract type UpsertType end
 
+"""
+    Pagination
+
+Cursor for windowing a collection of records.
+
+Fields
+- `limit::Int64`: Maximum number of records to return (capped at the route boundary).
+- `offset::Int64`: Number of records to skip before the page starts.
+"""
+struct Pagination
+    limit::Int64
+    offset::Int64
+end
+
+"""
+    PaginatedResponse{T} <: ResultType
+
+Envelope returned by paginated list endpoints.
+
+Fields
+- `data::Array{T,1}`: The records in this page.
+- `total::Int64`: Total number of matching records (across all pages).
+- `limit::Int64`: The page size used.
+- `offset::Int64`: The offset used.
+"""
+struct PaginatedResponse{T} <: ResultType
+    data::Array{T,1}
+    total::Int64
+    limit::Int64
+    offset::Int64
+end
+
 abstract type KeyConversionTrait end
 struct WithSymbolKeys <: KeyConversionTrait end
 struct WithStringKeys <: KeyConversionTrait end

@@ -53,6 +53,52 @@ function fetch_all(
 end
 
 """
+    fetch_count(query::AbstractString; parameters::NamedTuple=(;))::Int64
+
+Run a `SELECT COUNT(*) AS count FROM ...` query and return the integer count.
+
+# Arguments
+- `query::AbstractString`: The COUNT query to execute.
+- `parameters::NamedTuple`: The query parameters.
+
+# Returns
+The count value, or `0` if the query returns no rows.
+"""
+function fetch_count(query::AbstractString; parameters::NamedTuple=(;))::Int64
+    row = fetch(query, parameters)
+    return row |> isnothing ? 0 : Int64(row[:count])
+end
+
+"""
+    fetch_page(select_query, count_query; parameters, page::Pagination)::@NamedTuple{rows, total}
+
+Execute a SELECT (with `LIMIT :limit OFFSET :offset` appended) and a matching COUNT in one
+shot. The page-bounded rows and total count are returned as raw dictionaries; concrete entity
+overloads typically wrap these into a [`PaginatedResponse`](@ref).
+
+# Arguments
+- `select_query::AbstractString`: SELECT query without `LIMIT`/`OFFSET`. The helper appends them.
+- `count_query::AbstractString`: COUNT query that filters by the same parameters.
+- `parameters::NamedTuple`: Filter parameters shared by both queries.
+- `page::Pagination`: Page bounds.
+
+# Returns
+A NamedTuple `(rows::Array{Dict{Symbol,Any},1}, total::Int64)`.
+"""
+function fetch_page(
+    select_query::AbstractString,
+    count_query::AbstractString;
+    parameters::NamedTuple=(;),
+    page::Pagination,
+)::@NamedTuple{rows::Array{Dict{Symbol,Any},1}, total::Int64}
+    paged_query = select_query * " LIMIT :limit OFFSET :offset"
+    paged_params = merge(parameters, (limit=page.limit, offset=page.offset))
+    rows = fetch_all(paged_query; parameters=paged_params)
+    total = fetch_count(count_query; parameters=parameters)
+    return (rows=rows, total=total)
+end
+
+"""
     insert(query::AbstractString, parameters::NamedTuple)::NamedTuple{id::Optional{<:Int64},status::UpsertResult}
 
 Insert a record into the database.

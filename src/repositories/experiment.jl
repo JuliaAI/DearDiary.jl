@@ -11,6 +11,19 @@ function fetch_all(::Type{<:Experiment}, project_id::Integer)::Array{Experiment,
     return experiments .|> Experiment
 end
 
+function fetch_page(
+    ::Type{<:Experiment}, project_id::Integer, page::Pagination,
+)::PaginatedResponse{Experiment}
+    paged = fetch_page(
+        SQL_SELECT_EXPERIMENTS_BY_PROJECT_ID,
+        SQL_COUNT_EXPERIMENTS_BY_PROJECT_ID;
+        parameters=(id=project_id,), page=page,
+    )
+    return PaginatedResponse{Experiment}(
+        paged.rows .|> Experiment, paged.total, page.limit, page.offset,
+    )
+end
+
 function insert(
     ::Type{<:Experiment}, project_id::Integer, status_id::Integer, name::AbstractString
 )::@NamedTuple{id::Optional{<:Int64}, status::UpsertResult}

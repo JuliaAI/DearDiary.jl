@@ -11,6 +11,19 @@ function fetch_all(::Type{<:Parameter}, iteration_id::Integer)::Array{Parameter,
     return parameters .|> Parameter
 end
 
+function fetch_page(
+    ::Type{<:Parameter}, iteration_id::Integer, page::Pagination,
+)::PaginatedResponse{Parameter}
+    paged = fetch_page(
+        SQL_SELECT_PARAMETERS_BY_ITERATION_ID,
+        SQL_COUNT_PARAMETERS_BY_ITERATION_ID;
+        parameters=(id=iteration_id,), page=page,
+    )
+    return PaginatedResponse{Parameter}(
+        paged.rows .|> Parameter, paged.total, page.limit, page.offset,
+    )
+end
+
 function insert(
     ::Type{<:Parameter}, iteration_id::Integer, key::AbstractString, value::AbstractString
 )::@NamedTuple{id::Optional{<:Int64}, status::UpsertResult}

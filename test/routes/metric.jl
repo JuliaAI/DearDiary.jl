@@ -71,8 +71,11 @@
             )
 
             @test response.status == HTTP.StatusCodes.OK
-            data = JSON.parse(response.body |> String, Array{Dict{String,Any},1})
-            metrics = data .|> DearDiary.Metric
+            data = JSON.parse(response.body |> String, Dict{String,Any})
+            @test data["total"] == 2
+            @test data["limit"] == 50
+            @test data["offset"] == 0
+            metrics = data["data"] .|> DearDiary.Metric
 
             @test metrics isa Array{DearDiary.Metric,1}
             @test (metrics |> length) == 2

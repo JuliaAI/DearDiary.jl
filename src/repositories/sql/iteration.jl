@@ -18,6 +18,10 @@ const SQL_SELECT_ITERATIONS_BY_EXPERIMENT_ID = """
     FROM iteration i WHERE i.experiment_id = :id
     """
 
+const SQL_COUNT_ITERATIONS_BY_EXPERIMENT_ID = """
+    SELECT COUNT(*) AS count FROM iteration WHERE experiment_id = :id
+    """
+
 const SQL_INSERT_ITERATION = """
     INSERT INTO iteration (experiment_id, created_date)
         VALUES (:experiment_id, :created_date) RETURNING id

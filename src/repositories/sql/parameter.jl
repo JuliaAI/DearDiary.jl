@@ -16,6 +16,10 @@ const SQL_SELECT_PARAMETERS_BY_ITERATION_ID = """
     FROM parameter p WHERE p.iteration_id = :id
     """
 
+const SQL_COUNT_PARAMETERS_BY_ITERATION_ID = """
+    SELECT COUNT(*) AS count FROM parameter WHERE iteration_id = :id
+    """
+
 const SQL_INSERT_PARAMETER = """
     INSERT INTO parameter (iteration_id, key, value)
         VALUES (:iteration_id, :key, :value) RETURNING id

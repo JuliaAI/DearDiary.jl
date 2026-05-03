@@ -60,11 +60,62 @@
             )
 
             @test response.status == HTTP.StatusCodes.OK
-            data = JSON.parse(response.body |> String, Array{Dict{String,Any},1})
-            experiments = data .|> DearDiary.Experiment
+            data = JSON.parse(response.body |> String, Dict{String,Any})
+            @test data["total"] == 2
+            @test data["limit"] == 50
+            @test data["offset"] == 0
+            experiments = data["data"] .|> DearDiary.Experiment
 
             @test experiments isa Array{DearDiary.Experiment,1}
             @test (experiments |> length) == 2
+
+            @testset "limit / offset pagination" begin
+                page1 = HTTP.get(
+                    "http://127.0.0.1:9000/experiment/project/1?limit=1&offset=0";
+                    status_exception=false,
+                )
+                p1 = JSON.parse(page1.body |> String, Dict{String,Any})
+                @test (p1["data"] |> length) == 1
+                @test p1["total"] == 2
+                @test p1["limit"] == 1
+                @test p1["offset"] == 0
+
+                page2 = HTTP.get(
+                    "http://127.0.0.1:9000/experiment/project/1?limit=1&offset=1";
+                    status_exception=false,
+                )
+                p2 = JSON.parse(page2.body |> String, Dict{String,Any})
+                @test (p2["data"] |> length) == 1
+                @test p2["offset"] == 1
+                @test p1["data"][1]["id"] != p2["data"][1]["id"]
+
+                empty_page = HTTP.get(
+                    "http://127.0.0.1:9000/experiment/project/1?limit=10&offset=99";
+                    status_exception=false,
+                )
+                ep = JSON.parse(empty_page.body |> String, Dict{String,Any})
+                @test ep["data"] |> isempty
+                @test ep["total"] == 2
+            end
+
+            @testset "max_limit cap" begin
+                response = HTTP.get(
+                    "http://127.0.0.1:9000/experiment/project/1?limit=99999";
+                    status_exception=false,
+                )
+                data = JSON.parse(response.body |> String, Dict{String,Any})
+                @test data["limit"] == 200
+            end
+
+            @testset "invalid limit / offset fall back to defaults" begin
+                response = HTTP.get(
+                    "http://127.0.0.1:9000/experiment/project/1?limit=abc&offset=-5";
+                    status_exception=false,
+                )
+                data = JSON.parse(response.body |> String, Dict{String,Any})
+                @test data["limit"] == 50
+                @test data["offset"] == 0
+            end
         end
 
         @testset verbose = true "update experiment" begin

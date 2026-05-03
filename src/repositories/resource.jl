@@ -11,6 +11,19 @@ function fetch_all(::Type{<:Resource}, experiment_id::Integer)::Array{Resource,1
     return resources .|> Resource
 end
 
+function fetch_page(
+    ::Type{<:Resource}, experiment_id::Integer, page::Pagination,
+)::PaginatedResponse{Resource}
+    paged = fetch_page(
+        SQL_SELECT_RESOURCES_BY_EXPERIMENT_ID,
+        SQL_COUNT_RESOURCES_BY_EXPERIMENT_ID;
+        parameters=(id=experiment_id,), page=page,
+    )
+    return PaginatedResponse{Resource}(
+        paged.rows .|> Resource, paged.total, page.limit, page.offset,
+    )
+end
+
 function insert(
     ::Type{<:Resource},
     experiment_id::Integer,

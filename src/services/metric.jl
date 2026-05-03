@@ -25,6 +25,24 @@ An array of [`Metric`](@ref) objects.
 get_metrics(iteration_id::Integer)::Array{Metric,1} = fetch_all(Metric, iteration_id)
 
 """
+    get_metrics(iteration_id::Integer, page::Pagination)::PaginatedResponse{Metric}
+
+Get a page of [`Metric`](@ref) records for an iteration, with `total` count populated.
+
+# Arguments
+- `iteration_id::Integer`: The id of the iteration to query.
+- `page::Pagination`: The page bounds (limit + offset).
+
+# Returns
+A [`PaginatedResponse`](@ref) of `Metric`.
+"""
+function get_metrics(
+    iteration_id::Integer, page::Pagination,
+)::PaginatedResponse{Metric}
+    return fetch_page(Metric, iteration_id, page)
+end
+
+"""
     create_metric(iteration_id::Integer, key::AbstractString, value::AbstractFloat)::NamedTuple{id::Optional{<:Int64},status::UpsertResult}
 
 Create a [`Metric`](@ref).

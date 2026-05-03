@@ -93,6 +93,41 @@ function SameUserOrAdminRequiredMiddleware(handle::Function)::Function
 end
 
 """
+    parse_pagination(request::HTTP.Request; default_limit::Integer=50, max_limit::Integer=200)::Pagination
+
+Read `?limit=` and `?offset=` from the request's query string and produce a [`Pagination`](@ref).
+
+Missing parameters fall back to the defaults; non-integer or negative values are clamped to the
+nearest valid bound. `limit` is capped at `max_limit` so a client can't request unbounded pages.
+
+# Arguments
+- `request::HTTP.Request`: The incoming request.
+- `default_limit::Integer`: Default page size when `?limit=` is not provided.
+- `max_limit::Integer`: Hard cap on the requested page size.
+
+# Returns
+A [`Pagination`](@ref) bounded to non-negative offset and `[0, max_limit]` limit.
+"""
+function parse_pagination(
+    request::HTTP.Request; default_limit::Integer=50, max_limit::Integer=200,
+)::Pagination
+    qp = request |> queryparams
+    limit = if haskey(qp, "limit")
+        parsed = tryparse(Int64, qp["limit"])
+        parsed |> isnothing ? default_limit : min(max(0, parsed), max_limit)
+    else
+        default_limit
+    end
+    offset = if haskey(qp, "offset")
+        parsed = tryparse(Int64, qp["offset"])
+        parsed |> isnothing ? 0 : max(0, parsed)
+    else
+        0
+    end
+    return Pagination(limit, offset)
+end
+
+"""
     path_segments(request::HTTP.Request)::Vector{String}
 
 Return the URL path segments of `request`, stripped of any query string.

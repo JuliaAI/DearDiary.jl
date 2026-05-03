@@ -17,6 +17,42 @@ function get_userpermission(
 end
 
 """
+    get_userpermissions(::Type{<:Project}, project_id::Integer)::Array{UserPermission,1}
+
+List every [`UserPermission`](@ref) record granting access to the given [`Project`](@ref).
+
+# Arguments
+- `::Type{<:Project}`: Dispatch tag selecting the project-scoped listing.
+- `project_id::Integer`: The project whose members are being listed.
+
+# Returns
+An array of [`UserPermission`](@ref) records (possibly empty).
+"""
+function get_userpermissions(
+    ::Type{<:Project}, project_id::Integer,
+)::Array{UserPermission,1}
+    return fetch_all(UserPermission, Project, project_id)
+end
+
+"""
+    get_userpermissions(::Type{<:User}, user_id::Integer)::Array{UserPermission,1}
+
+List every [`UserPermission`](@ref) record held by the given [`User`](@ref).
+
+# Arguments
+- `::Type{<:User}`: Dispatch tag selecting the user-scoped listing.
+- `user_id::Integer`: The user whose project memberships are being listed.
+
+# Returns
+An array of [`UserPermission`](@ref) records (possibly empty).
+"""
+function get_userpermissions(
+    ::Type{<:User}, user_id::Integer,
+)::Array{UserPermission,1}
+    return fetch_all(UserPermission, User, user_id)
+end
+
+"""
     create_userpermission(user_id::Integer, project_id::Integer, create_permission::Bool, read_permission::Bool, update_permission::Bool, delete_permission::Bool)::NamedTuple{id::Optional{<:Int64},status::UpsertResult}
 
 Create a [`UserPermission`](@ref).

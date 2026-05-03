@@ -11,7 +11,7 @@ const SQL_SELECT_USERPERMISSION_BY_ID = """
     """
 
 const SQL_SELECT_USERPERMISSION_BY_USERID_AND_PROJECT_ID = """
-    SELECT 
+    SELECT
         up.id,
         up.user_id,
         up.project_id,
@@ -20,6 +20,30 @@ const SQL_SELECT_USERPERMISSION_BY_USERID_AND_PROJECT_ID = """
         up.update_permission,
         up.delete_permission
     FROM user_permission up WHERE up.user_id = :user_id AND up.project_id = :project_id
+    """
+
+const SQL_SELECT_USERPERMISSIONS_BY_PROJECT_ID = """
+    SELECT
+        up.id,
+        up.user_id,
+        up.project_id,
+        up.create_permission,
+        up.read_permission,
+        up.update_permission,
+        up.delete_permission
+    FROM user_permission up WHERE up.project_id = :id
+    """
+
+const SQL_SELECT_USERPERMISSIONS_BY_USER_ID = """
+    SELECT
+        up.id,
+        up.user_id,
+        up.project_id,
+        up.create_permission,
+        up.read_permission,
+        up.update_permission,
+        up.delete_permission
+    FROM user_permission up WHERE up.user_id = :id
     """
 
 const SQL_INSERT_USERPERMISSION = """

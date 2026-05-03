@@ -25,6 +25,14 @@ function setup_project_routes()
         return json(get_projects(); status=HTTP.StatusCodes.OK)
     end
 
+    @get root("/{project_id}/members", middleware=[
+        ProjectPermissionRequiredMiddleware(UserPermission, ReadPermission),
+    ]) function (::HTTP.Request, project_id::Integer)
+        return json(
+            get_userpermissions(Project, project_id); status=HTTP.StatusCodes.OK,
+        )
+    end
+
     @post root("/", middleware=[AdminRequiredMiddleware]) function (
         request::HTTP.Request, parameters::Json{ProjectCreatePayload}
     )

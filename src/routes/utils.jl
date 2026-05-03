@@ -230,6 +230,13 @@ function get_project_id(::Type{Tag}, request::HTTP.Request)::Optional{Int64}
     return nothing
 end
 
+function get_project_id(::Type{UserPermission}, request::HTTP.Request)::Optional{Int64}
+    segments = request |> path_segments
+    (segments |> length) >= 2 || return nothing
+    segments[1] == "project" || return nothing
+    return tryparse(Int64, segments[2])
+end
+
 """
     ProjectPermissionRequiredMiddleware(::Type{T}, ::Type{A})::Function where {T, A<:PermissionAction}
 

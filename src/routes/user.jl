@@ -27,6 +27,12 @@ function setup_user_routes()
         return json(get_users() |> sanitize_user; status=HTTP.StatusCodes.OK)
     end
 
+    @get root("/{id}/permissions", middleware=[
+        SameUserOrAdminRequiredMiddleware,
+    ]) function (::HTTP.Request, id::Integer)
+        return json(get_userpermissions(User, id); status=HTTP.StatusCodes.OK)
+    end
+
     @post root("/", middleware=[AdminRequiredMiddleware]) function (
         ::HTTP.Request, parameters::Json{UserCreatePayload}
     )

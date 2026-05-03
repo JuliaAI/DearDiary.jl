@@ -13,6 +13,24 @@ function fetch(
     return (user_permission |> isnothing) ? nothing : (user_permission |> UserPermission)
 end
 
+function fetch_all(
+    ::Type{<:UserPermission}, ::Type{<:Project}, project_id::Integer,
+)::Array{UserPermission,1}
+    rows = fetch_all(
+        SQL_SELECT_USERPERMISSIONS_BY_PROJECT_ID; parameters=(id=project_id,),
+    )
+    return rows .|> UserPermission
+end
+
+function fetch_all(
+    ::Type{<:UserPermission}, ::Type{<:User}, user_id::Integer,
+)::Array{UserPermission,1}
+    rows = fetch_all(
+        SQL_SELECT_USERPERMISSIONS_BY_USER_ID; parameters=(id=user_id,),
+    )
+    return rows .|> UserPermission
+end
+
 function insert(
     ::Type{<:UserPermission}, user_id::Integer, project_id::Integer
 )::@NamedTuple{id::Optional{<:Int64}, status::UpsertResult}

@@ -72,7 +72,7 @@ include("routes/auth.jl")
 
 export get_user, get_users, create_user, update_user, delete_user, sanitize_user
 export get_project, get_projects, create_project, update_project, delete_project
-export get_userpermission, create_userpermission, update_userpermission, delete_userpermission
+export get_userpermission, get_userpermissions, create_userpermission, update_userpermission, delete_userpermission
 export get_experiment, get_experiments, create_experiment, update_experiment, delete_experiment
 export get_iteration, get_iterations, create_iteration, update_iteration, delete_iteration
 export get_parameter, get_parameters, create_parameter, update_parameter, delete_parameter

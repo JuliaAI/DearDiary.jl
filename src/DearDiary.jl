@@ -67,9 +67,10 @@ include("routes/iteration.jl")
 include("routes/parameter.jl")
 include("routes/metric.jl")
 include("routes/resource.jl")
+include("routes/tag.jl")
 include("routes/auth.jl")
 
-export get_user, get_users, create_user, update_user, delete_user
+export get_user, get_users, create_user, update_user, delete_user, sanitize_user
 export get_project, get_projects, create_project, update_project, delete_project
 export get_userpermission, create_userpermission, update_userpermission, delete_userpermission
 export get_experiment, get_experiments, create_experiment, update_experiment, delete_experiment
@@ -136,7 +137,8 @@ function AuthMiddleware(handler)
                     end
 
                     exp = get(payload, "exp", nothing)
-                    if exp |> isnothing || (exp isa Integer && exp < (now() |> Dates.value))
+                    now_unix = (now() |> datetime2unix |> floor) |> Int
+                    if exp |> isnothing || (exp isa Integer && exp < now_unix)
                         return json(
                             ("message" => "Token has expired"),
                             status=HTTP.StatusCodes.UNAUTHORIZED,
@@ -201,13 +203,21 @@ function run(; env_file::String=".env")
     setup_parameter_routes()
     setup_metric_routes()
     setup_resource_routes()
+    setup_tag_routes()
     setup_auth_routes()
 
+    cors = Cors(;
+        allowed_origins=_DEARDIARY_APICONFIG.cors_origins,
+        allowed_headers=["Authorization", "Content-Type"],
+        allowed_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+        allow_credentials=!("*" in _DEARDIARY_APICONFIG.cors_origins),
+        max_age=600,
+    )
     serveparallel(;
         host=_DEARDIARY_APICONFIG.host,
         port=_DEARDIARY_APICONFIG.port,
         async=true,
-        middleware=[AuthMiddleware],
+        middleware=[cors, AuthMiddleware],
     )
     @info "DearDiary server running on $(_DEARDIARY_APICONFIG.host):$(_DEARDIARY_APICONFIG.port)"
 end

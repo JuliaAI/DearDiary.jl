@@ -28,7 +28,8 @@
 
             @test response.status == HTTP.StatusCodes.OK
             data = JSON.parse(response.body |> String, Dict{String,Any})
-            user = data |> DearDiary.User
+            @test !haskey(data, "password")
+            user = data |> DearDiary.UserResponse
 
             @test user.id isa Int
             @test user.first_name == "Missy"
@@ -50,10 +51,11 @@
 
             @test response.status == HTTP.StatusCodes.OK
             data = JSON.parse(response.body |> String, Array{Dict{String,Any},1})
-            users = data .|> DearDiary.User
+            users = data .|> DearDiary.UserResponse
 
-            @test users isa Array{DearDiary.User,1}
+            @test users isa Array{DearDiary.UserResponse,1}
             @test (users |> length) == 3
+            @test all(d -> !haskey(d, "password"), data)
         end
 
         @testset verbose = true "update user" begin
@@ -78,7 +80,7 @@
                 status_exception=false,
             )
             data = JSON.parse(response.body |> String, Dict{String,Any})
-            user = data |> DearDiary.User
+            user = data |> DearDiary.UserResponse
 
             @test user.first_name == "Ana"
             @test user.last_name == "Gala"

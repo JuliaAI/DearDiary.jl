@@ -9,6 +9,18 @@ This function sets up the authentication-related routes for the API.
 function setup_auth_routes()
     root = router("/auth", tags=["auth"])
 
+    @get root("/me") function (request::HTTP.Request)
+        global _DEARDIARY_APICONFIG
+        if !_DEARDIARY_APICONFIG.enable_auth
+            request.context[:user] = get(
+                request.context, :user, get_user("default"),
+            )
+        end
+        return json(
+            (request.context[:user] |> sanitize_user); status=HTTP.StatusCodes.OK,
+        )
+    end
+
     @post root("/") function (::HTTP.Request, parameters::Json{UserLoginPayload})
         user = parameters.payload.username |> get_user
 
@@ -23,10 +35,11 @@ function setup_auth_routes()
             )
         end
 
+        expires_at = ((now() + Hour(1)) |> datetime2unix |> floor) |> Int
         claims = Dict(
             "sub" => user.username,
             "id" => user.id,
-            "exp" => (now() + Hour(1)) |> Dates.value,
+            "exp" => expires_at,
         )
         jwt = JWT(; payload=claims)
         global _DEARDIARY_APICONFIG
@@ -36,6 +49,14 @@ function setup_auth_routes()
         )
         sign!(jwt, key)
 
-        return json(jwt |> string; status=HTTP.StatusCodes.OK)
+        return json(
+            Dict(
+                "access_token" => (jwt |> string),
+                "token_type" => "Bearer",
+                "expires_at" => expires_at,
+                "user" => (user |> sanitize_user),
+            );
+            status=HTTP.StatusCodes.OK,
+        )
     end
 end

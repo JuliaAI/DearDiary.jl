@@ -131,3 +131,24 @@ function delete_user(id::Integer)::Bool
     delete(UserPermission, user)
     return delete(User, id)
 end
+
+"""
+    sanitize_user(user::User)::UserResponse
+    sanitize_user(users::AbstractArray{User,1})::Array{UserResponse,1}
+    sanitize_user(::Nothing)::Nothing
+
+Project a [`User`](@ref) (or array of them) into a [`UserResponse`](@ref) that omits the
+password hash, suitable for serializing in API responses.
+"""
+function sanitize_user(user::User)::UserResponse
+    return UserResponse(
+        user.id,
+        user.first_name,
+        user.last_name,
+        user.username,
+        user.created_date,
+        user.is_admin,
+    )
+end
+sanitize_user(users::AbstractArray{User,1})::Array{UserResponse,1} = users .|> sanitize_user
+sanitize_user(::Nothing)::Nothing = nothing

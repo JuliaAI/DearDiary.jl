@@ -15,6 +15,7 @@ function load_config(file::AbstractString)::APIConfig
     db_file = "deardiary.db"
     jwt_secret = "deardiary_secret"
     enable_auth = false
+    cors_origins = ["*"]
 
     if (file |> isfile)
         env_vars = Dict{String,String}()
@@ -40,6 +41,12 @@ function load_config(file::AbstractString)::APIConfig
         else
             enable_auth
         end
+
+        cors_origins = if haskey(env_vars, "DEARDIARY_CORS_ORIGINS")
+            split(env_vars["DEARDIARY_CORS_ORIGINS"], ',') .|> strip .|> string |> collect
+        else
+            cors_origins
+        end
     end
-    return APIConfig(host, port, db_file, jwt_secret, enable_auth)
+    return APIConfig(host, port, db_file, jwt_secret, enable_auth, cors_origins)
 end

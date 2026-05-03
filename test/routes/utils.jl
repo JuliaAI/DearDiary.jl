@@ -24,7 +24,7 @@
                     body=payload,
                     status_exception=false,
                 )
-                token = JSON.parse(response.body |> String)
+                token = JSON.parse(response.body |> String, Dict{String,Any})["access_token"]
 
                 create_payload = Dict(
                     "first_name" => "Missy",
@@ -51,7 +51,7 @@
                     body=payload,
                     status_exception=false,
                 )
-                token = JSON.parse(response.body |> String)
+                token = JSON.parse(response.body |> String, Dict{String,Any})["access_token"]
 
                 create_payload = Dict(
                     "first_name" => "Choclo",
@@ -69,6 +69,62 @@
             end
         end
 
+        @testset verbose = true "same-user-or-admin middleware" begin
+            missy_token = JSON.parse(
+                HTTP.post(
+                    "http://127.0.0.1:9000/auth";
+                    body=(
+                        Dict("username" => "missy", "password" => "gala") |> JSON.json
+                    ),
+                    status_exception=false,
+                ).body |> String,
+                Dict{String,Any},
+            )["access_token"]
+            missy = DearDiary.get_user("missy")
+            missy_headers = Dict("Authorization" => "Bearer $missy_token")
+
+            @testset "user can read own profile" begin
+                response = HTTP.get(
+                    "http://127.0.0.1:9000/user/$(missy.id)";
+                    headers=missy_headers,
+                    status_exception=false,
+                )
+                @test response.status == HTTP.StatusCodes.OK
+                data = JSON.parse(response.body |> String, Dict{String,Any})
+                @test data["username"] == "missy"
+                @test !haskey(data, "password")
+            end
+
+            @testset "user cannot read another user's profile" begin
+                response = HTTP.get(
+                    "http://127.0.0.1:9000/user/1";
+                    headers=missy_headers,
+                    status_exception=false,
+                )
+                @test response.status == HTTP.StatusCodes.FORBIDDEN
+            end
+
+            @testset "admin can read any profile" begin
+                admin_token = JSON.parse(
+                    HTTP.post(
+                        "http://127.0.0.1:9000/auth";
+                        body=(
+                            Dict("username" => "default", "password" => "default") |> JSON.json
+                        ),
+                        status_exception=false,
+                    ).body |> String,
+                    Dict{String,Any},
+                )["access_token"]
+
+                response = HTTP.get(
+                    "http://127.0.0.1:9000/user/$(missy.id)";
+                    headers=Dict("Authorization" => "Bearer $admin_token"),
+                    status_exception=false,
+                )
+                @test response.status == HTTP.StatusCodes.OK
+            end
+        end
+
         @testset verbose = true "project permission middleware" begin
             admin_token = JSON.parse(
                 HTTP.post(
@@ -78,7 +134,8 @@
                     ),
                     status_exception=false,
                 ).body |> String,
-            )
+                Dict{String,Any},
+            )["access_token"]
             admin_headers = Dict("Authorization" => "Bearer $admin_token")
 
             project_response = HTTP.post(
@@ -115,7 +172,8 @@
                     ),
                     status_exception=false,
                 ).body |> String,
-            )
+                Dict{String,Any},
+            )["access_token"]
             user_headers = Dict("Authorization" => "Bearer $user_token")
 
             @testset "admin bypasses permission check" begin

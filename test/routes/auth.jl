@@ -31,6 +31,41 @@
             )
 
             @test response.status == HTTP.StatusCodes.OK
+            data = JSON.parse(response.body |> String, Dict{String,Any})
+            @test data["token_type"] == "Bearer"
+            @test data["access_token"] isa String
+            @test data["expires_at"] isa Int
+            @test data["user"]["username"] == "default"
+            @test !haskey(data["user"], "password")
+        end
+
+        @testset verbose = true "GET /auth/me" begin
+            payload = Dict("username" => "default", "password" => "default") |> JSON.json
+            login = HTTP.post(
+                "http://127.0.0.1:9000/auth";
+                body=payload,
+                status_exception=false,
+            )
+            token = JSON.parse(login.body |> String, Dict{String,Any})["access_token"]
+
+            response = HTTP.get(
+                "http://127.0.0.1:9000/auth/me";
+                headers=Dict("Authorization" => "Bearer $token"),
+                status_exception=false,
+            )
+
+            @test response.status == HTTP.StatusCodes.OK
+            data = JSON.parse(response.body |> String, Dict{String,Any})
+            @test data["username"] == "default"
+            @test data["is_admin"] == true
+            @test !haskey(data, "password")
+        end
+
+        @testset verbose = true "GET /auth/me without token" begin
+            response = HTTP.get(
+                "http://127.0.0.1:9000/auth/me"; status_exception=false,
+            )
+            @test response.status == HTTP.StatusCodes.UNAUTHORIZED
         end
 
         @testset verbose = true "without authorization header" begin
@@ -51,7 +86,7 @@
                     status_exception=false,
                 )
 
-                token = JSON.parse(response.body |> String)
+                token = JSON.parse(response.body |> String, Dict{String,Any})["access_token"]
 
                 response = HTTP.get(
                     "http://127.0.0.1:9000/user/1";
@@ -79,7 +114,7 @@
                 claims = Dict(
                     "sub" => "default",
                     "id" => 1,
-                    "exp" => (now() + Hour(1)) |> Dates.value,
+                    "exp" => ((now() + Hour(1)) |> datetime2unix |> floor) |> Int,
                 )
                 jwt = JWT(; payload=claims)
                 key = JWKSymmetric(JWTs.MD_SHA256, "incorrect secret" |> Array{UInt8,1})
@@ -119,7 +154,7 @@
                 claims = Dict(
                     "sub" => "default",
                     "id" => 1,
-                    "exp" => (now() - Hour(1)) |> Dates.value,
+                    "exp" => ((now() - Hour(1)) |> datetime2unix |> floor) |> Int,
                 )
                 jwt = JWT(; payload=claims)
                 key = JWKSymmetric(
@@ -143,7 +178,7 @@
                 claims = Dict(
                     "sub" => "default",
                     "id" => "one",
-                    "exp" => (now() + Hour(1)) |> Dates.value,
+                    "exp" => ((now() + Hour(1)) |> datetime2unix |> floor) |> Int,
                 )
                 jwt = JWT(; payload=claims)
                 key = JWKSymmetric(
@@ -167,7 +202,7 @@
                 claims = Dict(
                     "sub" => "default",
                     "id" => 0,
-                    "exp" => (now() + Hour(1)) |> Dates.value,
+                    "exp" => ((now() + Hour(1)) |> datetime2unix |> floor) |> Int,
                 )
                 jwt = JWT(; payload=claims)
                 key = JWKSymmetric(
@@ -191,7 +226,7 @@
                 claims = Dict(
                     "sub" => "default",
                     "id" => 9999,
-                    "exp" => (now() + Hour(1)) |> Dates.value,
+                    "exp" => ((now() + Hour(1)) |> datetime2unix |> floor) |> Int,
                 )
                 jwt = JWT(; payload=claims)
                 key = JWKSymmetric(

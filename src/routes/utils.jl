@@ -58,17 +58,31 @@ end
     SameUserOrAdminRequiredMiddleware(handle::Function)::Function
 
 A middleware function to enforce that the indicated user is the same user making the request, or that the user has administrative privileges.
+
+Reads the target user id from the URL path (`/user/{id}`) using [`path_segments`](@ref),
+because Oxygen binds `request.context[:params]` only when the registered handler runs —
+after route-level middleware.
 """
 function SameUserOrAdminRequiredMiddleware(handle::Function)::Function
     function (request::HTTP.Request)
         global _DEARDIARY_APICONFIG
         if _DEARDIARY_APICONFIG.enable_auth
             user = request.context[:user]
-            if !user.is_admin && user.id != (request|>queryparams)[:id]
-                return json(
-                    ("message" => "Same user required");
-                    status=HTTP.StatusCodes.FORBIDDEN,
-                )
+            if !user.is_admin
+                segments = request |> path_segments
+                target_id = (segments |> length) >= 2 ? tryparse(Int64, segments[2]) : nothing
+                if target_id |> isnothing
+                    return json(
+                        ("message" => (HTTP.StatusCodes.NOT_FOUND |> HTTP.statustext));
+                        status=HTTP.StatusCodes.NOT_FOUND,
+                    )
+                end
+                if user.id != target_id
+                    return json(
+                        ("message" => "Same user required");
+                        status=HTTP.StatusCodes.FORBIDDEN,
+                    )
+                end
             end
         else
             @warn "Authentication is disabled. Handlers will be injected with the default admin user."
@@ -194,6 +208,26 @@ function get_project_id(::Type{Resource}, request::HTTP.Request)::Optional{Int64
     resource_id |> isnothing && return nothing
     resource = resource_id |> get_resource
     return resource |> isnothing ? nothing : (resource |> get_project_id)
+end
+
+function get_project_id(::Type{Tag}, request::HTTP.Request)::Optional{Int64}
+    segments = request |> path_segments
+    (segments |> length) >= 3 || return nothing
+
+    parent_kind = segments[2]
+    parent_id = tryparse(Int64, segments[3])
+    parent_id |> isnothing && return nothing
+
+    parent_kind == "project" && return parent_id
+    if parent_kind == "experiment"
+        experiment = parent_id |> get_experiment
+        return experiment |> isnothing ? nothing : (experiment |> get_project_id)
+    end
+    if parent_kind == "iteration"
+        iteration = parent_id |> get_iteration
+        return iteration |> isnothing ? nothing : (iteration |> get_project_id)
+    end
+    return nothing
 end
 
 """

@@ -20,11 +20,11 @@ function setup_user_routes()
                 status=HTTP.StatusCodes.NOT_FOUND,
             )
         end
-        return json(response_user; status=HTTP.StatusCodes.OK)
+        return json(response_user |> sanitize_user; status=HTTP.StatusCodes.OK)
     end
 
     @get root("/", middleware=[AdminRequiredMiddleware]) function (::HTTP.Request)
-        return json(get_users(); status=HTTP.StatusCodes.OK)
+        return json(get_users() |> sanitize_user; status=HTTP.StatusCodes.OK)
     end
 
     @post root("/", middleware=[AdminRequiredMiddleware]) function (

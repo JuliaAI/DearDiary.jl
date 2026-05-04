@@ -22,6 +22,28 @@ An array of [`Project`](@ref) objects.
 get_projects()::Array{Project,1} = Project |> fetch_all
 
 """
+    get_projects(user::User)::Array{Project,1}
+
+Return the projects visible to `user`.
+
+Admins see every project. Non-admins see only projects where they have a [`UserPermission`](@ref)
+record with [`ReadPermission`](@ref) granted; projects without a matching permission row are
+omitted entirely so the dashboard never shows cards the viewer cannot open.
+
+# Arguments
+- `user::User`: The viewer.
+
+# Returns
+An array of [`Project`](@ref) objects scoped to the user's read access.
+"""
+function get_projects(user::User)::Array{Project,1}
+    user.is_admin && return get_projects()
+    permissions = get_userpermissions(User, user.id)
+    readable_ids = Set(p.project_id for p in permissions if p.read_permission)
+    return [p for p in get_projects() if p.id in readable_ids]
+end
+
+"""
     create_project(user_id::Integer, name::AbstractString)::NamedTuple{id::Optional{<:Int64},status::DataType}
 
 Create a [`Project`](@ref).

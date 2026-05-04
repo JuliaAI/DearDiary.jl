@@ -9,7 +9,9 @@ This function sets up the project-related routes for the API.
 function setup_project_routes()
     root = router("/project", tags=["project"])
 
-    @get root("/{id}") function (::HTTP.Request, id::Integer)
+    @get root("/{id}", middleware=[
+        ProjectPermissionRequiredMiddleware(Project, ReadPermission),
+    ]) function (::HTTP.Request, id::Integer)
         response_project = id |> get_project
 
         if (response_project |> isnothing)
@@ -21,8 +23,17 @@ function setup_project_routes()
         return json(response_project; status=HTTP.StatusCodes.OK)
     end
 
-    @get root("/") function (::HTTP.Request)
-        return json(get_projects(); status=HTTP.StatusCodes.OK)
+    @get root("/") function (request::HTTP.Request)
+        global _DEARDIARY_APICONFIG
+        # Viewer scoping: admins see every project; non-admins only those with
+        # `read_permission`. When auth is disabled the default admin user is
+        # assumed, matching the convention used by the permission middlewares.
+        viewer = if _DEARDIARY_APICONFIG.enable_auth
+            request.context[:user]
+        else
+            get(request.context, :user, get_user("default"))
+        end
+        return json(get_projects(viewer); status=HTTP.StatusCodes.OK)
     end
 
     @get root("/{project_id}/members", middleware=[

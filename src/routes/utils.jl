@@ -222,6 +222,12 @@ entity hierarchy via the service-layer [`get_project_id`](@ref) overloads.
 The owning project id, or `nothing` if it cannot be resolved (URL does not match a known
 pattern, malformed id, or an ancestor record that no longer exists).
 """
+function get_project_id(::Type{Project}, request::HTTP.Request)::Optional{Int64}
+    segments = request |> path_segments
+    (segments |> length) >= 2 || return nothing
+    return tryparse(Int64, segments[2])
+end
+
 function get_project_id(::Type{Experiment}, request::HTTP.Request)::Optional{Int64}
     segments = request |> path_segments
     n = segments |> length

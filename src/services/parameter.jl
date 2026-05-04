@@ -66,6 +66,11 @@ function create_parameter(
         return (id=nothing, status=Unprocessable)
     end
 
+    # Ended iterations are immutable.
+    if !(iteration.end_date |> isnothing)
+        return (id=nothing, status=Unprocessable)
+    end
+
     parameter_id, parameter_upsert_result = insert(Parameter, iteration_id, key, value)
     if !(parameter_upsert_result === Created)
         return (id=nothing, status=parameter_upsert_result)
@@ -114,6 +119,12 @@ function update_parameter(
         return Unprocessable
     end
 
+    # Ended iterations are immutable.
+    iteration = parameter.iteration_id |> get_iteration
+    if !(iteration |> isnothing) && !(iteration.end_date |> isnothing)
+        return Unprocessable
+    end
+
     should_be_updated = compare_object_fields(parameter; key=key, value=value)
     if !should_be_updated
         return Updated
@@ -152,7 +163,20 @@ Delete a [`Parameter`](@ref) record.
 # Returns
 `true` if the record was successfully deleted, `false` otherwise.
 """
-delete_parameter(id::Integer)::Bool = delete(Parameter, id)
+function delete_parameter(id::Integer)::Bool
+    parameter = id |> get_parameter
+    if parameter |> isnothing
+        return false
+    end
+    iteration = parameter.iteration_id |> get_iteration
+    if !(iteration |> isnothing) && !(iteration.end_date |> isnothing)
+        # Ended iterations are immutable — refuse single-row deletes. The
+        # cascade path used by `delete_iteration` calls the bulk
+        # `delete_parameters(iteration)` helper instead.
+        return false
+    end
+    return delete(Parameter, id)
+end
 
 """
     delete_parameters(iteration::Iteration)::Bool

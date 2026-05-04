@@ -42,8 +42,23 @@ function update(
     name::Optional{AbstractString}=nothing,
     description::Optional{String}=nothing,
     end_date::Optional{DateTime}=nothing,
+    clear_end_date::Bool=false,
 )::Type{<:UpsertResult}
-    fields = (status_id=status_id, name=name, description=description, end_date=end_date)
+    # The column is TEXT — stringify so SQLite stores ISO text instead of a
+    # Julia-binary blob (which `sqldeserialize` can't read across versions).
+    # `clear_end_date=true` writes an empty string, which is how the row marks
+    # "no end date" (the column default) and is round-tripped to `nothing` by
+    # `type_from_dict`. It takes precedence over an explicit `end_date` value.
+    end_date_text = if clear_end_date
+        ""
+    elseif end_date |> isnothing
+        nothing
+    else
+        end_date |> string
+    end
+    fields = (
+        status_id=status_id, name=name, description=description, end_date=end_date_text,
+    )
     return update(SQL_UPDATE_EXPERIMENT, fetch(Experiment, id); fields...)
 end
 

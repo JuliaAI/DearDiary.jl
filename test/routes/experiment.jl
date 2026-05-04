@@ -45,7 +45,7 @@
 
         @testset verbose = true "get experiments" begin
             payload = Dict(
-                "status_id" => DearDiary.FINISHED |> Integer,
+                "status_id" => DearDiary.IN_PROGRESS |> Integer,
                 "name" => "Second Experiment",
             ) |> JSON.json
             HTTP.post(

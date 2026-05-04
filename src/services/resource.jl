@@ -64,6 +64,11 @@ function create_resource(
         return (id=nothing, status=Unprocessable)
     end
 
+    # Resources can only be uploaded against an `IN_PROGRESS` experiment.
+    if experiment.status_id != (IN_PROGRESS |> Integer)
+        return (id=nothing, status=Unprocessable)
+    end
+
     resource_id, resource_upsert_result = insert(Resource, experiment_id, name, data)
     if !(resource_upsert_result === Created)
         return (id=nothing, status=resource_upsert_result)

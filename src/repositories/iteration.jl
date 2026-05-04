@@ -39,7 +39,10 @@ function update(
     notes::Optional{AbstractString}=nothing,
     end_date::Optional{DateTime}=nothing,
 )::Type{<:UpsertResult}
-    fields = (notes=notes, end_date=end_date)
+    # The column is TEXT — stringify so SQLite stores ISO text instead of a
+    # Julia-binary blob (which `sqldeserialize` can't read across versions).
+    end_date_text = end_date |> isnothing ? nothing : (end_date |> string)
+    fields = (notes=notes, end_date=end_date_text)
     return update(SQL_UPDATE_ITERATION, fetch(Iteration, id); fields...)
 end
 

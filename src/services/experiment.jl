@@ -66,7 +66,9 @@ function create_experiment(
         return (id=nothing, status=Unprocessable)
     end
 
-    if !(status_id in (Status |> instances .|> Int))
+    # Experiments must always be created `IN_PROGRESS`. Transitioning to
+    # `STOPPED` or `FINISHED` happens later via `update_experiment`.
+    if status_id != (IN_PROGRESS |> Integer)
         return (id=nothing, status=Unprocessable)
     end
 
@@ -133,14 +135,22 @@ function update_experiment(
         return Unprocessable
     end
 
+    # Reopening: when an experiment transitions back to `IN_PROGRESS` and a
+    # previous `end_date` was recorded, that timestamp must be cleared — the
+    # experiment is once again live, so it has no end yet.
+    reopening = (
+        status_id == (IN_PROGRESS |> Integer) && !(experiment.end_date |> isnothing)
+    )
+    effective_end_date = reopening ? nothing : end_date
+
     should_be_updated = compare_object_fields(
         experiment;
         status_id=status_id,
         name=name,
         description=description,
-        end_date=end_date,
+        end_date=effective_end_date,
     )
-    if !should_be_updated
+    if !should_be_updated && !reopening
         return Updated
     end
 
@@ -149,7 +159,8 @@ function update_experiment(
         status_id=status_id,
         name=name,
         description=description,
-        end_date=end_date,
+        end_date=effective_end_date,
+        clear_end_date=reopening,
     )
 end
 

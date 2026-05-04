@@ -157,6 +157,10 @@ function add_tag(
     if iteration |> isnothing
         return (id=nothing, status=Unprocessable)
     end
+    # Ended iterations are immutable.
+    if !(iteration.end_date |> isnothing)
+        return (id=nothing, status=Unprocessable)
+    end
     return insert_tag(Iteration, iteration_id, tag_value)
 end
 

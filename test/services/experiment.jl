@@ -76,7 +76,7 @@
             )
             experiment_id2, _ = DearDiary.create_experiment(
                 project_id,
-                DearDiary.FINISHED,
+                DearDiary.IN_PROGRESS,
                 "Service Test Experiment 2",
             )
 

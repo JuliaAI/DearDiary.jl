@@ -64,6 +64,11 @@ function create_metric(
         return (id=nothing, status=Unprocessable)
     end
 
+    # Ended iterations are immutable.
+    if !(iteration.end_date |> isnothing)
+        return (id=nothing, status=Unprocessable)
+    end
+
     metric_id, metric_upsert_result = insert(Metric, iteration_id, key, value)
     if !(metric_upsert_result === Created)
         return (id=nothing, status=metric_upsert_result)
@@ -92,6 +97,12 @@ function update_metric(
         return Unprocessable
     end
 
+    # Ended iterations are immutable.
+    iteration = metric.iteration_id |> get_iteration
+    if !(iteration |> isnothing) && !(iteration.end_date |> isnothing)
+        return Unprocessable
+    end
+
     should_be_updated = compare_object_fields(metric; key=key, value=value)
     if !should_be_updated
         return Updated
@@ -111,7 +122,17 @@ Delete a [`Metric`](@ref) record.
 # Returns
 `true` if the record was successfully deleted, `false` otherwise.
 """
-delete_metric(id::Integer)::Bool = delete(Metric, id)
+function delete_metric(id::Integer)::Bool
+    metric = id |> get_metric
+    if metric |> isnothing
+        return false
+    end
+    iteration = metric.iteration_id |> get_iteration
+    if !(iteration |> isnothing) && !(iteration.end_date |> isnothing)
+        return false
+    end
+    return delete(Metric, id)
+end
 
 """
     delete_metrics(iteration::Iteration)::Bool

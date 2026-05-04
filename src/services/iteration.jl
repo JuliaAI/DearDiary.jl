@@ -64,6 +64,11 @@ function create_iteration(
         return (id=nothing, status=Unprocessable)
     end
 
+    # Only `IN_PROGRESS` experiments accept new iterations.
+    if experiment.status_id != (IN_PROGRESS |> Integer)
+        return (id=nothing, status=Unprocessable)
+    end
+
     iteration_id, iteration_upsert_result = insert(Iteration, experiment_id)
     if !(iteration_upsert_result === Created)
         return (id=nothing, status=iteration_upsert_result)
@@ -89,6 +94,11 @@ function update_iteration(
 )::Type{<:UpsertResult}
     iteration = id |> get_iteration
     if iteration |> isnothing
+        return Unprocessable
+    end
+
+    # Once an iteration has ended it is locked: no notes edit, no re-open.
+    if !(iteration.end_date |> isnothing)
         return Unprocessable
     end
 

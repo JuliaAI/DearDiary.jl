@@ -26,7 +26,7 @@ end
 
 function insert(
     ::Type{<:Iteration}, experiment_id::Integer
-)::@NamedTuple{id::Optional{<:Int64}, status::Type{<:UpsertResult}}
+)::@NamedTuple{id::Optional{<:Int64}, status::DataType}
     fields = (
         experiment_id=experiment_id,
         created_date=(now() |> string),

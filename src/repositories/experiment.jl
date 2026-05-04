@@ -26,7 +26,7 @@ end
 
 function insert(
     ::Type{<:Experiment}, project_id::Integer, status_id::Integer, name::AbstractString
-)::@NamedTuple{id::Optional{<:Int64}, status::Type{<:UpsertResult}}
+)::@NamedTuple{id::Optional{<:Int64}, status::DataType}
     fields = (
         project_id=project_id,
         status_id=status_id,

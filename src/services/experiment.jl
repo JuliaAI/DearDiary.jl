@@ -45,7 +45,7 @@ function get_experiments(
 end
 
 """
-    create_experiment(project_id::Integer, status_id::Integer, name::AbstractString)::NamedTuple{id::Optional{<:Int64},status::Type{<:UpsertResult}}
+    create_experiment(project_id::Integer, status_id::Integer, name::AbstractString)::NamedTuple{id::Optional{<:Int64},status::DataType}
 
 Create a [`Experiment`](@ref).
 
@@ -60,7 +60,7 @@ Create a [`Experiment`](@ref).
 """
 function create_experiment(
     project_id::Integer, status_id::Integer, name::AbstractString
-)::@NamedTuple{id::Optional{<:Int64}, status::Type{<:UpsertResult}}
+)::@NamedTuple{id::Optional{<:Int64}, status::DataType}
     project = project_id |> get_project
     if project |> isnothing
         return (id=nothing, status=Unprocessable)
@@ -83,7 +83,7 @@ function create_experiment(
 end
 
 """
-    create_experiment(project_id::Integer, status::Status, name::AbstractString)::NamedTuple{id::Optional{<:Int64},status::Type{<:UpsertResult}}
+    create_experiment(project_id::Integer, status::Status, name::AbstractString)::NamedTuple{id::Optional{<:Int64},status::DataType}
 
 Create a [`Experiment`](@ref).
 
@@ -98,7 +98,7 @@ Create a [`Experiment`](@ref).
 """
 function create_experiment(
     project_id::Integer, status::Status, name::AbstractString
-)::@NamedTuple{id::Optional{<:Int64}, status::Type{<:UpsertResult}}
+)::@NamedTuple{id::Optional{<:Int64}, status::DataType}
     return create_experiment(project_id, (status |> Integer), name)
 end
 

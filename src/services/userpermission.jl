@@ -53,7 +53,7 @@ function get_userpermissions(
 end
 
 """
-    create_userpermission(user_id::Integer, project_id::Integer, create_permission::Bool, read_permission::Bool, update_permission::Bool, delete_permission::Bool)::NamedTuple{id::Optional{<:Int64},status::Type{<:UpsertResult}}
+    create_userpermission(user_id::Integer, project_id::Integer, create_permission::Bool, read_permission::Bool, update_permission::Bool, delete_permission::Bool)::NamedTuple{id::Optional{<:Int64},status::DataType}
 
 Create a [`UserPermission`](@ref).
 
@@ -76,7 +76,7 @@ function create_userpermission(
     read_permission::Bool,
     update_permission::Bool,
     delete_permission::Bool,
-)::@NamedTuple{id::Optional{<:Int64}, status::Type{<:UpsertResult}}
+)::@NamedTuple{id::Optional{<:Int64}, status::DataType}
     user = user_id |> get_user
     if user |> isnothing
         return (id=nothing, status=Unprocessable)

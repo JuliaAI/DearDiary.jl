@@ -35,7 +35,7 @@ An array of [`User`](@ref) objects.
 get_users()::Array{User,1} = User |> fetch_all
 
 """
-    create_user(first_name::AbstractString, last_name::AbstractString, username::AbstractString, password::AbstractString)::NamedTuple{id::Optional{<:Int64},status::Type{<:UpsertResult}}
+    create_user(first_name::AbstractString, last_name::AbstractString, username::AbstractString, password::AbstractString)::NamedTuple{id::Optional{<:Int64},status::DataType}
 
 Create an [`User`](@ref).
 
@@ -54,7 +54,7 @@ function create_user(
     last_name::AbstractString,
     username::AbstractString,
     password::AbstractString,
-)::@NamedTuple{id::Optional{<:Int64}, status::Type{<:UpsertResult}}
+)::@NamedTuple{id::Optional{<:Int64}, status::DataType}
     return insert(
         User,
         first_name,

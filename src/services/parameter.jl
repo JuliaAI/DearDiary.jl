@@ -45,7 +45,7 @@ function get_parameters(
 end
 
 """
-    create_parameter(iteration_id::Integer, key::AbstractString, value::AbstractString)::NamedTuple{id::Optional{<:Int64},status::Type{<:UpsertResult}}
+    create_parameter(iteration_id::Integer, key::AbstractString, value::AbstractString)::NamedTuple{id::Optional{<:Int64},status::DataType}
 
 Create a [`Parameter`](@ref).
 
@@ -60,7 +60,7 @@ Create a [`Parameter`](@ref).
 """
 function create_parameter(
     iteration_id::Integer, key::AbstractString, value::AbstractString
-)::@NamedTuple{id::Optional{<:Int64}, status::Type{<:UpsertResult}}
+)::@NamedTuple{id::Optional{<:Int64}, status::DataType}
     iteration = iteration_id |> get_iteration
     if iteration |> isnothing
         return (id=nothing, status=Unprocessable)
@@ -74,7 +74,7 @@ function create_parameter(
 end
 
 """
-    create_parameter(iteration_id::Integer, key::AbstractString, value::Real)::NamedTuple{id::Optional{<:Int64},status::Type{<:UpsertResult}}
+    create_parameter(iteration_id::Integer, key::AbstractString, value::Real)::NamedTuple{id::Optional{<:Int64},status::DataType}
 
 Create a [`Parameter`](@ref).
 
@@ -89,7 +89,7 @@ Create a [`Parameter`](@ref).
 """
 function create_parameter(
     iteration_id::Integer, key::AbstractString, value::Real
-)::@NamedTuple{id::Optional{<:Int64}, status::Type{<:UpsertResult}}
+)::@NamedTuple{id::Optional{<:Int64}, status::DataType}
     return create_parameter(iteration_id, key, value |> string)
 end
 

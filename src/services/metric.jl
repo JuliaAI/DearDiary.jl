@@ -43,7 +43,7 @@ function get_metrics(
 end
 
 """
-    create_metric(iteration_id::Integer, key::AbstractString, value::AbstractFloat)::NamedTuple{id::Optional{<:Int64},status::Type{<:UpsertResult}}
+    create_metric(iteration_id::Integer, key::AbstractString, value::AbstractFloat)::NamedTuple{id::Optional{<:Int64},status::DataType}
 
 Create a [`Metric`](@ref).
 
@@ -58,7 +58,7 @@ Create a [`Metric`](@ref).
 """
 function create_metric(
     iteration_id::Integer, key::AbstractString, value::AbstractFloat
-)::@NamedTuple{id::Optional{<:Int64}, status::Type{<:UpsertResult}}
+)::@NamedTuple{id::Optional{<:Int64}, status::DataType}
     iteration = iteration_id |> get_iteration
     if iteration |> isnothing
         return (id=nothing, status=Unprocessable)

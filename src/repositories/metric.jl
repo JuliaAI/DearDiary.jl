@@ -26,7 +26,7 @@ end
 
 function insert(
     ::Type{<:Metric}, iteration_id::Integer, key::AbstractString, value::AbstractFloat
-)::@NamedTuple{id::Optional{<:Int64}, status::Type{<:UpsertResult}}
+)::@NamedTuple{id::Optional{<:Int64}, status::DataType}
     fields = (
         iteration_id=iteration_id,
         key=key,

@@ -73,7 +73,7 @@ function get_tags(::Type{<:Iteration}, iteration_id::Integer)::Array{Tag,1}
 end
 
 """
-    create_tag(value::AbstractString)::NamedTuple{id::Optional{<:Int64},status::Type{<:UpsertResult}}
+    create_tag(value::AbstractString)::NamedTuple{id::Optional{<:Int64},status::DataType}
 
 Create a [`Tag`](@ref).
 
@@ -84,12 +84,12 @@ Create a [`Tag`](@ref).
 - The created tag ID. If an error occurs, `nothing` is returned.
 - An [`UpsertResult`](@ref). [`Created`](@ref) if the record was successfully created, [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
 """
-function create_tag(value::AbstractString)::@NamedTuple{id::Optional{<:Int64}, status::Type{<:UpsertResult}}
+function create_tag(value::AbstractString)::@NamedTuple{id::Optional{<:Int64}, status::DataType}
     return insert(Tag, value)
 end
 
 """
-    add_tag(::Type{<:Project}, project_id::Integer, tag_value::AbstractString)::NamedTuple{id::Optional{<:Int64},status::Type{<:UpsertResult}}
+    add_tag(::Type{<:Project}, project_id::Integer, tag_value::AbstractString)::NamedTuple{id::Optional{<:Int64},status::DataType}
 
 Add a tag to a project.
 
@@ -104,7 +104,7 @@ Add a tag to a project.
 """
 function add_tag(
     ::Type{<:Project}, project_id::Integer, tag_value::AbstractString
-)::@NamedTuple{id::Optional{<:Int64}, status::Type{<:UpsertResult}}
+)::@NamedTuple{id::Optional{<:Int64}, status::DataType}
     project = project_id |> get_project
     if project |> isnothing
         return (id=nothing, status=Unprocessable)
@@ -113,7 +113,7 @@ function add_tag(
 end
 
 """
-    add_tag(::Type{<:Experiment}, experiment_id::Integer, tag_value::AbstractString)::NamedTuple{id::Optional{<:Int64},status::Type{<:UpsertResult}}
+    add_tag(::Type{<:Experiment}, experiment_id::Integer, tag_value::AbstractString)::NamedTuple{id::Optional{<:Int64},status::DataType}
 
 Add a tag to an experiment.
 
@@ -128,7 +128,7 @@ Add a tag to an experiment.
 """
 function add_tag(
     ::Type{<:Experiment}, experiment_id::Integer, tag_value::AbstractString
-)::@NamedTuple{id::Optional{<:Int64}, status::Type{<:UpsertResult}}
+)::@NamedTuple{id::Optional{<:Int64}, status::DataType}
     experiment = experiment_id |> get_experiment
     if experiment |> isnothing
         return (id=nothing, status=Unprocessable)
@@ -137,7 +137,7 @@ function add_tag(
 end
 
 """
-    add_tag(::Type{<:Iteration}, iteration_id::Integer, tag_value::AbstractString)::NamedTuple{id::Optional{<:Int64},status::Type{<:UpsertResult}}
+    add_tag(::Type{<:Iteration}, iteration_id::Integer, tag_value::AbstractString)::NamedTuple{id::Optional{<:Int64},status::DataType}
 
 Add a tag to an iteration.
 
@@ -152,7 +152,7 @@ Add a tag to an iteration.
 """
 function add_tag(
     ::Type{<:Iteration}, iteration_id::Integer, tag_value::AbstractString
-)::@NamedTuple{id::Optional{<:Int64}, status::Type{<:UpsertResult}}
+)::@NamedTuple{id::Optional{<:Int64}, status::DataType}
     iteration = iteration_id |> get_iteration
     if iteration |> isnothing
         return (id=nothing, status=Unprocessable)

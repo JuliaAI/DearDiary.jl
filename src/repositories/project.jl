@@ -9,7 +9,7 @@ end
 
 function insert(
     ::Type{<:Project}, name::AbstractString
-)::@NamedTuple{id::Optional{<:Int64}, status::Type{<:UpsertResult}}
+)::@NamedTuple{id::Optional{<:Int64}, status::DataType}
     return insert(SQL_INSERT_PROJECT, (name=name, created_date=(now() |> string)))
 end
 

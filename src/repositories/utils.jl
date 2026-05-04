@@ -99,7 +99,7 @@ function fetch_page(
 end
 
 """
-    insert(query::AbstractString, parameters::NamedTuple)::NamedTuple{id::Optional{<:Int64},status::Type{<:UpsertResult}}
+    insert(query::AbstractString, parameters::NamedTuple)::NamedTuple{id::Optional{<:Int64},status::DataType}
 
 Insert a record into the database.
 
@@ -113,7 +113,7 @@ Insert a record into the database.
 """
 function insert(
     query::AbstractString, parameters::NamedTuple
-)::@NamedTuple{id::Optional{<:Int64}, status::Type{<:UpsertResult}}
+)::@NamedTuple{id::Optional{<:Int64}, status::DataType}
     try
         result = DBInterface.execute(get_database(), query, parameters)
         record_id = result |> first |> first

@@ -15,8 +15,8 @@ function setup_iteration_routes()
         response_iteration = id |> get_iteration
 
         if (response_iteration |> isnothing)
-            return json(
-                ("message" => (HTTP.StatusCodes.NOT_FOUND |> HTTP.statustext));
+            return error_response(
+                NotFound, "Iteration not found";
                 status=HTTP.StatusCodes.NOT_FOUND,
             )
         end
@@ -34,8 +34,14 @@ function setup_iteration_routes()
         ProjectPermissionRequiredMiddleware(Iteration, CreatePermission),
     ]) function (::HTTP.Request, experiment_id::Integer)
         iteration_id, upsert_result = experiment_id |> create_iteration
-        upsert_status = upsert_result |> get_status_by_upsert_result
-        return json(("iteration_id" => iteration_id); status=upsert_status)
+        if !(upsert_result === Created)
+            return error_response(
+                upsert_to_error_code(upsert_result),
+                "Failed to create iteration";
+                status=upsert_result |> get_status_by_upsert_result,
+            )
+        end
+        return json(("iteration_id" => iteration_id); status=HTTP.StatusCodes.CREATED)
     end
 
     @patch root("/{id}", middleware=[
@@ -48,8 +54,14 @@ function setup_iteration_routes()
             parameters.payload.notes,
             parameters.payload.end_date,
         )
-        upsert_status = upsert_result |> get_status_by_upsert_result
-        return json(("message" => (upsert_result |> String)); status=upsert_status)
+        if !(upsert_result === Updated)
+            return error_response(
+                upsert_to_error_code(upsert_result),
+                "Failed to update iteration";
+                status=upsert_result |> get_status_by_upsert_result,
+            )
+        end
+        return json(("message" => (upsert_result |> String)); status=HTTP.StatusCodes.OK)
     end
 
     @delete root("/{id}", middleware=[
@@ -58,8 +70,8 @@ function setup_iteration_routes()
         success = id |> delete_iteration
 
         if !success
-            return json(
-                ("message" => (HTTP.StatusCodes.INTERNAL_SERVER_ERROR |> HTTP.statustext));
+            return error_response(
+                ServerError, "Failed to delete iteration";
                 status=HTTP.StatusCodes.INTERNAL_SERVER_ERROR,
             )
         end

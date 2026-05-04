@@ -35,7 +35,7 @@ An array of [`User`](@ref) objects.
 get_users()::Array{User,1} = User |> fetch_all
 
 """
-    create_user(first_name::AbstractString, last_name::AbstractString, username::AbstractString, password::AbstractString)::NamedTuple{id::Optional{<:Int64},status::UpsertResult}
+    create_user(first_name::AbstractString, last_name::AbstractString, username::AbstractString, password::AbstractString)::NamedTuple{id::Optional{<:Int64},status::Type{<:UpsertResult}}
 
 Create an [`User`](@ref).
 
@@ -54,7 +54,7 @@ function create_user(
     last_name::AbstractString,
     username::AbstractString,
     password::AbstractString,
-)::@NamedTuple{id::Optional{<:Int64}, status::UpsertResult}
+)::@NamedTuple{id::Optional{<:Int64}, status::Type{<:UpsertResult}}
     return insert(
         User,
         first_name,
@@ -65,7 +65,7 @@ function create_user(
 end
 
 """
-    update_user(id::Integer, first_name::Optional{AbstractString}, last_name::Optional{AbstractString}, password::Optional{AbstractString}, is_admin::Optional{Bool})::UpsertResult
+    update_user(id::Integer, first_name::Optional{AbstractString}, last_name::Optional{AbstractString}, password::Optional{AbstractString}, is_admin::Optional{Bool})::Type{<:UpsertResult}
 
 Update an [`User`](@ref).
 
@@ -85,10 +85,10 @@ function update_user(
     last_name::Optional{AbstractString},
     password::Optional{AbstractString},
     is_admin::Optional{Bool},
-)::UpsertResult
+)::Type{<:UpsertResult}
     user = fetch(User, id)
     if user |> isnothing
-        return Unprocessable()
+        return Unprocessable
     end
 
     should_be_updated = compare_object_fields(
@@ -99,7 +99,7 @@ function update_user(
         is_admin=is_admin,
     )
     if !should_be_updated
-        return Updated()
+        return Updated
     end
 
     if !(password |> isnothing)

@@ -16,7 +16,7 @@
                     experiment_id,
                 )
                 @test id isa Integer
-                @test status isa DearDiary.Created
+                @test status === DearDiary.Created
             end
 
             @testset "with non-existing experiment" begin
@@ -25,7 +25,7 @@
                     9999,
                 )
                 @test id |> isnothing
-                @test status isa DearDiary.Unprocessable
+                @test status === DearDiary.Unprocessable
             end
         end
 
@@ -91,7 +91,7 @@
                 end_date=Dates.now(),
             )
 
-            @test update_result isa DearDiary.Updated
+            @test update_result === DearDiary.Updated
 
             iteration = DearDiary.fetch(DearDiary.Iteration, iteration_id)
             @test iteration.notes == "Updated notes"

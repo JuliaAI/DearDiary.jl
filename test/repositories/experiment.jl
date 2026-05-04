@@ -12,7 +12,7 @@
                     "Test Experiment",
                 )
                 @test id isa Integer
-                @test status isa DearDiary.Created
+                @test status === DearDiary.Created
             end
 
             @testset "with non-existing project" begin
@@ -23,7 +23,7 @@
                     "Test Experiment",
                 )
                 @test id |> isnothing
-                @test status isa DearDiary.Unprocessable
+                @test status === DearDiary.Unprocessable
             end
 
             @testset "with non-allowed status" begin
@@ -37,7 +37,7 @@
                     "Test Experiment",
                 )
                 @test id |> isnothing
-                @test status isa DearDiary.Unprocessable
+                @test status === DearDiary.Unprocessable
             end
         end
 
@@ -108,7 +108,7 @@
                 end_date=Dates.now(),
             )
 
-            @test update_result isa DearDiary.Updated
+            @test update_result === DearDiary.Updated
 
             experiment = DearDiary.fetch(DearDiary.Experiment, experiment_id)
 

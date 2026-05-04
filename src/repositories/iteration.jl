@@ -26,7 +26,7 @@ end
 
 function insert(
     ::Type{<:Iteration}, experiment_id::Integer
-)::@NamedTuple{id::Optional{<:Int64}, status::UpsertResult}
+)::@NamedTuple{id::Optional{<:Int64}, status::Type{<:UpsertResult}}
     fields = (
         experiment_id=experiment_id,
         created_date=(now() |> string),
@@ -38,7 +38,7 @@ function update(
     ::Type{<:Iteration}, id::Integer;
     notes::Optional{AbstractString}=nothing,
     end_date::Optional{DateTime}=nothing,
-)::UpsertResult
+)::Type{<:UpsertResult}
     fields = (notes=notes, end_date=end_date)
     return update(SQL_UPDATE_ITERATION, fetch(Iteration, id); fields...)
 end

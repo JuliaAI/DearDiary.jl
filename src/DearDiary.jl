@@ -14,6 +14,7 @@ include("utils.jl")
 include("types/config.jl")
 include("types/enums.jl")
 include("types/utils.jl")
+include("types/error.jl")
 include("types/user.jl")
 include("types/project.jl")
 include("types/userpermission.jl")
@@ -95,8 +96,8 @@ function AuthMiddleware(handler)
                 auth_header = get(request.headers |> Dict, "Authorization", missing)
 
                 if auth_header |> ismissing
-                    return json(
-                        ("message" => "Missing authorization header");
+                    return error_response(
+                        TokenMissing, "Missing authorization header";
                         status=HTTP.StatusCodes.UNAUTHORIZED,
                     )
                 end
@@ -110,8 +111,8 @@ function AuthMiddleware(handler)
                 try
                     validate!(jwt, key)
                 catch _
-                    return json(
-                        ("message" => "Invalid token"),
+                    return error_response(
+                        TokenInvalid, "Invalid token";
                         status=HTTP.StatusCodes.UNAUTHORIZED,
                     )
                 end
@@ -120,8 +121,8 @@ function AuthMiddleware(handler)
                     payload = jwt |> claims
 
                     if payload |> isnothing
-                        return json(
-                            ("message" => "Invalid token payload"),
+                        return error_response(
+                            TokenPayloadInvalid, "Invalid token payload";
                             status=HTTP.StatusCodes.UNAUTHORIZED,
                         )
                     end
@@ -131,8 +132,8 @@ function AuthMiddleware(handler)
                         ["sub", "id", "exp"],
                     )
                     if !is_valid_payload
-                        return json(
-                            ("message" => "Invalid token payload"),
+                        return error_response(
+                            TokenPayloadInvalid, "Invalid token payload";
                             status=HTTP.StatusCodes.UNAUTHORIZED,
                         )
                     end
@@ -140,8 +141,8 @@ function AuthMiddleware(handler)
                     exp = get(payload, "exp", nothing)
                     now_unix = (now() |> datetime2unix |> floor) |> Int
                     if exp |> isnothing || (exp isa Integer && exp < now_unix)
-                        return json(
-                            ("message" => "Token has expired"),
+                        return error_response(
+                            TokenExpired, "Token has expired";
                             status=HTTP.StatusCodes.UNAUTHORIZED,
                         )
                     end
@@ -149,23 +150,23 @@ function AuthMiddleware(handler)
                     user_id = get(payload, "id", 0)
                     is_valid_user_id = user_id isa Int && user_id > 0
                     if !is_valid_user_id
-                        return json(
-                            ("message" => "Invalid token payload"),
+                        return error_response(
+                            TokenPayloadInvalid, "Invalid token payload";
                             status=HTTP.StatusCodes.UNAUTHORIZED,
                         )
                     end
 
                     user = get_user(user_id)
                     if user |> isnothing
-                        return json(
-                            ("message" => "User not found"),
+                        return error_response(
+                            UserNotFound, "User not found";
                             status=HTTP.StatusCodes.UNAUTHORIZED,
                         )
                     end
                     request.context[:user] = user
                 else
-                    return json(
-                        ("message" => "Invalid token"),
+                    return error_response(
+                        TokenInvalid, "Invalid token";
                         status=HTTP.StatusCodes.UNAUTHORIZED,
                     )
                 end

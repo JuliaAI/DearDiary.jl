@@ -18,7 +18,7 @@
                     0.95,
                 )
                 @test id isa Integer
-                @test status isa DearDiary.Created
+                @test status === DearDiary.Created
             end
 
             @testset "with non-existing iteration" begin
@@ -29,7 +29,7 @@
                     0.95,
                 )
                 @test id |> isnothing
-                @test status isa DearDiary.Unprocessable
+                @test status === DearDiary.Unprocessable
             end
         end
 
@@ -115,7 +115,7 @@
                 value=0.0005,
             )
 
-            @test update_result isa DearDiary.Updated
+            @test update_result === DearDiary.Updated
 
             metric = DearDiary.fetch(DearDiary.Metric, metric_id)
             @test metric.value == 0.0005

@@ -11,7 +11,7 @@
                     project_id,
                 )
                 @test id |> isnothing
-                @test status isa DearDiary.Unprocessable
+                @test status === DearDiary.Unprocessable
             end
 
             @testset "insert with no existing project" begin
@@ -21,7 +21,7 @@
                     9999,
                 )
                 @test id |> isnothing
-                @test status isa DearDiary.Unprocessable
+                @test status === DearDiary.Unprocessable
             end
 
             @testset "insert with existing user and project" begin
@@ -31,7 +31,7 @@
                     project_id,
                 )
                 @test id isa Integer
-                @test status isa DearDiary.Created
+                @test status === DearDiary.Created
             end
 
             @testset "insert duplicate user permission" begin
@@ -41,7 +41,7 @@
                     project_id,
                 )
                 @test id |> isnothing
-                @test status isa DearDiary.Duplicate
+                @test status === DearDiary.Duplicate
             end
         end
 
@@ -102,7 +102,7 @@
             @test DearDiary.update(
                 DearDiary.UserPermission, userpermission.id;
                 create_permission=true,
-            ) isa DearDiary.Updated
+            ) === DearDiary.Updated
 
             userpermission = DearDiary.fetch(
                 DearDiary.UserPermission,

@@ -15,8 +15,8 @@ function setup_resource_routes()
         response_resource = id |> get_resource
 
         if (response_resource |> isnothing)
-            return json(
-                ("message" => (HTTP.StatusCodes.NOT_FOUND |> HTTP.statustext));
+            return error_response(
+                NotFound, "Resource not found";
                 status=HTTP.StatusCodes.NOT_FOUND,
             )
         end
@@ -37,8 +37,10 @@ function setup_resource_routes()
         name = find(form_data, "name").data
         data = find(form_data, "data").data
         if name |> isnothing || data |> isnothing
-            upsert_status = Unprocessable() |> get_status_by_upsert_result
-            return json(("resource_id" => nothing); status=upsert_status)
+            return error_response(
+                InvalidPayload, "Multipart fields 'name' and 'data' are required";
+                status=HTTP.StatusCodes.UNPROCESSABLE_ENTITY,
+            )
         end
 
         resource_id, upsert_result = create_resource(
@@ -46,8 +48,14 @@ function setup_resource_routes()
             name |> take! |> String,
             data |> take!,
         )
-        upsert_status = upsert_result |> get_status_by_upsert_result
-        return json(("resource_id" => resource_id); status=upsert_status)
+        if !(upsert_result === Created)
+            return error_response(
+                upsert_to_error_code(upsert_result),
+                "Failed to create resource";
+                status=upsert_result |> get_status_by_upsert_result,
+            )
+        end
+        return json(("resource_id" => resource_id); status=HTTP.StatusCodes.CREATED)
     end
 
     @patch root("/{id}", middleware=[
@@ -64,8 +72,14 @@ function setup_resource_routes()
             description |> isnothing ? nothing : (description |> take! |> String),
             data |> isnothing ? nothing : (data |> take!),
         )
-        upsert_status = upsert_result |> get_status_by_upsert_result
-        return json(("message" => (upsert_result |> String)); status=upsert_status)
+        if !(upsert_result === Updated)
+            return error_response(
+                upsert_to_error_code(upsert_result),
+                "Failed to update resource";
+                status=upsert_result |> get_status_by_upsert_result,
+            )
+        end
+        return json(("message" => (upsert_result |> String)); status=HTTP.StatusCodes.OK)
     end
 
     @delete root("/{id}", middleware=[
@@ -74,8 +88,8 @@ function setup_resource_routes()
         success = id |> delete_resource
 
         if !success
-            return json(
-                ("message" => (HTTP.StatusCodes.INTERNAL_SERVER_ERROR |> HTTP.statustext));
+            return error_response(
+                ServerError, "Failed to delete resource";
                 status=HTTP.StatusCodes.INTERNAL_SERVER_ERROR,
             )
         end

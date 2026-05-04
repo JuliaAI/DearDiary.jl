@@ -15,8 +15,8 @@ function setup_metric_routes()
         response_metric = id |> get_metric
 
         if (response_metric |> isnothing)
-            return json(
-                ("message" => (HTTP.StatusCodes.NOT_FOUND |> HTTP.statustext));
+            return error_response(
+                NotFound, "Metric not found";
                 status=HTTP.StatusCodes.NOT_FOUND,
             )
         end
@@ -40,8 +40,14 @@ function setup_metric_routes()
             parameters.payload.key,
             parameters.payload.value,
         )
-        upsert_status = upsert_result |> get_status_by_upsert_result
-        return json(("metric_id" => metric_id); status=upsert_status)
+        if !(upsert_result === Created)
+            return error_response(
+                upsert_to_error_code(upsert_result),
+                "Failed to create metric";
+                status=upsert_result |> get_status_by_upsert_result,
+            )
+        end
+        return json(("metric_id" => metric_id); status=HTTP.StatusCodes.CREATED)
     end
 
     @patch root("/{id}", middleware=[
@@ -54,8 +60,14 @@ function setup_metric_routes()
             parameters.payload.key,
             parameters.payload.value,
         )
-        upsert_status = upsert_result |> get_status_by_upsert_result
-        return json(("message" => (upsert_result |> String)); status=upsert_status)
+        if !(upsert_result === Updated)
+            return error_response(
+                upsert_to_error_code(upsert_result),
+                "Failed to update metric";
+                status=upsert_result |> get_status_by_upsert_result,
+            )
+        end
+        return json(("message" => (upsert_result |> String)); status=HTTP.StatusCodes.OK)
     end
 
     @delete root("/{id}", middleware=[
@@ -64,8 +76,8 @@ function setup_metric_routes()
         success = id |> delete_metric
 
         if !success
-            return json(
-                ("message" => (HTTP.StatusCodes.INTERNAL_SERVER_ERROR |> HTTP.statustext));
+            return error_response(
+                ServerError, "Failed to delete metric";
                 status=HTTP.StatusCodes.INTERNAL_SERVER_ERROR,
             )
         end

@@ -45,7 +45,7 @@ function get_parameters(
 end
 
 """
-    create_parameter(iteration_id::Integer, key::AbstractString, value::AbstractString)::NamedTuple{id::Optional{<:Int64},status::UpsertResult}
+    create_parameter(iteration_id::Integer, key::AbstractString, value::AbstractString)::NamedTuple{id::Optional{<:Int64},status::Type{<:UpsertResult}}
 
 Create a [`Parameter`](@ref).
 
@@ -60,21 +60,21 @@ Create a [`Parameter`](@ref).
 """
 function create_parameter(
     iteration_id::Integer, key::AbstractString, value::AbstractString
-)::@NamedTuple{id::Optional{<:Int64}, status::UpsertResult}
+)::@NamedTuple{id::Optional{<:Int64}, status::Type{<:UpsertResult}}
     iteration = iteration_id |> get_iteration
     if iteration |> isnothing
-        return (id=nothing, status=Unprocessable())
+        return (id=nothing, status=Unprocessable)
     end
 
     parameter_id, parameter_upsert_result = insert(Parameter, iteration_id, key, value)
-    if !(parameter_upsert_result isa Created)
+    if !(parameter_upsert_result === Created)
         return (id=nothing, status=parameter_upsert_result)
     end
     return (id=parameter_id, status=parameter_upsert_result)
 end
 
 """
-    create_parameter(iteration_id::Integer, key::AbstractString, value::Real)::NamedTuple{id::Optional{<:Int64},status::UpsertResult}
+    create_parameter(iteration_id::Integer, key::AbstractString, value::Real)::NamedTuple{id::Optional{<:Int64},status::Type{<:UpsertResult}}
 
 Create a [`Parameter`](@ref).
 
@@ -89,12 +89,12 @@ Create a [`Parameter`](@ref).
 """
 function create_parameter(
     iteration_id::Integer, key::AbstractString, value::Real
-)::@NamedTuple{id::Optional{<:Int64}, status::UpsertResult}
+)::@NamedTuple{id::Optional{<:Int64}, status::Type{<:UpsertResult}}
     return create_parameter(iteration_id, key, value |> string)
 end
 
 """
-    update_parameter(id::Integer, key::Optional{AbstractString}, value::Optional{AbstractString})::UpsertResult
+    update_parameter(id::Integer, key::Optional{AbstractString}, value::Optional{AbstractString})::Type{<:UpsertResult}
 
 Update a [`Parameter`](@ref) record.
 
@@ -108,22 +108,22 @@ An [`UpsertResult`](@ref). [`Updated`](@ref) if the record was successfully upda
 """
 function update_parameter(
     id::Integer, key::Optional{AbstractString}, value::Optional{AbstractString}
-)::UpsertResult
+)::Type{<:UpsertResult}
     parameter = id |> get_parameter
     if parameter |> isnothing
-        return Unprocessable()
+        return Unprocessable
     end
 
     should_be_updated = compare_object_fields(parameter; key=key, value=value)
     if !should_be_updated
-        return Updated()
+        return Updated
     end
 
     return update(Parameter, id; key=key, value=value)
 end
 
 """
-    update_parameter(id::Integer, key::Optional{AbstractString}, value::Real)::UpsertResult
+    update_parameter(id::Integer, key::Optional{AbstractString}, value::Real)::Type{<:UpsertResult}
 
 Update a [`Parameter`](@ref) record.
 
@@ -137,7 +137,7 @@ An [`UpsertResult`](@ref). [`Updated`](@ref) if the record was successfully upda
 """
 function update_parameter(
     id::Integer, key::Optional{AbstractString}, value::Real
-)::UpsertResult
+)::Type{<:UpsertResult}
     return update_parameter(id, key, (value |> string))
 end
 

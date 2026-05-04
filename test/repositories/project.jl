@@ -6,7 +6,7 @@
                 "Project Missy",
             )
             @test id isa Integer
-            @test status isa DearDiary.Created
+            @test status === DearDiary.Created
         end
 
         @testset verbose = true "fetch" begin
@@ -33,7 +33,7 @@
                 DearDiary.Project, 1;
                 name="Project Choclo",
                 description="Updated project"
-            ) isa DearDiary.Updated
+            ) === DearDiary.Updated
 
             project = DearDiary.fetch(DearDiary.Project, 1)
 

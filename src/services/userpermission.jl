@@ -53,7 +53,7 @@ function get_userpermissions(
 end
 
 """
-    create_userpermission(user_id::Integer, project_id::Integer, create_permission::Bool, read_permission::Bool, update_permission::Bool, delete_permission::Bool)::NamedTuple{id::Optional{<:Int64},status::UpsertResult}
+    create_userpermission(user_id::Integer, project_id::Integer, create_permission::Bool, read_permission::Bool, update_permission::Bool, delete_permission::Bool)::NamedTuple{id::Optional{<:Int64},status::Type{<:UpsertResult}}
 
 Create a [`UserPermission`](@ref).
 
@@ -76,19 +76,19 @@ function create_userpermission(
     read_permission::Bool,
     update_permission::Bool,
     delete_permission::Bool,
-)::@NamedTuple{id::Optional{<:Int64}, status::UpsertResult}
+)::@NamedTuple{id::Optional{<:Int64}, status::Type{<:UpsertResult}}
     user = user_id |> get_user
     if user |> isnothing
-        return (id=nothing, status=Unprocessable())
+        return (id=nothing, status=Unprocessable)
     end
 
     project = project_id |> get_project
     if project |> isnothing
-        return (id=nothing, status=Unprocessable())
+        return (id=nothing, status=Unprocessable)
     end
 
     userpermission_id, insert_result = insert(UserPermission, user_id, project_id)
-    if !(insert_result isa Created)
+    if !(insert_result === Created)
         return (id=nothing, status=insert_result)
     end
 
@@ -99,7 +99,7 @@ function create_userpermission(
         update_permission=update_permission,
         delete_permission=delete_permission,
     )
-    if !(update_result isa Updated)
+    if !(update_result === Updated)
         delete(UserPermission, userpermission_id)
         return (id=nothing, status=update_result)
     end
@@ -108,7 +108,7 @@ function create_userpermission(
 end
 
 """
-    update_userpermission(id::Integer, create_permission::Optional{Bool}, read_permission::Optional{Bool}, update_permission::Optional{Bool}, delete_permission::Optional{Bool})::UpsertResult
+    update_userpermission(id::Integer, create_permission::Optional{Bool}, read_permission::Optional{Bool}, update_permission::Optional{Bool}, delete_permission::Optional{Bool})::Type{<:UpsertResult}
 
 Update a [`UserPermission`](@ref).
 
@@ -128,10 +128,10 @@ function update_userpermission(
     read_permission::Optional{Bool},
     update_permission::Optional{Bool},
     delete_permission::Optional{Bool},
-)::UpsertResult
+)::Type{<:UpsertResult}
     userpermission = fetch(UserPermission, id)
     if userpermission |> isnothing
-        return Unprocessable()
+        return Unprocessable
     end
 
     should_be_updated = compare_object_fields(
@@ -142,7 +142,7 @@ function update_userpermission(
         delete_permission=delete_permission,
     )
     if !should_be_updated
-        return Updated()
+        return Updated
     end
 
     return update(

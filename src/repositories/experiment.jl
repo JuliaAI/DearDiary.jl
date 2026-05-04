@@ -26,7 +26,7 @@ end
 
 function insert(
     ::Type{<:Experiment}, project_id::Integer, status_id::Integer, name::AbstractString
-)::@NamedTuple{id::Optional{<:Int64}, status::UpsertResult}
+)::@NamedTuple{id::Optional{<:Int64}, status::Type{<:UpsertResult}}
     fields = (
         project_id=project_id,
         status_id=status_id,
@@ -42,7 +42,7 @@ function update(
     name::Optional{AbstractString}=nothing,
     description::Optional{String}=nothing,
     end_date::Optional{DateTime}=nothing,
-)::UpsertResult
+)::Type{<:UpsertResult}
     fields = (status_id=status_id, name=name, description=description, end_date=end_date)
     return update(SQL_UPDATE_EXPERIMENT, fetch(Experiment, id); fields...)
 end

@@ -13,7 +13,7 @@
                 first_user,
             )
             @test id isa Integer
-            @test status isa DearDiary.Created
+            @test status === DearDiary.Created
 
             second_user = (
                 username="gala",
@@ -27,7 +27,7 @@
                 second_user,
             )
             @test id isa Integer
-            @test status isa DearDiary.Created
+            @test status === DearDiary.Created
         end
 
         @testset verbose = true "fetch" begin
@@ -58,7 +58,7 @@
                 DearDiary.SQL_UPDATE_USER, user;
                 first_name="Ana",
                 last_name=nothing,
-            ) isa DearDiary.Updated
+            ) === DearDiary.Updated
 
             user = DearDiary.fetch(
                 DearDiary.SQL_SELECT_USER_BY_USERNAME,

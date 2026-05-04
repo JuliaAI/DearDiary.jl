@@ -29,7 +29,7 @@ function insert(
     experiment_id::Integer,
     name::AbstractString,
     data::AbstractArray{UInt8,1},
-)::@NamedTuple{id::Optional{<:Int64}, status::UpsertResult}
+)::@NamedTuple{id::Optional{<:Int64}, status::Type{<:UpsertResult}}
     fields = (
         experiment_id=experiment_id,
         name=name,
@@ -44,7 +44,7 @@ function update(
     name::Optional{AbstractString}=nothing,
     description::Optional{AbstractString}=nothing,
     data::Optional{AbstractArray{UInt8,1}}=nothing,
-)::UpsertResult
+)::Type{<:UpsertResult}
     fields = (
         name=name,
         description=description,

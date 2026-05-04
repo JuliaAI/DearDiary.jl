@@ -1,4 +1,61 @@
 """
+    error_code(::Type{<:ErrorCode})::String
+
+Return the stable, SCREAMING_SNAKE identifier for an [`ErrorCode`](@ref) type that is exposed
+in error response bodies (`{"code": ..., "message": ...}`). The mapping is intentionally fixed
+so that frontend code can switch on the value without parsing English messages.
+"""
+error_code(::Type{NotFound})::String = "NOT_FOUND"
+error_code(::Type{InvalidCredentials})::String = "INVALID_CREDENTIALS"
+error_code(::Type{TokenMissing})::String = "TOKEN_MISSING"
+error_code(::Type{TokenInvalid})::String = "TOKEN_INVALID"
+error_code(::Type{TokenExpired})::String = "TOKEN_EXPIRED"
+error_code(::Type{TokenPayloadInvalid})::String = "TOKEN_PAYLOAD_INVALID"
+error_code(::Type{UserNotFound})::String = "USER_NOT_FOUND"
+error_code(::Type{AdminRequired})::String = "ADMIN_REQUIRED"
+error_code(::Type{SameUserRequired})::String = "SAME_USER_REQUIRED"
+error_code(::Type{ProjectPermissionRequired})::String = "PROJECT_PERMISSION_REQUIRED"
+error_code(::Type{Conflict})::String = "CONFLICT"
+error_code(::Type{InvalidPayload})::String = "INVALID_PAYLOAD"
+error_code(::Type{ServerError})::String = "SERVER_ERROR"
+
+"""
+    error_response(::Type{<:ErrorCode}, message::AbstractString; status)::HTTP.Response
+
+Build an error response with the standard `{"code": ..., "message": ...}` envelope.
+
+# Arguments
+- `::Type{<:ErrorCode}`: The stable identifier as a type tag (see [`error_code`](@ref)).
+- `message::AbstractString`: A human-readable description for logs and (optionally) UI fallback.
+- `status`: HTTP status code (passed through to [`Oxygen.json`](@extref Oxygen.Json.json)).
+
+# Returns
+An HTTP response with JSON body and the given status.
+"""
+function error_response(
+    ::Type{C}, message::AbstractString; status,
+) where {C<:ErrorCode}
+    return json(
+        Dict("code" => error_code(C), "message" => (message |> string));
+        status=status,
+    )
+end
+
+"""
+    upsert_to_error_code(result::UpsertResult)::Type{<:ErrorCode}
+
+Translate a non-success [`UpsertResult`](@ref) into the matching [`ErrorCode`](@ref) type so
+that write-outcome failures surface a stable code in the response body.
+
+Calling this with a successful result ([`Created`](@ref) or [`Updated`](@ref)) is a programmer
+error and falls through to a generic [`ServerError`](@ref).
+"""
+upsert_to_error_code(::Type{Duplicate})::Type{<:ErrorCode} = Conflict
+upsert_to_error_code(::Type{Unprocessable})::Type{<:ErrorCode} = InvalidPayload
+upsert_to_error_code(::Type{Error})::Type{<:ErrorCode} = ServerError
+upsert_to_error_code(::Type{<:UpsertResult})::Type{<:ErrorCode} = ServerError
+
+"""
     get_status_by_upsert_result(UpsertResult)::HTTP.StatusCodes
 
 Return the appropriate HTTP status code based on the upsert result.
@@ -10,11 +67,11 @@ Return the appropriate HTTP status code based on the upsert result.
 - **Unprocessable** -> `HTTP.StatusCodes.UNPROCESSABLE_ENTITY`
 - **Error** -> `HTTP.StatusCodes.INTERNAL_SERVER_ERROR`
 """
-get_status_by_upsert_result(::Created) = HTTP.StatusCodes.CREATED
-get_status_by_upsert_result(::Updated) = HTTP.StatusCodes.OK
-get_status_by_upsert_result(::Duplicate) = HTTP.StatusCodes.CONFLICT
-get_status_by_upsert_result(::Unprocessable) = HTTP.StatusCodes.UNPROCESSABLE_ENTITY
-get_status_by_upsert_result(::Error) = HTTP.StatusCodes.INTERNAL_SERVER_ERROR
+get_status_by_upsert_result(::Type{Created}) = HTTP.StatusCodes.CREATED
+get_status_by_upsert_result(::Type{Updated}) = HTTP.StatusCodes.OK
+get_status_by_upsert_result(::Type{Duplicate}) = HTTP.StatusCodes.CONFLICT
+get_status_by_upsert_result(::Type{Unprocessable}) = HTTP.StatusCodes.UNPROCESSABLE_ENTITY
+get_status_by_upsert_result(::Type{Error}) = HTTP.StatusCodes.INTERNAL_SERVER_ERROR
 
 """
     Base.String(::Type{<:UpsertResult})::String
@@ -27,8 +84,8 @@ Convert an [`UpsertResult`](@ref) type to its string representation in uppercase
 # Returns
 A string representation of the upsert result type in uppercase.
 """
-function Base.String(upsert_result::UpsertResult)::String
-    return upsert_result |> typeof |> nameof |> String |> uppercase
+function Base.String(::Type{T})::String where {T<:UpsertResult}
+    return T |> nameof |> String |> uppercase
 end
 
 """
@@ -41,8 +98,8 @@ function AdminRequiredMiddleware(handle::Function)::Function
         global _DEARDIARY_APICONFIG
         if _DEARDIARY_APICONFIG.enable_auth
             if !(request.context[:user].is_admin)
-                return json(
-                    ("message" => "Admin privileges required");
+                return error_response(
+                    AdminRequired, "Admin privileges required";
                     status=HTTP.StatusCodes.FORBIDDEN,
                 )
             end
@@ -72,14 +129,14 @@ function SameUserOrAdminRequiredMiddleware(handle::Function)::Function
                 segments = request |> path_segments
                 target_id = (segments |> length) >= 2 ? tryparse(Int64, segments[2]) : nothing
                 if target_id |> isnothing
-                    return json(
-                        ("message" => (HTTP.StatusCodes.NOT_FOUND |> HTTP.statustext));
+                    return error_response(
+                        NotFound, (HTTP.StatusCodes.NOT_FOUND |> HTTP.statustext);
                         status=HTTP.StatusCodes.NOT_FOUND,
                     )
                 end
                 if user.id != target_id
-                    return json(
-                        ("message" => "Same user required");
+                    return error_response(
+                        SameUserRequired, "Same user required";
                         status=HTTP.StatusCodes.FORBIDDEN,
                     )
                 end
@@ -305,16 +362,16 @@ function ProjectPermissionRequiredMiddleware(
                 if !user.is_admin
                     project_id = get_project_id(T, request)
                     if project_id |> isnothing
-                        return json(
-                            ("message" => (HTTP.StatusCodes.NOT_FOUND |> HTTP.statustext));
+                        return error_response(
+                            NotFound, (HTTP.StatusCodes.NOT_FOUND |> HTTP.statustext);
                             status=HTTP.StatusCodes.NOT_FOUND,
                         )
                     end
 
                     permission = get_userpermission(user.id, project_id)
                     if (permission |> isnothing) || !has_permission(permission, A)
-                        return json(
-                            ("message" => "Project permission required");
+                        return error_response(
+                            ProjectPermissionRequired, "Project permission required";
                             status=HTTP.StatusCodes.FORBIDDEN,
                         )
                     end

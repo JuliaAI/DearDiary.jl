@@ -43,7 +43,7 @@ function get_resources(
 end
 
 """
-    create_resource(experiment_id::Integer, name::AbstractString, data::AbstractArray{UInt8,1})::NamedTuple{id::Optional{<:Int64},status::UpsertResult}
+    create_resource(experiment_id::Integer, name::AbstractString, data::AbstractArray{UInt8,1})::NamedTuple{id::Optional{<:Int64},status::Type{<:UpsertResult}}
 
 Create a new [`Resource`](@ref) record.
 
@@ -58,21 +58,21 @@ Create a new [`Resource`](@ref) record.
 """
 function create_resource(
     experiment_id::Integer, name::AbstractString, data::AbstractArray{UInt8,1}
-)::@NamedTuple{id::Optional{<:Int64}, status::UpsertResult}
+)::@NamedTuple{id::Optional{<:Int64}, status::Type{<:UpsertResult}}
     experiment = experiment_id |> get_experiment
     if experiment |> isnothing
-        return (id=nothing, status=Unprocessable())
+        return (id=nothing, status=Unprocessable)
     end
 
     resource_id, resource_upsert_result = insert(Resource, experiment_id, name, data)
-    if !(resource_upsert_result isa Created)
+    if !(resource_upsert_result === Created)
         return (id=nothing, status=resource_upsert_result)
     end
     return (id=resource_id, status=resource_upsert_result)
 end
 
 """
-    update_resource(id::Integer, name::Optional{AbstractString}, description::Optional{AbstractString}, data::Optional{AbstractArray{UInt8,1}})::UpsertResult
+    update_resource(id::Integer, name::Optional{AbstractString}, description::Optional{AbstractString}, data::Optional{AbstractArray{UInt8,1}})::Type{<:UpsertResult}
 
 Update a [`Resource`](@ref) record.
 
@@ -90,10 +90,10 @@ function update_resource(
     name::Optional{AbstractString},
     description::Optional{AbstractString},
     data::Optional{AbstractArray{UInt8,1}},
-)::UpsertResult
+)::Type{<:UpsertResult}
     resource = id |> get_resource
     if resource |> isnothing
-        return Unprocessable()
+        return Unprocessable
     end
 
     should_be_updated = compare_object_fields(
@@ -103,7 +103,7 @@ function update_resource(
         data=data,
     )
     if !should_be_updated
-        return Updated()
+        return Updated
     end
 
     return update(Resource, id; name=name, description=description, data=data)

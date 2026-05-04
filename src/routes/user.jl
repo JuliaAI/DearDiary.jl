@@ -15,8 +15,8 @@ function setup_user_routes()
         response_user = id |> get_user
 
         if (response_user |> isnothing)
-            return json(
-                ("message" => (HTTP.StatusCodes.NOT_FOUND |> HTTP.statustext));
+            return error_response(
+                UserNotFound, "User not found";
                 status=HTTP.StatusCodes.NOT_FOUND,
             )
         end
@@ -42,8 +42,14 @@ function setup_user_routes()
             parameters.payload.username,
             parameters.payload.password,
         )
-        upsert_status = upsert_result |> get_status_by_upsert_result
-        return json(("user_id" => user_id); status=upsert_status)
+        if !(upsert_result === Created)
+            return error_response(
+                upsert_to_error_code(upsert_result),
+                "Failed to create user";
+                status=upsert_result |> get_status_by_upsert_result,
+            )
+        end
+        return json(("user_id" => user_id); status=HTTP.StatusCodes.CREATED)
     end
 
     @patch root("/{id}", middleware=[SameUserOrAdminRequiredMiddleware]) function (
@@ -56,8 +62,14 @@ function setup_user_routes()
             parameters.payload.password,
             parameters.payload.is_admin,
         )
-        upsert_status = upsert_result |> get_status_by_upsert_result
-        return json(("message" => (upsert_result |> String)); status=upsert_status)
+        if !(upsert_result === Updated)
+            return error_response(
+                upsert_to_error_code(upsert_result),
+                "Failed to update user";
+                status=upsert_result |> get_status_by_upsert_result,
+            )
+        end
+        return json(("message" => (upsert_result |> String)); status=HTTP.StatusCodes.OK)
     end
 
     @delete root("/{id}", middleware=[SameUserOrAdminRequiredMiddleware]) function (
@@ -66,8 +78,8 @@ function setup_user_routes()
         success = id |> delete_user
 
         if !success
-            return json(
-                ("message" => (HTTP.StatusCodes.INTERNAL_SERVER_ERROR |> HTTP.statustext));
+            return error_response(
+                ServerError, "Failed to delete user";
                 status=HTTP.StatusCodes.INTERNAL_SERVER_ERROR,
             )
         end

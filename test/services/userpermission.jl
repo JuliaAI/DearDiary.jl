@@ -13,7 +13,7 @@
                     false,
                     false,
                 )
-                @test upsert_result isa DearDiary.Unprocessable
+                @test upsert_result === DearDiary.Unprocessable
             end
 
             @testset "create with no existing project" begin
@@ -25,7 +25,7 @@
                     false,
                     false,
                 )
-                @test upsert_result isa DearDiary.Unprocessable
+                @test upsert_result === DearDiary.Unprocessable
             end
 
             @testset "create with existing user and project" begin
@@ -38,7 +38,7 @@
                     false,
                     false,
                 )
-                @test upsert_result isa DearDiary.Created
+                @test upsert_result === DearDiary.Created
                 @test userpermission_id isa Integer
             end
 
@@ -51,7 +51,7 @@
                     false,
                     false,
                 )
-                @test upsert_result isa DearDiary.Duplicate
+                @test upsert_result === DearDiary.Duplicate
             end
         end
 
@@ -101,7 +101,7 @@
                     nothing,
                     nothing,
                 )
-                @test result isa DearDiary.Unprocessable
+                @test result === DearDiary.Unprocessable
             end
 
             @testset "with existing id" begin
@@ -120,7 +120,7 @@
                     nothing,
                     nothing,
                     nothing,
-                ) isa DearDiary.Updated
+                ) === DearDiary.Updated
                 userpermission = DearDiary.get_userpermission(user.id, project_id)
                 @test userpermission.create_permission == true
                 @test userpermission.read_permission == true

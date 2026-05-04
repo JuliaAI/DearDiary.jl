@@ -45,7 +45,7 @@ function get_iterations(
 end
 
 """
-    create_iteration(experiment_id::Integer)::NamedTuple{id::Optional{<:Int64},status::UpsertResult}
+    create_iteration(experiment_id::Integer)::NamedTuple{id::Optional{<:Int64},status::Type{<:UpsertResult}}
 
 Create a [`Iteration`](@ref).
 
@@ -58,21 +58,21 @@ Create a [`Iteration`](@ref).
 """
 function create_iteration(
     experiment_id::Integer
-)::@NamedTuple{id::Optional{<:Int64}, status::UpsertResult}
+)::@NamedTuple{id::Optional{<:Int64}, status::Type{<:UpsertResult}}
     experiment = experiment_id |> get_experiment
     if experiment |> isnothing
-        return (id=nothing, status=Unprocessable())
+        return (id=nothing, status=Unprocessable)
     end
 
     iteration_id, iteration_upsert_result = insert(Iteration, experiment_id)
-    if !(iteration_upsert_result isa Created)
+    if !(iteration_upsert_result === Created)
         return (id=nothing, status=iteration_upsert_result)
     end
     return (id=iteration_id, status=iteration_upsert_result)
 end
 
 """
-    update_iteration(id::Int, notes::Optional{AbstractString}, end_date::Optional{DateTime})::UpsertResult
+    update_iteration(id::Int, notes::Optional{AbstractString}, end_date::Optional{DateTime})::Type{<:UpsertResult}
 
 Update a [`Iteration`](@ref) record.
 
@@ -86,15 +86,15 @@ An [`UpsertResult`](@ref). [`Updated`](@ref) if the record was successfully upda
 """
 function update_iteration(
     id::Integer, notes::Optional{AbstractString}, end_date::Optional{DateTime}
-)::UpsertResult
+)::Type{<:UpsertResult}
     iteration = id |> get_iteration
     if iteration |> isnothing
-        return Unprocessable()
+        return Unprocessable
     end
 
     should_be_updated = compare_object_fields(iteration; notes=notes, end_date=end_date)
     if !should_be_updated
-        return Updated()
+        return Updated
     end
 
     return update(Iteration, id; notes=notes, end_date=end_date)

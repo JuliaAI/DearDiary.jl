@@ -35,13 +35,13 @@ end
 
 function insert(
     ::Type{<:Tag}, value::AbstractString
-)::@NamedTuple{id::Optional{<:Int64}, status::UpsertResult}
+)::@NamedTuple{id::Optional{<:Int64}, status::Type{<:UpsertResult}}
     return insert(SQL_INSERT_TAG, (value=value,))
 end
 
 function insert_tag(
     ::Type{<:Project}, project_id::Integer, tag_value::AbstractString
-)::@NamedTuple{id::Optional{<:Int64}, status::UpsertResult}
+)::@NamedTuple{id::Optional{<:Int64}, status::Type{<:UpsertResult}}
     tag_id = _tag_id_by_value(tag_value)
     project_tag_fields = (project_id=project_id, tag_id=tag_id)
     return insert(SQL_INSERT_PROJECT_TAG, project_tag_fields)
@@ -49,7 +49,7 @@ end
 
 function insert_tag(
     ::Type{<:Experiment}, experiment_id::Integer, tag_value::AbstractString
-)::@NamedTuple{id::Optional{<:Int64}, status::UpsertResult}
+)::@NamedTuple{id::Optional{<:Int64}, status::Type{<:UpsertResult}}
     tag_id = _tag_id_by_value(tag_value)
     experiment_tag_fields = (experiment_id=experiment_id, tag_id=tag_id)
     return insert(SQL_INSERT_EXPERIMENT_TAG, experiment_tag_fields)
@@ -57,7 +57,7 @@ end
 
 function insert_tag(
     ::Type{<:Iteration}, iteration_id::Integer, tag_value::AbstractString
-)::@NamedTuple{id::Optional{<:Int64}, status::UpsertResult}
+)::@NamedTuple{id::Optional{<:Int64}, status::Type{<:UpsertResult}}
     tag_id = _tag_id_by_value(tag_value)
     iteration_tag_fields = (iteration_id=iteration_id, tag_id=tag_id)
     return insert(SQL_INSERT_ITERATION_TAG, iteration_tag_fields)

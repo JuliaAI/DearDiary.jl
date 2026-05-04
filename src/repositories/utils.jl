@@ -99,7 +99,7 @@ function fetch_page(
 end
 
 """
-    insert(query::AbstractString, parameters::NamedTuple)::NamedTuple{id::Optional{<:Int64},status::UpsertResult}
+    insert(query::AbstractString, parameters::NamedTuple)::NamedTuple{id::Optional{<:Int64},status::Type{<:UpsertResult}}
 
 Insert a record into the database.
 
@@ -113,26 +113,26 @@ Insert a record into the database.
 """
 function insert(
     query::AbstractString, parameters::NamedTuple
-)::@NamedTuple{id::Optional{<:Int64}, status::UpsertResult}
+)::@NamedTuple{id::Optional{<:Int64}, status::Type{<:UpsertResult}}
     try
         result = DBInterface.execute(get_database(), query, parameters)
         record_id = result |> first |> first
-        return (id=record_id, status=Created())
+        return (id=record_id, status=Created)
     catch exception
         if occursin("UNIQUE constraint failed", (exception.msg |> string))
-            return (id=nothing, status=Duplicate())
+            return (id=nothing, status=Duplicate)
         elseif occursin("CHECK constraint failed", (exception.msg |> string))
-            return (id=nothing, status=Unprocessable())
+            return (id=nothing, status=Unprocessable)
         elseif occursin("FOREIGN KEY constraint failed", (exception.msg |> string))
-            return (id=nothing, status=Unprocessable())
+            return (id=nothing, status=Unprocessable)
         else
-            return (id=nothing, status=Error())
+            return (id=nothing, status=Error)
         end
     end
 end
 
 """
-    update(query::AbstractString, object::Optional{<:ResultType}; parameters...)::UpsertResult
+    update(query::AbstractString, object::Optional{<:ResultType}; parameters...)::Type{<:UpsertResult}
 
 Update a record in the database.
 
@@ -146,7 +146,7 @@ An [`UpsertResult`](@ref). [`Updated`](@ref) if the record was successfully upda
 """
 function update(
     query::AbstractString, object::Optional{<:ResultType}; parameters...
-)::UpsertResult
+)::Type{<:UpsertResult}
     try
         parameters = parameters |> NamedTuple
         fields = join(
@@ -158,12 +158,12 @@ function update(
             replace(query, "{fields}" => fields),
             merge(parameters, (id=getfield(object, :id),)),
         )
-        return Updated()
+        return Updated
     catch exception
         if occursin("CHECK constraint failed", (exception.msg |> string))
-            return Unprocessable()
+            return Unprocessable
         else
-            return Error()
+            return Error
         end
     end
 end

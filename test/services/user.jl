@@ -8,7 +8,7 @@
                 "gala",
             )
 
-            @test user_upsert_result isa DearDiary.Created
+            @test user_upsert_result === DearDiary.Created
             @test user_id isa Integer
         end
 
@@ -46,7 +46,7 @@
                     "Gala",
                     "Choclo",
                     true,
-                ) isa DearDiary.Unprocessable
+                ) === DearDiary.Unprocessable
             end
 
             @testset "with existing user id" begin
@@ -56,7 +56,7 @@
                     nothing,
                     "Choclo",
                     nothing,
-                ) isa DearDiary.Updated
+                ) === DearDiary.Updated
 
                 user = DearDiary.get_user("missy")
 

@@ -63,12 +63,14 @@ function setup_auth_routes()
         user = parameters.payload.username |> get_user
 
         if user |> isnothing
-            return json(("message" => "User not found"); status=HTTP.StatusCodes.NOT_FOUND)
+            return error_response(
+                UserNotFound, "User not found"; status=HTTP.StatusCodes.NOT_FOUND,
+            )
         end
 
         if !CompareHashAndPassword(user.password, parameters.payload.password)
-            return json(
-                ("message" => "Invalid credentials");
+            return error_response(
+                InvalidCredentials, "Invalid credentials";
                 status=HTTP.StatusCodes.UNAUTHORIZED,
             )
         end

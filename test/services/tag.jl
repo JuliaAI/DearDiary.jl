@@ -76,7 +76,7 @@
         @testset verbose = true "create_tag" begin
             result = DearDiary.create_tag("new-tag-service")
             @test result.id isa Integer
-            @test result.status isa DearDiary.Created
+            @test result.status === DearDiary.Created
             
             tag = result.id |> DearDiary.get_tag
             @test tag isa DearDiary.Tag
@@ -86,7 +86,7 @@
         @testset verbose = true "create_tag duplicate" begin
             result = DearDiary.create_tag("new-tag-service")
             @test result.id |> isnothing
-            @test result.status isa DearDiary.Duplicate
+            @test result.status === DearDiary.Duplicate
         end
 
         @testset verbose = true "add_tag to project" begin
@@ -95,7 +95,7 @@
             
             result = DearDiary.add_tag(DearDiary.Project, project_id, "added-project-tag")
             @test result.id isa Integer
-            @test result.status isa DearDiary.Created
+            @test result.status === DearDiary.Created
             
             tags = DearDiary.get_tags(DearDiary.Project, project_id)
             @test (tags |> length) >= 1
@@ -106,7 +106,7 @@
         @testset verbose = true "add_tag to project with non-existent project" begin
             result = DearDiary.add_tag(DearDiary.Project, 99999, "some-tag")
             @test result.id |> isnothing
-            @test result.status isa DearDiary.Unprocessable
+            @test result.status === DearDiary.Unprocessable
         end
 
         @testset verbose = true "add_tag to experiment" begin
@@ -121,7 +121,7 @@
             
             result = DearDiary.add_tag(DearDiary.Experiment, experiment_id, "added-exp-tag")
             @test result.id isa Integer
-            @test result.status isa DearDiary.Created
+            @test result.status === DearDiary.Created
             
             tags = DearDiary.get_tags(DearDiary.Experiment, experiment_id)
             @test (tags |> length) >= 1
@@ -132,7 +132,7 @@
         @testset verbose = true "add_tag to experiment with non-existent experiment" begin
             result = DearDiary.add_tag(DearDiary.Experiment, 99999, "some-tag")
             @test result.id |> isnothing
-            @test result.status isa DearDiary.Unprocessable
+            @test result.status === DearDiary.Unprocessable
         end
 
         @testset verbose = true "add_tag to iteration" begin
@@ -148,7 +148,7 @@
             
             result = DearDiary.add_tag(DearDiary.Iteration, iteration_id, "added-iter-tag")
             @test result.id isa Integer
-            @test result.status isa DearDiary.Created
+            @test result.status === DearDiary.Created
             
             tags = DearDiary.get_tags(DearDiary.Iteration, iteration_id)
             @test (tags |> length) >= 1
@@ -159,7 +159,7 @@
         @testset verbose = true "add_tag to iteration with non-existent iteration" begin
             result = DearDiary.add_tag(DearDiary.Iteration, 99999, "some-tag")
             @test result.id |> isnothing
-            @test result.status isa DearDiary.Unprocessable
+            @test result.status === DearDiary.Unprocessable
         end
 
         @testset verbose = true "delete_tag" begin

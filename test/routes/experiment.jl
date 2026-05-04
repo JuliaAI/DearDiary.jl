@@ -156,5 +156,31 @@
             data = JSON.parse(response.body |> String, Dict{String,Any})
             @test data["message"] == "OK"
         end
+
+        @testset verbose = true "error envelope on upsert failure" begin
+            response = HTTP.post(
+                "http://127.0.0.1:9000/experiment/project/9999";
+                body=(
+                    Dict(
+                        "status_id" => (DearDiary.IN_PROGRESS |> Integer),
+                        "name" => "Orphan Experiment",
+                    ) |> JSON.json
+                ),
+                status_exception=false,
+            )
+            @test response.status == HTTP.StatusCodes.UNPROCESSABLE_ENTITY
+            data = JSON.parse(response.body |> String, Dict{String,Any})
+            @test data["code"] == "INVALID_PAYLOAD"
+            @test data["message"] |> !isempty
+        end
+
+        @testset verbose = true "GET 404 carries NOT_FOUND code" begin
+            response = HTTP.get(
+                "http://127.0.0.1:9000/experiment/9999"; status_exception=false,
+            )
+            @test response.status == HTTP.StatusCodes.NOT_FOUND
+            data = JSON.parse(response.body |> String, Dict{String,Any})
+            @test data["code"] == "NOT_FOUND"
+        end
     end
 end

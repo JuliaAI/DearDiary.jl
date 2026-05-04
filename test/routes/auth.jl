@@ -102,6 +102,89 @@
             @test response.status == HTTP.StatusCodes.UNAUTHORIZED
         end
 
+        @testset verbose = true "error responses carry stable code" begin
+            @testset "TOKEN_MISSING" begin
+                response = HTTP.get(
+                    "http://127.0.0.1:9000/user/1"; status_exception=false,
+                )
+                @test response.status == HTTP.StatusCodes.UNAUTHORIZED
+                data = JSON.parse(response.body |> String, Dict{String,Any})
+                @test data["code"] == "TOKEN_MISSING"
+                @test data["message"] |> !isempty
+            end
+
+            @testset "TOKEN_INVALID" begin
+                response = HTTP.get(
+                    "http://127.0.0.1:9000/user/1";
+                    headers=Dict("Authorization" => "Bearer not.a.token"),
+                    status_exception=false,
+                )
+                data = JSON.parse(response.body |> String, Dict{String,Any})
+                @test data["code"] == "TOKEN_INVALID"
+            end
+
+            @testset "TOKEN_EXPIRED" begin
+                claims = Dict(
+                    "sub" => "default",
+                    "id" => 1,
+                    "exp" => ((now() - Hour(1)) |> datetime2unix |> floor) |> Int,
+                )
+                jwt = JWT(; payload=claims)
+                key = JWKSymmetric(
+                    JWTs.MD_SHA256,
+                    DearDiary._DEARDIARY_APICONFIG.jwt_secret |> Array{UInt8,1},
+                )
+                sign!(jwt, key)
+                response = HTTP.get(
+                    "http://127.0.0.1:9000/user/1";
+                    headers=Dict("Authorization" => "Bearer $(jwt |> string)"),
+                    status_exception=false,
+                )
+                data = JSON.parse(response.body |> String, Dict{String,Any})
+                @test data["code"] == "TOKEN_EXPIRED"
+            end
+
+            @testset "TOKEN_PAYLOAD_INVALID" begin
+                jwt = JWT(; payload=Dict())
+                key = JWKSymmetric(
+                    JWTs.MD_SHA256,
+                    DearDiary._DEARDIARY_APICONFIG.jwt_secret |> Array{UInt8,1},
+                )
+                sign!(jwt, key)
+                response = HTTP.get(
+                    "http://127.0.0.1:9000/user/1";
+                    headers=Dict("Authorization" => "Bearer $(jwt |> string)"),
+                    status_exception=false,
+                )
+                data = JSON.parse(response.body |> String, Dict{String,Any})
+                @test data["code"] == "TOKEN_PAYLOAD_INVALID"
+            end
+
+            @testset "USER_NOT_FOUND on login" begin
+                response = HTTP.post(
+                    "http://127.0.0.1:9000/auth";
+                    body=(
+                        Dict("username" => "ghost", "password" => "x") |> JSON.json
+                    ),
+                    status_exception=false,
+                )
+                data = JSON.parse(response.body |> String, Dict{String,Any})
+                @test data["code"] == "USER_NOT_FOUND"
+            end
+
+            @testset "INVALID_CREDENTIALS" begin
+                response = HTTP.post(
+                    "http://127.0.0.1:9000/auth";
+                    body=(
+                        Dict("username" => "default", "password" => "wrong") |> JSON.json
+                    ),
+                    status_exception=false,
+                )
+                data = JSON.parse(response.body |> String, Dict{String,Any})
+                @test data["code"] == "INVALID_CREDENTIALS"
+            end
+        end
+
         @testset verbose = true "POST /auth/refresh with expired token" begin
             claims = Dict(
                 "sub" => "default",

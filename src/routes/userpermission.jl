@@ -19,8 +19,8 @@ function setup_userpermission_routes()
         response_userpermission = get_userpermission(user_id, project_id)
 
         if (response_userpermission |> isnothing)
-            return json(
-                ("message" => (HTTP.StatusCodes.NOT_FOUND |> HTTP.statustext));
+            return error_response(
+                NotFound, "User permission not found";
                 status=HTTP.StatusCodes.NOT_FOUND,
             )
         end
@@ -41,8 +41,17 @@ function setup_userpermission_routes()
             parameters.payload.update_permission,
             parameters.payload.delete_permission,
         )
-        upsert_status = upsert_result |> get_status_by_upsert_result
-        return json(("userpermission_id" => userpermission_id); status=upsert_status)
+        if !(upsert_result === Created)
+            return error_response(
+                upsert_to_error_code(upsert_result),
+                "Failed to create user permission";
+                status=upsert_result |> get_status_by_upsert_result,
+            )
+        end
+        return json(
+            ("userpermission_id" => userpermission_id);
+            status=HTTP.StatusCodes.CREATED,
+        )
     end
 
     @patch root("/{id}") function (
@@ -55,16 +64,22 @@ function setup_userpermission_routes()
             parameters.payload.update_permission,
             parameters.payload.delete_permission,
         )
-        upsert_status = upsert_result |> get_status_by_upsert_result
-        return json(("message" => (upsert_result |> String)); status=upsert_status)
+        if !(upsert_result === Updated)
+            return error_response(
+                upsert_to_error_code(upsert_result),
+                "Failed to update user permission";
+                status=upsert_result |> get_status_by_upsert_result,
+            )
+        end
+        return json(("message" => (upsert_result |> String)); status=HTTP.StatusCodes.OK)
     end
 
     @delete root("/{id}") function (::HTTP.Request, id::Integer)
         success = id |> delete_userpermission
 
         if !success
-            return json(
-                ("message" => (HTTP.StatusCodes.INTERNAL_SERVER_ERROR |> HTTP.statustext));
+            return error_response(
+                ServerError, "Failed to delete user permission";
                 status=HTTP.StatusCodes.INTERNAL_SERVER_ERROR,
             )
         end

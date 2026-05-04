@@ -26,7 +26,7 @@ end
 
 function insert(
     ::Type{<:Metric}, iteration_id::Integer, key::AbstractString, value::AbstractFloat
-)::@NamedTuple{id::Optional{<:Int64}, status::UpsertResult}
+)::@NamedTuple{id::Optional{<:Int64}, status::Type{<:UpsertResult}}
     fields = (
         iteration_id=iteration_id,
         key=key,
@@ -40,7 +40,7 @@ function update(
     ::Type{<:Metric}, id::Integer;
     key::Optional{AbstractString}=nothing,
     value::Optional{AbstractFloat}=nothing,
-)::UpsertResult
+)::Type{<:UpsertResult}
     fields = (key=key, value=value)
     return update(SQL_UPDATE_METRIC, fetch(Metric, id); fields...)
 end

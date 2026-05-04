@@ -9,7 +9,7 @@ end
 
 function insert(
     ::Type{<:Project}, name::AbstractString
-)::@NamedTuple{id::Optional{<:Int64}, status::UpsertResult}
+)::@NamedTuple{id::Optional{<:Int64}, status::Type{<:UpsertResult}}
     return insert(SQL_INSERT_PROJECT, (name=name, created_date=(now() |> string)))
 end
 
@@ -17,7 +17,7 @@ function update(
     ::Type{<:Project}, id::Integer;
     name::Optional{AbstractString}=nothing,
     description::Optional{AbstractString}=nothing,
-)::UpsertResult
+)::Type{<:UpsertResult}
     fields = (name=name, description=description)
     return update(SQL_UPDATE_PROJECT, fetch(Project, id); fields...)
 end

@@ -17,7 +17,7 @@
                 )
 
                 @test resource_id isa Integer
-                @test result isa DearDiary.Created
+                @test result === DearDiary.Created
             end
 
             @testset "with non-existing experiment" begin
@@ -28,7 +28,7 @@
                 )
 
                 @test resource_id |> isnothing
-                @test result isa DearDiary.Unprocessable
+                @test result === DearDiary.Unprocessable
             end
         end
 
@@ -98,7 +98,7 @@
                     UInt8[0x0D, 0x0E, 0x0F],
                 )
 
-                @test result isa DearDiary.Unprocessable
+                @test result === DearDiary.Unprocessable
             end
 
             @testset "with existing id" begin
@@ -123,7 +123,7 @@
                     "This is an updated resource.",
                     UInt8[0x0D, 0x0E, 0x0F],
                 )
-                @test update_result isa DearDiary.Updated
+                @test update_result === DearDiary.Updated
 
                 updated_resource = resource_id |> DearDiary.get_resource
 

@@ -10,7 +10,7 @@
                     "gala",
                 )
                 @test id isa Integer
-                @test status isa DearDiary.Created
+                @test status === DearDiary.Created
             end
 
             @testset "insert with existing username" begin
@@ -22,7 +22,7 @@
                     "gala",
                 )
                 @test id |> isnothing
-                @test status isa DearDiary.Duplicate
+                @test status === DearDiary.Duplicate
             end
 
             @testset "insert with empty username" begin
@@ -34,7 +34,7 @@
                     "gala",
                 )
                 @test id |> isnothing
-                @test status isa DearDiary.Unprocessable
+                @test status === DearDiary.Unprocessable
             end
         end
 
@@ -83,7 +83,7 @@
                 DearDiary.User, username_user.id;
                 first_name="Ana",
                 last_name=nothing,
-            ) isa DearDiary.Updated
+            ) === DearDiary.Updated
 
             user = DearDiary.fetch(DearDiary.User, "missy")
 

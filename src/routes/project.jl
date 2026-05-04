@@ -13,8 +13,8 @@ function setup_project_routes()
         response_project = id |> get_project
 
         if (response_project |> isnothing)
-            return json(
-                ("message" => (HTTP.StatusCodes.NOT_FOUND |> HTTP.statustext));
+            return error_response(
+                NotFound, "Project not found";
                 status=HTTP.StatusCodes.NOT_FOUND,
             )
         end
@@ -40,8 +40,14 @@ function setup_project_routes()
             request.context[:user].id,
             parameters.payload.name,
         )
-        upsert_status = upsert_result |> get_status_by_upsert_result
-        return json(("project_id" => project_id); status=upsert_status)
+        if !(upsert_result === Created)
+            return error_response(
+                upsert_to_error_code(upsert_result),
+                "Failed to create project";
+                status=upsert_result |> get_status_by_upsert_result,
+            )
+        end
+        return json(("project_id" => project_id); status=HTTP.StatusCodes.CREATED)
     end
 
     @patch root("/{id}", middleware=[AdminRequiredMiddleware]) function (
@@ -52,8 +58,14 @@ function setup_project_routes()
             parameters.payload.name,
             parameters.payload.description,
         )
-        upsert_status = upsert_result |> get_status_by_upsert_result
-        return json(("message" => (upsert_result |> String)); status=upsert_status)
+        if !(upsert_result === Updated)
+            return error_response(
+                upsert_to_error_code(upsert_result),
+                "Failed to update project";
+                status=upsert_result |> get_status_by_upsert_result,
+            )
+        end
+        return json(("message" => (upsert_result |> String)); status=HTTP.StatusCodes.OK)
     end
 
     @delete root("/{id}", middleware=[AdminRequiredMiddleware]) function (
@@ -62,8 +74,8 @@ function setup_project_routes()
         success = id |> delete_project
 
         if !success
-            return json(
-                ("message" => (HTTP.StatusCodes.INTERNAL_SERVER_ERROR |> HTTP.statustext));
+            return error_response(
+                ServerError, "Failed to delete project";
                 status=HTTP.StatusCodes.INTERNAL_SERVER_ERROR,
             )
         end

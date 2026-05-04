@@ -43,7 +43,7 @@ function get_metrics(
 end
 
 """
-    create_metric(iteration_id::Integer, key::AbstractString, value::AbstractFloat)::NamedTuple{id::Optional{<:Int64},status::UpsertResult}
+    create_metric(iteration_id::Integer, key::AbstractString, value::AbstractFloat)::NamedTuple{id::Optional{<:Int64},status::Type{<:UpsertResult}}
 
 Create a [`Metric`](@ref).
 
@@ -58,21 +58,21 @@ Create a [`Metric`](@ref).
 """
 function create_metric(
     iteration_id::Integer, key::AbstractString, value::AbstractFloat
-)::@NamedTuple{id::Optional{<:Int64}, status::UpsertResult}
+)::@NamedTuple{id::Optional{<:Int64}, status::Type{<:UpsertResult}}
     iteration = iteration_id |> get_iteration
     if iteration |> isnothing
-        return (id=nothing, status=Unprocessable())
+        return (id=nothing, status=Unprocessable)
     end
 
     metric_id, metric_upsert_result = insert(Metric, iteration_id, key, value)
-    if !(metric_upsert_result isa Created)
+    if !(metric_upsert_result === Created)
         return (id=nothing, status=metric_upsert_result)
     end
     return (id=metric_id, status=metric_upsert_result)
 end
 
 """
-    update_metric(id::Integer, key::Optional{AbstractString}, value::Optional{AbstractFloat})::UpsertResult
+    update_metric(id::Integer, key::Optional{AbstractString}, value::Optional{AbstractFloat})::Type{<:UpsertResult}
 
 Update a [`Metric`](@ref) record.
 
@@ -86,15 +86,15 @@ An [`UpsertResult`](@ref). [`Updated`](@ref) if the record was successfully upda
 """
 function update_metric(
     id::Integer, key::Optional{AbstractString}, value::Optional{AbstractFloat}
-)::UpsertResult
+)::Type{<:UpsertResult}
     metric = id |> get_metric
     if metric |> isnothing
-        return Unprocessable()
+        return Unprocessable
     end
 
     should_be_updated = compare_object_fields(metric; key=key, value=value)
     if !should_be_updated
-        return Updated()
+        return Updated
     end
 
     return update(Metric, id; key=key, value=value)

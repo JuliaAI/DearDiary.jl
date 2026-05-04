@@ -13,14 +13,14 @@
                 iteration_id, result = DearDiary.create_iteration(experiment_id)
 
                 @test iteration_id isa Integer
-                @test result isa DearDiary.Created
+                @test result === DearDiary.Created
             end
 
             @testset "with non-existing experiment" begin
                 iteration_id, result = DearDiary.create_iteration(9999)
 
                 @test iteration_id |> isnothing
-                @test result isa DearDiary.Unprocessable
+                @test result === DearDiary.Unprocessable
             end
         end
 
@@ -75,7 +75,7 @@
                     now(),
                 )
 
-                @test result isa DearDiary.Unprocessable
+                @test result === DearDiary.Unprocessable
             end
 
             @testset "with existing id" begin
@@ -99,7 +99,7 @@
                     "Updated iteration notes",
                     now(),
                 )
-                @test update_result isa DearDiary.Updated
+                @test update_result === DearDiary.Updated
 
                 updated_iteration = iteration_id |> DearDiary.get_iteration
 

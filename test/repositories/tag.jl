@@ -6,7 +6,7 @@
                 "test-tag"
             )
             @test result.id isa Integer
-            @test result.status isa DearDiary.Created
+            @test result.status === DearDiary.Created
         end
 
         @testset verbose = true "fetch by id" begin
@@ -124,10 +124,10 @@
         )
 
         @test project_tag_result.id isa Integer
-        @test project_tag_result.status isa DearDiary.Created
+        @test project_tag_result.status === DearDiary.Created
         @test experiment_tag_result.id isa Integer
-        @test experiment_tag_result.status isa DearDiary.Created
+        @test experiment_tag_result.status === DearDiary.Created
         @test iteration_tag_result.id isa Integer
-        @test iteration_tag_result.status isa DearDiary.Created
+        @test iteration_tag_result.status === DearDiary.Created
     end
 end

@@ -45,7 +45,7 @@ function get_experiments(
 end
 
 """
-    create_experiment(project_id::Integer, status_id::Integer, name::AbstractString)::NamedTuple{id::Optional{<:Int64},status::UpsertResult}
+    create_experiment(project_id::Integer, status_id::Integer, name::AbstractString)::NamedTuple{id::Optional{<:Int64},status::Type{<:UpsertResult}}
 
 Create a [`Experiment`](@ref).
 
@@ -60,14 +60,14 @@ Create a [`Experiment`](@ref).
 """
 function create_experiment(
     project_id::Integer, status_id::Integer, name::AbstractString
-)::@NamedTuple{id::Optional{<:Int64}, status::UpsertResult}
+)::@NamedTuple{id::Optional{<:Int64}, status::Type{<:UpsertResult}}
     project = project_id |> get_project
     if project |> isnothing
-        return (id=nothing, status=Unprocessable())
+        return (id=nothing, status=Unprocessable)
     end
 
     if !(status_id in (Status |> instances .|> Int))
-        return (id=nothing, status=Unprocessable())
+        return (id=nothing, status=Unprocessable)
     end
 
     experiment_id, experiment_upsert_result = insert(
@@ -76,14 +76,14 @@ function create_experiment(
         status_id,
         name,
     )
-    if !(experiment_upsert_result isa Created)
+    if !(experiment_upsert_result === Created)
         return (id=nothing, status=experiment_upsert_result)
     end
     return (id=experiment_id, status=experiment_upsert_result)
 end
 
 """
-    create_experiment(project_id::Integer, status::Status, name::AbstractString)::NamedTuple{id::Optional{<:Int64},status::UpsertResult}
+    create_experiment(project_id::Integer, status::Status, name::AbstractString)::NamedTuple{id::Optional{<:Int64},status::Type{<:UpsertResult}}
 
 Create a [`Experiment`](@ref).
 
@@ -98,12 +98,12 @@ Create a [`Experiment`](@ref).
 """
 function create_experiment(
     project_id::Integer, status::Status, name::AbstractString
-)::@NamedTuple{id::Optional{<:Int64}, status::UpsertResult}
+)::@NamedTuple{id::Optional{<:Int64}, status::Type{<:UpsertResult}}
     return create_experiment(project_id, (status |> Integer), name)
 end
 
 """
-    update_experiment(id::Integer, status_id::Optional{Integer}, name::Optional{AbstractString}, description::Optional{AbstractString}, end_date::Optional{DateTime})::UpsertResult
+    update_experiment(id::Integer, status_id::Optional{Integer}, name::Optional{AbstractString}, description::Optional{AbstractString}, end_date::Optional{DateTime})::Type{<:UpsertResult}
 
 Update a [`Experiment`](@ref) record.
 
@@ -123,14 +123,14 @@ function update_experiment(
     name::Optional{AbstractString},
     description::Optional{AbstractString},
     end_date::Optional{DateTime},
-)::UpsertResult
+)::Type{<:UpsertResult}
     experiment = fetch(Experiment, id)
     if experiment |> isnothing
-        return Unprocessable()
+        return Unprocessable
     end
 
     if !(status_id in (Status |> instances .|> Int))
-        return Unprocessable()
+        return Unprocessable
     end
 
     should_be_updated = compare_object_fields(
@@ -141,7 +141,7 @@ function update_experiment(
         end_date=end_date,
     )
     if !should_be_updated
-        return Updated()
+        return Updated
     end
 
     return update(
@@ -154,7 +154,7 @@ function update_experiment(
 end
 
 """
-    update_experiment(id::Integer, status::Status, name::Optional{AbstractString}, description::Optional{AbstractString}, end_date::Optional{DateTime})::UpsertResult
+    update_experiment(id::Integer, status::Status, name::Optional{AbstractString}, description::Optional{AbstractString}, end_date::Optional{DateTime})::Type{<:UpsertResult}
 
 Update a [`Experiment`](@ref) record.
 
@@ -174,7 +174,7 @@ function update_experiment(
     name::Optional{AbstractString},
     description::Optional{AbstractString},
     end_date::Optional{DateTime},
-)::UpsertResult
+)::Type{<:UpsertResult}
     return update_experiment(id, (status |> Integer), name, description, end_date)
 end
 

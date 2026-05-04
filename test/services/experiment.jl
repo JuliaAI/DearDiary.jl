@@ -12,7 +12,7 @@
                 )
 
                 @test experiment_id isa Integer
-                @test result isa DearDiary.Created
+                @test result === DearDiary.Created
             end
 
             @testset "with non-existing project" begin
@@ -23,7 +23,7 @@
                 )
 
                 @test experiment_id |> isnothing
-                @test result isa DearDiary.Unprocessable
+                @test result === DearDiary.Unprocessable
             end
 
             @testset "with invalid status" begin
@@ -37,7 +37,7 @@
                 )
 
                 @test experiment_id |> isnothing
-                @test result isa DearDiary.Unprocessable
+                @test result === DearDiary.Unprocessable
             end
         end
         @testset verbose = true "get experiment by id" begin
@@ -96,7 +96,7 @@
                     Dates.now(),
                 )
 
-                @test result isa DearDiary.Unprocessable
+                @test result === DearDiary.Unprocessable
             end
 
             @testset "with existing id" begin
@@ -115,7 +115,7 @@
                     "Updated description",
                     Dates.now(),
                 )
-                @test update_result isa DearDiary.Updated
+                @test update_result === DearDiary.Updated
 
                 experiment = experiment_id |> DearDiary.get_experiment
 
@@ -143,7 +143,7 @@
                     Dates.now(),
                 )
 
-                @test result isa DearDiary.Unprocessable
+                @test result === DearDiary.Unprocessable
             end
         end
 

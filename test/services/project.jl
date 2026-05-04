@@ -9,7 +9,7 @@
                     "Test Project",
                 )
 
-                @test project_upsert_result isa DearDiary.Created
+                @test project_upsert_result === DearDiary.Created
                 @test project_id isa Integer
             end
 
@@ -20,7 +20,7 @@
                 )
 
                 @test project_id |> isnothing
-                @test project_upsert_result isa DearDiary.Unprocessable
+                @test project_upsert_result === DearDiary.Unprocessable
             end
 
             @testset "with non-admin user_id as argument" begin
@@ -31,7 +31,7 @@
                 )
 
                 @test project_id |> isnothing
-                @test project_upsert_result isa DearDiary.Unprocessable
+                @test project_upsert_result === DearDiary.Unprocessable
             end
 
             @testset verbose = true "with no user_id as argument" begin
@@ -39,7 +39,7 @@
                     "Test Project",
                 )
 
-                @test project_upsert_result isa DearDiary.Created
+                @test project_upsert_result === DearDiary.Created
                 @test project_id isa Integer
 
                 default_user = DearDiary.get_user("default")
@@ -83,7 +83,7 @@
                     "Updated Description"
                 )
 
-                @test result isa DearDiary.Unprocessable
+                @test result === DearDiary.Unprocessable
             end
 
             @testset "with existing id" begin
@@ -91,7 +91,7 @@
                     1,
                     "Updated Test Project",
                     "Updated Description"
-                ) isa DearDiary.Updated
+                ) === DearDiary.Updated
 
                 project = DearDiary.get_project(1)
 

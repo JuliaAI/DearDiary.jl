@@ -22,7 +22,7 @@ An array of [`Project`](@ref) objects.
 get_projects()::Array{Project,1} = Project |> fetch_all
 
 """
-    create_project(user_id::Integer, name::AbstractString)::NamedTuple{id::Optional{<:Int64},status::UpsertResult}
+    create_project(user_id::Integer, name::AbstractString)::NamedTuple{id::Optional{<:Int64},status::Type{<:UpsertResult}}
 
 Create a [`Project`](@ref).
 
@@ -36,19 +36,19 @@ Create a [`Project`](@ref).
 """
 function create_project(
     user_id::Integer, name::AbstractString
-)::@NamedTuple{id::Optional{<:Int64}, status::UpsertResult}
+)::@NamedTuple{id::Optional{<:Int64}, status::Type{<:UpsertResult}}
     user = user_id |> get_user
     if user |> isnothing || user.is_admin == 0
-        return (id=nothing, status=Unprocessable())
+        return (id=nothing, status=Unprocessable)
     end
 
     project_id, project_upsert_result = insert(Project, name)
-    if !(project_upsert_result isa Created)
+    if !(project_upsert_result === Created)
         return (id=nothing, status=project_upsert_result)
     end
 
     _, userpermission_upsert_result = insert(UserPermission, user_id, project_id)
-    if !(userpermission_upsert_result isa Created)
+    if !(userpermission_upsert_result === Created)
         delete(Project, project_id)
         return (id=nothing, status=userpermission_upsert_result)
     end
@@ -56,7 +56,7 @@ function create_project(
 end
 
 """
-    create_project(name::AbstractString)::NamedTuple{id::Optional{<:Int64},status::UpsertResult}
+    create_project(name::AbstractString)::NamedTuple{id::Optional{<:Int64},status::Type{<:UpsertResult}}
 
 Create a [`Project`](@ref). Uses the "default" user to create the project.
 
@@ -67,13 +67,13 @@ Create a [`Project`](@ref). Uses the "default" user to create the project.
 - The created project ID. If an error occurs, `nothing` is returned.
 - An [`UpsertResult`](@ref). [`Created`](@ref) if the record was successfully created, [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
 """
-function create_project(name::AbstractString)::@NamedTuple{id::Optional{<:Int64}, status::UpsertResult}
+function create_project(name::AbstractString)::@NamedTuple{id::Optional{<:Int64}, status::Type{<:UpsertResult}}
     default_user = get_user("default")
     return create_project(default_user.id, name)
 end
 
 """
-    update_project(id::Int, name::Optional{AbstractString}, description::Optional{AbstractString})::UpsertResult
+    update_project(id::Int, name::Optional{AbstractString}, description::Optional{AbstractString})::Type{<:UpsertResult}
 
 Update a [`Project`](@ref) record.
 
@@ -87,15 +87,15 @@ An [`UpsertResult`](@ref). [`Updated`](@ref) if the record was successfully upda
 """
 function update_project(
     id::Integer, name::Optional{AbstractString}, description::Optional{AbstractString}
-)::UpsertResult
+)::Type{<:UpsertResult}
     project = fetch(Project, id)
     if project |> isnothing
-        return Unprocessable()
+        return Unprocessable
     end
 
     should_be_updated = compare_object_fields(project; name=name, description=description)
     if !should_be_updated
-        return Updated()
+        return Updated
     end
 
     return update(Project, id; name=name, description=description)

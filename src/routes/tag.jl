@@ -15,8 +15,8 @@ function setup_tag_routes()
         response_tag = id |> get_tag
 
         if (response_tag |> isnothing)
-            return json(
-                ("message" => (HTTP.StatusCodes.NOT_FOUND |> HTTP.statustext));
+            return error_response(
+                NotFound, "Tag not found";
                 status=HTTP.StatusCodes.NOT_FOUND,
             )
         end
@@ -49,8 +49,14 @@ function setup_tag_routes()
         association_id, upsert_result = add_tag(
             Project, project_id, parameters.payload.value,
         )
-        upsert_status = upsert_result |> get_status_by_upsert_result
-        return json(("association_id" => association_id); status=upsert_status)
+        if !(upsert_result === Created)
+            return error_response(
+                upsert_to_error_code(upsert_result),
+                "Failed to attach tag to project";
+                status=upsert_result |> get_status_by_upsert_result,
+            )
+        end
+        return json(("association_id" => association_id); status=HTTP.StatusCodes.CREATED)
     end
 
     @post root("/experiment/{experiment_id}", middleware=[
@@ -61,8 +67,14 @@ function setup_tag_routes()
         association_id, upsert_result = add_tag(
             Experiment, experiment_id, parameters.payload.value,
         )
-        upsert_status = upsert_result |> get_status_by_upsert_result
-        return json(("association_id" => association_id); status=upsert_status)
+        if !(upsert_result === Created)
+            return error_response(
+                upsert_to_error_code(upsert_result),
+                "Failed to attach tag to experiment";
+                status=upsert_result |> get_status_by_upsert_result,
+            )
+        end
+        return json(("association_id" => association_id); status=HTTP.StatusCodes.CREATED)
     end
 
     @post root("/iteration/{iteration_id}", middleware=[
@@ -73,8 +85,14 @@ function setup_tag_routes()
         association_id, upsert_result = add_tag(
             Iteration, iteration_id, parameters.payload.value,
         )
-        upsert_status = upsert_result |> get_status_by_upsert_result
-        return json(("association_id" => association_id); status=upsert_status)
+        if !(upsert_result === Created)
+            return error_response(
+                upsert_to_error_code(upsert_result),
+                "Failed to attach tag to iteration";
+                status=upsert_result |> get_status_by_upsert_result,
+            )
+        end
+        return json(("association_id" => association_id); status=HTTP.StatusCodes.CREATED)
     end
 
     @delete root("/{id}", middleware=[AdminRequiredMiddleware]) function (
@@ -83,8 +101,8 @@ function setup_tag_routes()
         success = id |> delete_tag
 
         if !success
-            return json(
-                ("message" => (HTTP.StatusCodes.INTERNAL_SERVER_ERROR |> HTTP.statustext));
+            return error_response(
+                ServerError, "Failed to delete tag";
                 status=HTTP.StatusCodes.INTERNAL_SERVER_ERROR,
             )
         end

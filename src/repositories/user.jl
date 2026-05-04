@@ -16,7 +16,7 @@ function insert(
     last_name::AbstractString,
     username::AbstractString,
     password::AbstractString,
-)::@NamedTuple{id::Optional{<:Int64}, status::UpsertResult}
+)::@NamedTuple{id::Optional{<:Int64}, status::Type{<:UpsertResult}}
     fields = (
         first_name=first_name,
         last_name=last_name,
@@ -33,7 +33,7 @@ function update(
     last_name::Optional{AbstractString}=nothing,
     password::Optional{AbstractString}=nothing,
     is_admin::Optional{Bool}=nothing,
-)::UpsertResult
+)::Type{<:UpsertResult}
     fields = (
         first_name=first_name,
         last_name=last_name,

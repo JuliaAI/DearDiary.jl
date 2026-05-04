@@ -1,15 +1,42 @@
 @testset verbose = true "routes utilities" begin
     @testset verbose = true "get status by upsert result" begin
         upsert_result_to_status = [
-            (DearDiary.Created(), HTTP.StatusCodes.CREATED),
-            (DearDiary.Duplicate(), HTTP.StatusCodes.CONFLICT),
-            (DearDiary.Unprocessable(), HTTP.StatusCodes.UNPROCESSABLE_ENTITY),
-            (DearDiary.Error(), HTTP.StatusCodes.INTERNAL_SERVER_ERROR),
+            (DearDiary.Created, HTTP.StatusCodes.CREATED),
+            (DearDiary.Duplicate, HTTP.StatusCodes.CONFLICT),
+            (DearDiary.Unprocessable, HTTP.StatusCodes.UNPROCESSABLE_ENTITY),
+            (DearDiary.Error, HTTP.StatusCodes.INTERNAL_SERVER_ERROR),
         ]
 
         for (upsert_result, status) in upsert_result_to_status
             @test DearDiary.get_status_by_upsert_result(upsert_result) == status
         end
+    end
+
+    @testset verbose = true "error_code returns stable identifiers" begin
+        code_strings = [
+            (DearDiary.NotFound, "NOT_FOUND"),
+            (DearDiary.InvalidCredentials, "INVALID_CREDENTIALS"),
+            (DearDiary.TokenMissing, "TOKEN_MISSING"),
+            (DearDiary.TokenInvalid, "TOKEN_INVALID"),
+            (DearDiary.TokenExpired, "TOKEN_EXPIRED"),
+            (DearDiary.TokenPayloadInvalid, "TOKEN_PAYLOAD_INVALID"),
+            (DearDiary.UserNotFound, "USER_NOT_FOUND"),
+            (DearDiary.AdminRequired, "ADMIN_REQUIRED"),
+            (DearDiary.SameUserRequired, "SAME_USER_REQUIRED"),
+            (DearDiary.ProjectPermissionRequired, "PROJECT_PERMISSION_REQUIRED"),
+            (DearDiary.Conflict, "CONFLICT"),
+            (DearDiary.InvalidPayload, "INVALID_PAYLOAD"),
+            (DearDiary.ServerError, "SERVER_ERROR"),
+        ]
+        for (code, expected) in code_strings
+            @test DearDiary.error_code(code) == expected
+        end
+    end
+
+    @testset verbose = true "upsert_to_error_code dispatch" begin
+        @test DearDiary.upsert_to_error_code(DearDiary.Duplicate) === DearDiary.Conflict
+        @test DearDiary.upsert_to_error_code(DearDiary.Unprocessable) === DearDiary.InvalidPayload
+        @test DearDiary.upsert_to_error_code(DearDiary.Error) === DearDiary.ServerError
     end
 
     @with_deardiary_test_db begin
@@ -66,6 +93,8 @@
                     status_exception=false,
                 )
                 @test response.status == HTTP.StatusCodes.FORBIDDEN
+                data = JSON.parse(response.body |> String, Dict{String,Any})
+                @test data["code"] == "ADMIN_REQUIRED"
             end
         end
 
@@ -102,6 +131,8 @@
                     status_exception=false,
                 )
                 @test response.status == HTTP.StatusCodes.FORBIDDEN
+                data = JSON.parse(response.body |> String, Dict{String,Any})
+                @test data["code"] == "SAME_USER_REQUIRED"
             end
 
             @testset "admin can read any profile" begin
@@ -312,6 +343,8 @@
                     status_exception=false,
                 )
                 @test response.status == HTTP.StatusCodes.FORBIDDEN
+                data = JSON.parse(response.body |> String, Dict{String,Any})
+                @test data["code"] == "PROJECT_PERMISSION_REQUIRED"
             end
 
             @testset "non-admin with read permission can read but not create" begin
@@ -344,7 +377,7 @@
                 permission = DearDiary.get_userpermission(user.id, project_id)
                 @test DearDiary.update_userpermission(
                     permission.id, true, nothing, nothing, nothing,
-                ) isa DearDiary.Updated
+                ) === DearDiary.Updated
 
                 response = HTTP.post(
                     "http://127.0.0.1:9000/experiment/project/$(project_id)";

@@ -17,7 +17,7 @@
                     UInt8[0x01, 0x02, 0x03, 0x04],
                 )
                 @test id isa Integer
-                @test status isa DearDiary.Created
+                @test status === DearDiary.Created
             end
 
             @testset "with non-existing experiment" begin
@@ -28,7 +28,7 @@
                     UInt8[0x01, 0x02, 0x03, 0x04],
                 )
                 @test id |> isnothing
-                @test status isa DearDiary.Unprocessable
+                @test status === DearDiary.Unprocessable
             end
         end
 
@@ -119,7 +119,7 @@
                 data=UInt8[0x0D, 0x0E, 0x0F],
             )
 
-            @test update_result isa DearDiary.Updated
+            @test update_result === DearDiary.Updated
 
             resource = DearDiary.fetch(DearDiary.Resource, resource_id)
             @test resource.name == "Updated Resource"

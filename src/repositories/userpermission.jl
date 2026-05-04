@@ -33,7 +33,7 @@ end
 
 function insert(
     ::Type{<:UserPermission}, user_id::Integer, project_id::Integer
-)::@NamedTuple{id::Optional{<:Int64}, status::UpsertResult}
+)::@NamedTuple{id::Optional{<:Int64}, status::Type{<:UpsertResult}}
     return insert(SQL_INSERT_USERPERMISSION, (user_id=user_id, project_id=project_id))
 end
 
@@ -44,7 +44,7 @@ function update(
     update_permission::Optional{Bool}=nothing,
     delete_permission::Optional{Bool}=nothing,
     manage_permission::Optional{Bool}=nothing,
-)::UpsertResult
+)::Type{<:UpsertResult}
     fields = (
         create_permission=create_permission,
         read_permission=read_permission,

@@ -10,7 +10,7 @@ Load environment variables from a file.
 An [`APIConfig`](@ref) object containing the loaded environment variables.
 """
 function load_config(file::AbstractString)::APIConfig
-    host = "localhost"
+    host = "127.0.0.1"
     port = 9000
     db_file = "deardiary.db"
     jwt_secret = "deardiary_secret"

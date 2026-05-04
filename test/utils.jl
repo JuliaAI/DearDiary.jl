@@ -17,7 +17,7 @@
         end
 
         config = (file |> DearDiary.load_config)
-        @test config.host == "localhost"
+        @test config.host == "127.0.0.1"
     end
 end
 

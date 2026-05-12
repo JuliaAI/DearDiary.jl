@@ -2,6 +2,7 @@ module DearDiary
 
 using Oxygen: headers
 using HTTP
+using JSON
 using JWTs
 using Dates
 using Bcrypt
@@ -70,6 +71,22 @@ include("routes/metric.jl")
 include("routes/resource.jl")
 include("routes/tag.jl")
 include("routes/auth.jl")
+
+include("client/types.jl")
+include("client/http.jl")
+include("client/auth.jl")
+include("client/user.jl")
+include("client/project.jl")
+include("client/userpermission.jl")
+include("client/experiment.jl")
+include("client/iteration.jl")
+include("client/parameter.jl")
+include("client/metric.jl")
+include("client/resource.jl")
+include("client/tag.jl")
+include("client/lifecycle.jl")
+
+export Client, ClientError, connect, disconnect, refresh_token!, whoami, with_iteration
 
 export get_user, get_users, create_user, update_user, delete_user, sanitize_user
 export get_project, get_projects, create_project, update_project, delete_project

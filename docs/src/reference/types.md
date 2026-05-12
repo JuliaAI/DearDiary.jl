@@ -8,4 +8,6 @@ DearDiary.Iteration
 DearDiary.Parameter
 DearDiary.Metric
 DearDiary.Resource
+DearDiary.Client
+DearDiary.ClientError
 ```

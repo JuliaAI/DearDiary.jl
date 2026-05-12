@@ -178,6 +178,31 @@ This will start the API server on `http://localhost:9000`. You can customize the
 by setting an `.env` file containing the configuration options. For more details, refer to
 the [REST API](@ref) section of the documentation.
 
+## Logging from a remote training script
+When the training script runs on a different machine from the server, use the bundled Julia
+client. Every CRUD verb shown above gains a [`Client`](@ref)-aware method, and the
+[`with_iteration`](@ref) helper auto-finalises an iteration on both success and exception.
+
+```julia
+using DearDiary
+
+client = DearDiary.connect(
+    "http://server.example:9000"; username="alice", password="secret",
+)
+
+project_id = create_project(client, "Iris classification")
+experiment_id = create_experiment(
+    client, project_id, DearDiary.IN_PROGRESS, "Decision tree sweep",
+)
+
+with_iteration(client, experiment_id) do iter
+    create_parameter(client, iter.id, "max_depth", 4)
+    create_metric(client, iter.id, "accuracy", 0.96)
+end
+```
+
+See the [Client](@ref) reference for the full list of helpers.
+
 ## Conclusion
 And that's it! You have successfully completed the tutorial and learned how to use the
 core features of this library. You can now track your machine learning experiments

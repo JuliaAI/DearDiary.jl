@@ -124,5 +124,7 @@ include("routes/metric.jl")
 include("routes/resource.jl")
 include("routes/tag.jl")
 
+include("client/client.jl")
+
 DearDiary.stop()
 file |> rm

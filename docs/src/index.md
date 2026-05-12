@@ -22,6 +22,8 @@ CurrentModule = DearDiary
 ## Features
 - A complete experiment tracking solution for Julia.
 - Built-in REST API server for remote logging and querying.
+- Native Julia client (`DearDiary.connect`, `with_iteration`, …) for logging from training
+  scripts running on another machine.
 - Portable and easy-to-use SQLite backend.
 - **Built in Julia**
 

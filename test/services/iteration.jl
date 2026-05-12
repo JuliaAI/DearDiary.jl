@@ -125,6 +125,63 @@
             @test (iteration_id |> DearDiary.get_iteration) |> isnothing
         end
 
+        @testset verbose = true "with_iteration" begin
+            @testset "closes on success" begin
+                user = DearDiary.get_user("default")
+                project_id, _ = DearDiary.create_project(user.id, "Withiter Project")
+                experiment_id, _ = DearDiary.create_experiment(
+                    project_id,
+                    DearDiary.IN_PROGRESS,
+                    "Withiter Experiment",
+                )
+
+                captured_id = DearDiary.with_iteration(experiment_id) do iter
+                    @test iter isa DearDiary.Iteration
+                    @test iter.end_date |> isnothing
+                    iter.id
+                end
+
+                iteration = captured_id |> DearDiary.get_iteration
+                @test !(iteration.end_date |> isnothing)
+            end
+
+            @testset "closes on failure and rethrows" begin
+                user = DearDiary.get_user("default")
+                project_id, _ = DearDiary.create_project(user.id, "Withiter Crash Project")
+                experiment_id, _ = DearDiary.create_experiment(
+                    project_id,
+                    DearDiary.IN_PROGRESS,
+                    "Withiter Crash Experiment",
+                )
+
+                captured_id = Ref{Int64}(0)
+                @test_throws ErrorException DearDiary.with_iteration(experiment_id) do iter
+                    captured_id[] = iter.id
+                    error("boom")
+                end
+
+                iteration = captured_id[] |> DearDiary.get_iteration
+                @test !(iteration.end_date |> isnothing)
+            end
+
+            @testset "raises when experiment cannot accept iterations" begin
+                user = DearDiary.get_user("default")
+                project_id, _ = DearDiary.create_project(user.id, "Withiter Stopped Project")
+                experiment_id, _ = DearDiary.create_experiment(
+                    project_id,
+                    DearDiary.IN_PROGRESS,
+                    "Stopped Experiment",
+                )
+                DearDiary.update_experiment(
+                    experiment_id, DearDiary.STOPPED, nothing, nothing, nothing,
+                )
+
+                @test_throws ArgumentError DearDiary.with_iteration(experiment_id) do _
+                    error("should not run")
+                end
+            end
+        end
+
         @testset verbose = true "get project id" begin
             user = DearDiary.get_user("default")
             project_id, _ = DearDiary.create_project(user.id, "Test Project")

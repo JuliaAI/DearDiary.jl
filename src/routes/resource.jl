@@ -34,9 +34,11 @@ function setup_resource_routes()
         ProjectPermissionRequiredMiddleware(Resource, CreatePermission),
     ]) function (request::HTTP.Request, experiment_id::Integer)
         form_data = request |> HTTP.parse_multipart_form
-        name = find(form_data, "name").data
-        data = find(form_data, "data").data
-        if name |> isnothing || data |> isnothing
+        # Both `name` and `data` are required, but `find` returns `nothing` when a part is
+        # absent — dereference `.data` only after we know the part exists.
+        name_part = find(form_data, "name")
+        data_part = find(form_data, "data")
+        if (name_part |> isnothing) || (data_part |> isnothing)
             return error_response(
                 InvalidPayload, "Multipart fields 'name' and 'data' are required";
                 status=HTTP.StatusCodes.UNPROCESSABLE_ENTITY,
@@ -45,8 +47,8 @@ function setup_resource_routes()
 
         resource_id, upsert_result = create_resource(
             experiment_id,
-            name |> take! |> String,
-            data |> take!,
+            name_part.data |> take! |> String,
+            data_part.data |> take!,
         )
         if !(upsert_result === Created)
             return error_response(
@@ -62,15 +64,16 @@ function setup_resource_routes()
         ProjectPermissionRequiredMiddleware(Resource, UpdatePermission),
     ]) function (request::HTTP.Request, id::Integer)
         form_data = request |> HTTP.parse_multipart_form
-        name = find(form_data, "name").data
-        description = find(form_data, "description").data
-        data = find(form_data, "data").data
+        # Any subset of these parts may be sent; `find` returns `nothing` when one is absent.
+        name_part = find(form_data, "name")
+        description_part = find(form_data, "description")
+        data_part = find(form_data, "data")
 
         upsert_result = update_resource(
             id,
-            name |> isnothing ? nothing : (name |> take! |> String),
-            description |> isnothing ? nothing : (description |> take! |> String),
-            data |> isnothing ? nothing : (data |> take!),
+            (name_part |> isnothing) ? nothing : (name_part.data |> take! |> String),
+            (description_part |> isnothing) ? nothing : (description_part.data |> take! |> String),
+            (data_part |> isnothing) ? nothing : (data_part.data |> take!),
         )
         if !(upsert_result === Updated)
             return error_response(

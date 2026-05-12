@@ -131,6 +131,44 @@ function delete_iteration(id::Integer)::Bool
 end
 
 """
+    with_iteration(f::Function, experiment_id::Integer)
+
+Open a fresh [`Iteration`](@ref) under `experiment_id` via [`create_iteration`](@ref), pass it
+to `f`, and finalise `end_date` regardless of whether the body returns normally or throws.
+The body's return value is returned on success; exceptions are rethrown after the iteration
+has been closed, so a script that crashes mid-run still leaves a terminated iteration in the
+database.
+
+# Arguments
+- `f::Function`: A unary function that receives the freshly-created [`Iteration`](@ref).
+- `experiment_id::Integer`: The id of the [`Experiment`](@ref) that owns the iteration.
+
+# Returns
+Whatever `f` returns.
+"""
+function with_iteration(f::Function, experiment_id::Integer)
+    iteration_id, status = experiment_id |> create_iteration
+    if !(status === Created)
+        throw(ArgumentError(
+            "Could not create iteration for experiment $experiment_id: $status",
+        ))
+    end
+    iteration = iteration_id |> get_iteration
+    try
+        result = f(iteration)
+        update_iteration(iteration.id, nothing, now())
+        return result
+    catch err
+        try
+            update_iteration(iteration.id, nothing, now())
+        catch _
+            # Preserve the original exception — a finaliser failure is less informative.
+        end
+        rethrow(err)
+    end
+end
+
+"""
     get_project_id(iteration::Iteration)::Optional{Int64}
 
 Return the [`Project`](@ref) id that owns the given [`Iteration`](@ref) by walking up to its

@@ -14,7 +14,8 @@ get_metric(id::Integer)::Optional{Metric} = fetch(Metric, id)
 """
     get_metrics(iteration_id::Integer)::Array{Metric, 1}
 
-Get all [`Metric`](@ref) for a given iteration.
+Get all [`Metric`](@ref) for a given iteration, ordered by `step` ascending so the rows
+already form a chronological time series.
 
 # Arguments
 - `iteration_id::Integer`: The id of the iteration to query.
@@ -43,7 +44,7 @@ function get_metrics(
 end
 
 """
-    create_metric(iteration_id::Integer, key::AbstractString, value::AbstractFloat)::NamedTuple{id::Optional{<:Int64},status::DataType}
+    create_metric(iteration_id::Integer, key::AbstractString, value::AbstractFloat; step=nothing, recorded_at=nothing)::NamedTuple{id::Optional{<:Int64},status::DataType}
 
 Create a [`Metric`](@ref).
 
@@ -51,13 +52,19 @@ Create a [`Metric`](@ref).
 - `iteration_id::Integer`: The id of the iteration to create the metric for.
 - `key::AbstractString`: The key of the metric.
 - `value::AbstractFloat`: The value of the metric.
+- `step::Optional{Integer}`: Position in the time series. When `nothing`, the next
+  `max(step) + 1` value for the `(iteration_id, key)` series is used.
+- `recorded_at::Optional{DateTime}`: When the value was captured. When `nothing`, the
+  server clock (`now()`) is used.
 
 # Returns
 - The created metric ID. If an error occurs, `nothing` is returned.
 - An [`UpsertResult`](@ref). [`Created`](@ref) if the record was successfully created, [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
 """
 function create_metric(
-    iteration_id::Integer, key::AbstractString, value::AbstractFloat
+    iteration_id::Integer, key::AbstractString, value::AbstractFloat;
+    step::Optional{Integer}=nothing,
+    recorded_at::Optional{DateTime}=nothing,
 )::@NamedTuple{id::Optional{<:Int64}, status::DataType}
     iteration = iteration_id |> get_iteration
     if iteration |> isnothing
@@ -69,7 +76,12 @@ function create_metric(
         return (id=nothing, status=Unprocessable)
     end
 
-    metric_id, metric_upsert_result = insert(Metric, iteration_id, key, value)
+    resolved_step = (step |> isnothing) ? next_metric_step(iteration_id, key) : step
+    resolved_recorded_at = (recorded_at |> isnothing) ? now() : recorded_at
+
+    metric_id, metric_upsert_result = insert(
+        Metric, iteration_id, key, value, resolved_step, resolved_recorded_at,
+    )
     if !(metric_upsert_result === Created)
         return (id=nothing, status=metric_upsert_result)
     end
@@ -77,7 +89,61 @@ function create_metric(
 end
 
 """
-    update_metric(id::Integer, key::Optional{AbstractString}, value::Optional{AbstractFloat})::Type{<:UpsertResult}
+    log_metrics(iteration_id::Integer, metrics::AbstractDict{<:AbstractString,<:AbstractFloat}; step=nothing, recorded_at=nothing)::NamedTuple{ids::Array{Int64,1},status::DataType}
+
+Record many metric values against `iteration_id` in one shot. Every entry shares the same
+`recorded_at` (server clock when `nothing`). When `step` is omitted, each `key` independently
+gets its own `max(step) + 1`, so per-key counters do not interfere.
+
+Stops at the first failure and returns the ids that were committed before the failure plus
+the failing status — callers can then decide whether to retry or surface the error.
+
+# Arguments
+- `iteration_id::Integer`: The id of the iteration to record against.
+- `metrics::AbstractDict`: The `key => value` pairs to record.
+- `step::Optional{Integer}`: Shared step for every entry, or `nothing` to let each key
+  get its own next value.
+- `recorded_at::Optional{DateTime}`: Shared timestamp, or `nothing` for `now()`.
+
+# Returns
+- `ids::Array{Int64,1}`: The ids of the inserted [`Metric`](@ref) rows in iteration order.
+- `status::DataType`: [`Created`](@ref) when every insert succeeded; otherwise the
+  [`UpsertResult`](@ref) of the first failing insert.
+"""
+function log_metrics(
+    iteration_id::Integer,
+    metrics::AbstractDict{<:AbstractString,<:AbstractFloat};
+    step::Optional{Integer}=nothing,
+    recorded_at::Optional{DateTime}=nothing,
+)::@NamedTuple{ids::Array{Int64,1}, status::DataType}
+    iteration = iteration_id |> get_iteration
+    if iteration |> isnothing
+        return (ids=Int64[], status=Unprocessable)
+    end
+    if !(iteration.end_date |> isnothing)
+        return (ids=Int64[], status=Unprocessable)
+    end
+
+    resolved_recorded_at = (recorded_at |> isnothing) ? now() : recorded_at
+
+    ids = Int64[]
+    for (key, value) in metrics
+        resolved_step = (step |> isnothing) ?
+            next_metric_step(iteration_id, key) : step
+        id, result = insert(
+            Metric, iteration_id, key, value |> Float64,
+            resolved_step, resolved_recorded_at,
+        )
+        if !(result === Created)
+            return (ids=ids, status=result)
+        end
+        push!(ids, id)
+    end
+    return (ids=ids, status=Created)
+end
+
+"""
+    update_metric(id::Integer, key::Optional{AbstractString}, value::Optional{AbstractFloat}; step=nothing, recorded_at=nothing)::Type{<:UpsertResult}
 
 Update a [`Metric`](@ref) record.
 
@@ -85,12 +151,18 @@ Update a [`Metric`](@ref) record.
 - `id::Integer`: The id of the metric to update.
 - `key::Optional{AbstractString}`: The new key for the metric.
 - `value::Optional{AbstractFloat}`: The new value for the metric.
+- `step::Optional{Integer}`: The new step in the series.
+- `recorded_at::Optional{DateTime}`: The new timestamp.
 
 # Returns
 An [`UpsertResult`](@ref). [`Updated`](@ref) if the record was successfully updated (or no changes were made), [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
 """
 function update_metric(
-    id::Integer, key::Optional{AbstractString}, value::Optional{AbstractFloat}
+    id::Integer,
+    key::Optional{AbstractString},
+    value::Optional{AbstractFloat};
+    step::Optional{Integer}=nothing,
+    recorded_at::Optional{DateTime}=nothing,
 )::Type{<:UpsertResult}
     metric = id |> get_metric
     if metric |> isnothing
@@ -103,12 +175,16 @@ function update_metric(
         return Unprocessable
     end
 
-    should_be_updated = compare_object_fields(metric; key=key, value=value)
+    should_be_updated = compare_object_fields(
+        metric; key=key, value=value, step=step, recorded_at=recorded_at,
+    )
     if !should_be_updated
         return Updated
     end
 
-    return update(Metric, id; key=key, value=value)
+    return update(
+        Metric, id; key=key, value=value, step=step, recorded_at=recorded_at,
+    )
 end
 
 """

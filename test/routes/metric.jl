@@ -116,5 +116,66 @@
             data = JSON.parse(response.body |> String, Dict{String,Any})
             @test data["message"] == "OK"
         end
+
+        @testset verbose = true "create metric persists step and recorded_at" begin
+            # Iteration 1 already exists from earlier in this testset.
+            payload = Dict(
+                "key" => "f1",
+                "value" => 0.81,
+                "step" => 9,
+                "recorded_at" => "2025-03-04T18:30:00",
+            ) |> JSON.json
+            response = HTTP.post(
+                "http://127.0.0.1:9000/metric/iteration/1";
+                body=payload,
+                status_exception=false,
+            )
+            @test response.status == HTTP.StatusCodes.CREATED
+            metric_id = JSON.parse(
+                response.body |> String, Dict{String,Any},
+            )["metric_id"]
+
+            response = HTTP.get(
+                "http://127.0.0.1:9000/metric/$(metric_id)";
+                status_exception=false,
+            )
+            metric = JSON.parse(response.body |> String, Dict{String,Any}) |>
+                DearDiary.Metric
+            @test metric.step == 9
+            @test metric.recorded_at == DateTime(2025, 3, 4, 18, 30, 0)
+        end
+
+        @testset verbose = true "batch endpoint records multiple metrics" begin
+            payload = Dict(
+                "step" => 12,
+                "recorded_at" => "2025-03-04T18:31:00",
+                "metrics" => [
+                    Dict("key" => "loss", "value" => 0.27),
+                    Dict("key" => "val_loss", "value" => 0.31),
+                    Dict("key" => "accuracy", "value" => 0.93),
+                ],
+            ) |> JSON.json
+            response = HTTP.post(
+                "http://127.0.0.1:9000/metric/iteration/1/batch";
+                body=payload,
+                status_exception=false,
+            )
+            @test response.status == HTTP.StatusCodes.CREATED
+            data = JSON.parse(response.body |> String, Dict{String,Any})
+            @test data["metric_ids"] isa AbstractArray
+            @test (data["metric_ids"] |> length) == 3
+
+            fetched = [
+                HTTP.get(
+                    "http://127.0.0.1:9000/metric/$(id)";
+                    status_exception=false,
+                ) |>
+                r -> JSON.parse(r.body |> String, Dict{String,Any}) |>
+                     DearDiary.Metric
+                for id in data["metric_ids"]
+            ]
+            @test all(m -> m.step == 12, fetched)
+            @test all(m -> m.recorded_at == DateTime(2025, 3, 4, 18, 31, 0), fetched)
+        end
     end
 end

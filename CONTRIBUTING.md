@@ -111,6 +111,38 @@ function example_function(arg1, arg2)
 end
 ```
 
+### Schema migrations
+Every change to the SQLite schema goes through the forward-only migration system rooted at
+`src/repositories/sql/migrations.jl`. There is no rollback path — once a migration is
+released, treat it as immutable.
+
+To add a new migration:
+
+1. Create `src/repositories/sql/migrations/NNN_short_name.jl` where `NNN` is the next free
+   three-digit version number.
+2. In that file, define a `const MIGRATION_NNN_SHORT_NAME = Migration(NNN, "short_name", [...])`
+   whose `statements` list the SQL to apply in order. Re-use the existing `SQL_*` constants
+   when the change is idempotent (e.g. an `IF NOT EXISTS` rebuild) and write inline
+   `ALTER TABLE` strings for additive column changes.
+3. Append the new constant to the `MIGRATIONS` vector at the bottom of
+   `src/repositories/sql/migrations.jl`, and add the file to the ordered `include`s there.
+
+```julia
+# 002_add_metric_step_recorded_at.jl
+const MIGRATION_002_ADD_METRIC_STEP_RECORDED_AT = Migration(
+    2,
+    "add_metric_step_recorded_at",
+    [
+        "ALTER TABLE metric ADD COLUMN step INTEGER NOT NULL DEFAULT 0",
+        "ALTER TABLE metric ADD COLUMN recorded_at TEXT NOT NULL DEFAULT ''",
+    ],
+)
+```
+
+When the server starts, `initialize_database()` runs every pending migration in version
+order and stamps each one into the `schema_migrations` table, so an existing database
+only ever sees the new statements.
+
 ### Documentation
 If something is pointed to be used by the user, it must be documented. If something is pointed to be used internally, it does not need to be documented, but it should be well-named and self-explanatory.
 

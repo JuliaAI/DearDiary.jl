@@ -38,7 +38,9 @@ function setup_metric_routes()
         metric_id, upsert_result = create_metric(
             iteration_id,
             parameters.payload.key,
-            parameters.payload.value,
+            parameters.payload.value;
+            step=parameters.payload.step,
+            recorded_at=parameters.payload.recorded_at,
         )
         if !(upsert_result === Created)
             return error_response(
@@ -50,6 +52,33 @@ function setup_metric_routes()
         return json(("metric_id" => metric_id); status=HTTP.StatusCodes.CREATED)
     end
 
+    @post root("/iteration/{iteration_id}/batch", middleware=[
+        ProjectPermissionRequiredMiddleware(Metric, CreatePermission),
+    ]) function (
+        ::HTTP.Request, iteration_id::Integer, parameters::Json{MetricBatchPayload}
+    )
+        # `MetricBatchPayload` carries an ordered array so the inserted ids align with the
+        # client-side iteration order — handy for retries that want to know what landed.
+        items = Dict{String,Float64}(
+            item.key => item.value for item in parameters.payload.metrics
+        )
+        result = log_metrics(
+            iteration_id, items;
+            step=parameters.payload.step,
+            recorded_at=parameters.payload.recorded_at,
+        )
+        if !(result.status === Created)
+            return error_response(
+                upsert_to_error_code(result.status),
+                "Failed to log metrics";
+                status=result.status |> get_status_by_upsert_result,
+            )
+        end
+        return json(
+            ("metric_ids" => result.ids); status=HTTP.StatusCodes.CREATED,
+        )
+    end
+
     @patch root("/{id}", middleware=[
         ProjectPermissionRequiredMiddleware(Metric, UpdatePermission),
     ]) function (
@@ -58,7 +87,9 @@ function setup_metric_routes()
         upsert_result = update_metric(
             id,
             parameters.payload.key,
-            parameters.payload.value,
+            parameters.payload.value;
+            step=parameters.payload.step,
+            recorded_at=parameters.payload.recorded_at,
         )
         if !(upsert_result === Updated)
             return error_response(

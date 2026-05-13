@@ -16,7 +16,10 @@ end
 """
     initialize_database(; file_name::String="deardiary.db")
 
-Initializes the database by creating the necessary tables.
+Open `file_name` (creating it if needed), run every pending [`Migration`](@ref) via
+[`apply_migrations`](@ref), and re-seed the default user. Safe to call repeatedly: each
+migration runs at most once per database, and the default-user `INSERT OR IGNORE` is a
+no-op when the row already exists.
 """
 function initialize_database(; file_name::String="deardiary.db")
     global _DEARDIARY_DATABASE = SQLite.DB(file_name)
@@ -24,29 +27,26 @@ function initialize_database(; file_name::String="deardiary.db")
     # Enable foreign key constraints
     DBInterface.execute(_DEARDIARY_DATABASE, "PRAGMA foreign_keys = ON")
 
-    DBInterface.execute(_DEARDIARY_DATABASE, SQL_CREATE_USER)
+    apply_migrations(_DEARDIARY_DATABASE)
+    seed_default_user(_DEARDIARY_DATABASE)
+
+    @info "Database initialized successfully."
+end
+
+"""
+    seed_default_user(db::SQLite.DB)::Nothing
+
+Insert the seeded `default` admin user when it is not already present. The bcrypt hash is
+derived at call time, so this lives outside the SQL migration system (which is restricted to
+static SQL strings). The underlying `INSERT OR IGNORE` makes the call idempotent.
+"""
+function seed_default_user(db::SQLite.DB)::Nothing
     DBInterface.execute(
-        _DEARDIARY_DATABASE,
+        db,
         SQL_INSERT_DEFAULT_ADMIN_USER,
         (password=GenerateFromPassword("default") |> String,),
     )
-    DBInterface.execute(_DEARDIARY_DATABASE, SQL_PREVENT_DEFAULT_USER_DELETION)
-    DBInterface.execute(_DEARDIARY_DATABASE, SQL_PREVENT_DEFAULT_USER_DEMOTE)
-
-    DBInterface.execute(_DEARDIARY_DATABASE, SQL_CREATE_PROJECT)
-    DBInterface.execute(_DEARDIARY_DATABASE, SQL_CREATE_USERPERMISSION)
-    DBInterface.execute(_DEARDIARY_DATABASE, SQL_CREATE_EXPERIMENT)
-    DBInterface.execute(_DEARDIARY_DATABASE, SQL_CREATE_ITERATION)
-    DBInterface.execute(_DEARDIARY_DATABASE, SQL_CREATE_PARAMETER)
-    DBInterface.execute(_DEARDIARY_DATABASE, SQL_CREATE_METRIC)
-    DBInterface.execute(_DEARDIARY_DATABASE, SQL_CREATE_RESOURCE)
-
-    DBInterface.execute(_DEARDIARY_DATABASE, SQL_CREATE_TAG)
-    DBInterface.execute(_DEARDIARY_DATABASE, SQL_CREATE_PROJECTTAG)
-    DBInterface.execute(_DEARDIARY_DATABASE, SQL_CREATE_EXPERIMENTTAG)
-    DBInterface.execute(_DEARDIARY_DATABASE, SQL_CREATE_ITERATIONTAG)
-
-    @info "Database initialized successfully."
+    return nothing
 end
 
 """

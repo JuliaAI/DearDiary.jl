@@ -25,6 +25,7 @@ makedocs(;
             "Miscellaneous" => "reference/misc.md",
             "REST API" => "reference/api.md",
             "Client" => "reference/client.md",
+            "Migrations" => "reference/migrations.md",
         ],
     ],
     warnonly=[:cross_references, :missing_docs],

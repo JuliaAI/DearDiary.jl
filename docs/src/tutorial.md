@@ -112,11 +112,23 @@ for (measure, measurements, max_depth) in model_values
     create_parameter(iteration_id, "max_depth", max_depth)
 
     measures_names = [split(x |> string, "(") |> first for x in measure]
-    for (name, value) in zip(measures_names, measurements)
-        create_metric(iteration_id, name, value)
-    end
+    metrics_at_step = Dict(
+        name => value for (name, value) in zip(measures_names, measurements)
+    )
+    log_metrics(iteration_id, metrics_at_step)
 end
 nothing # hide
+```
+
+Each `create_metric` or `log_metrics` call appends to a per-`(iteration, key)` series. The
+server auto-assigns `step` (`max(step) + 1`) and `recorded_at` (`now()`) when you don't pass
+them, so logging the same key repeatedly forms a chronological time series — exactly what a
+training loop produces over epochs:
+
+```julia
+for epoch in 1:10
+    log_metrics(iteration_id, Dict("loss" => train_loss(epoch), "acc" => accuracy(epoch)))
+end
 ```
 
 ## Viewing the logged data

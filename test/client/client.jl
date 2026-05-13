@@ -421,6 +421,58 @@
             @test get_iteration(client, iteration.id) |> isnothing
         end
 
+        @testset "metric step + recorded_at + log_metrics" begin
+            project_id = create_project(client, "Step Project")
+            experiment_id = create_experiment(
+                client, project_id, DearDiary.IN_PROGRESS, "Step Experiment",
+            )
+            iteration = create_iteration(client, experiment_id)
+
+            # Auto step assignment: three log calls for the same key produce 0,1,2.
+            create_metric(client, iteration.id, "loss", 0.5)
+            create_metric(client, iteration.id, "loss", 0.4)
+            create_metric(client, iteration.id, "loss", 0.3)
+
+            losses = [
+                m for m in get_metrics(client, iteration.id) if m.key == "loss"
+            ]
+            @test [m.step for m in losses] == [0, 1, 2]
+            @test [m.value for m in losses] == [0.5, 0.4, 0.3]
+            @test all(m -> m.recorded_at isa DateTime, losses)
+
+            # Explicit step + recorded_at round-trip.
+            explicit_ts = DateTime(2025, 9, 1, 7, 30, 0)
+            create_metric(
+                client, iteration.id, "explicit", 1.5;
+                step=100, recorded_at=explicit_ts,
+            )
+            explicit = [
+                m for m in get_metrics(client, iteration.id) if m.key == "explicit"
+            ]
+            @test (explicit |> length) == 1
+            @test explicit[1].step == 100
+            @test explicit[1].recorded_at == explicit_ts
+
+            # Batch endpoint.
+            ids = log_metrics(
+                client, iteration.id,
+                Dict("acc" => 0.94, "val_acc" => 0.89);
+                step=7,
+            )
+            @test ids isa Array{Int64,1}
+            @test (ids |> length) == 2
+            batched = [get_metric(client, id) for id in ids]
+            @test all(m -> m.step == 7, batched)
+
+            # Batch without step auto-assigns per key.
+            log_metrics(client, iteration.id, Dict("rolling" => 0.1))
+            log_metrics(client, iteration.id, Dict("rolling" => 0.2))
+            rolling = [
+                m for m in get_metrics(client, iteration.id) if m.key == "rolling"
+            ]
+            @test [m.step for m in rolling] == [0, 1]
+        end
+
         @testset "ClientError on locked iteration" begin
             project_id = create_project(client, "Locked Project")
             experiment_id = create_experiment(

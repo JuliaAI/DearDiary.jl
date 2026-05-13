@@ -16,6 +16,8 @@
                     iteration_id,
                     "accuracy",
                     0.95,
+                    0,
+                    now(),
                 )
                 @test id isa Integer
                 @test status === DearDiary.Created
@@ -27,6 +29,8 @@
                     9999,
                     "accuracy",
                     0.95,
+                    0,
+                    now(),
                 )
                 @test id |> isnothing
                 @test status === DearDiary.Unprocessable
@@ -48,6 +52,8 @@
                     iteration_id,
                     "precision",
                     0.92,
+                    0,
+                    now(),
                 )
 
                 metric = DearDiary.fetch(DearDiary.Metric, metric_id)
@@ -57,6 +63,8 @@
                 @test metric.iteration_id == iteration_id
                 @test metric.key == "precision"
                 @test metric.value == 0.92
+                @test metric.step == 0
+                @test metric.recorded_at isa DateTime
             end
 
             @testset "non-existing metric" begin
@@ -66,7 +74,7 @@
             end
         end
 
-        @testset verbose = true "fetch all" begin
+        @testset verbose = true "fetch all is ordered by step ascending" begin
             user = DearDiary.get_user("default")
             project_id, _ = DearDiary.create_project(user.id, "Test Project")
             experiment_id, _ = DearDiary.create_experiment(
@@ -75,22 +83,35 @@
                 "Metric Test Experiment",
             )
             iteration_id, _ = DearDiary.create_iteration(experiment_id)
-            DearDiary.insert(
-                DearDiary.Metric,
-                iteration_id,
-                "recall",
-                0.88,
-            )
-            DearDiary.insert(
-                DearDiary.Metric,
-                iteration_id,
-                "f1_score",
-                0.90,
-            )
-            metrics = DearDiary.fetch_all(DearDiary.Metric, iteration_id)
+            # Insert out-of-order to make sure the repository, not the caller, sorts.
+            DearDiary.insert(DearDiary.Metric, iteration_id, "loss", 0.3, 2, now())
+            DearDiary.insert(DearDiary.Metric, iteration_id, "loss", 0.5, 0, now())
+            DearDiary.insert(DearDiary.Metric, iteration_id, "loss", 0.4, 1, now())
 
+            metrics = DearDiary.fetch_all(DearDiary.Metric, iteration_id)
             @test metrics isa Array{DearDiary.Metric,1}
-            @test (metrics |> length) == 2
+            @test (metrics |> length) == 3
+            @test [m.step for m in metrics] == [0, 1, 2]
+        end
+
+        @testset verbose = true "next_metric_step" begin
+            user = DearDiary.get_user("default")
+            project_id, _ = DearDiary.create_project(user.id, "Test Project")
+            experiment_id, _ = DearDiary.create_experiment(
+                project_id,
+                DearDiary.IN_PROGRESS,
+                "NextStep Experiment",
+            )
+            iteration_id, _ = DearDiary.create_iteration(experiment_id)
+
+            @test DearDiary.next_metric_step(iteration_id, "loss") == 0
+
+            DearDiary.insert(DearDiary.Metric, iteration_id, "loss", 0.1, 0, now())
+            DearDiary.insert(DearDiary.Metric, iteration_id, "loss", 0.05, 5, now())
+            @test DearDiary.next_metric_step(iteration_id, "loss") == 6
+
+            # Per-key counters are independent.
+            @test DearDiary.next_metric_step(iteration_id, "accuracy") == 0
         end
 
         @testset verbose = true "update" begin
@@ -107,18 +128,22 @@
                 iteration_id,
                 "log_loss",
                 0.001,
+                0,
+                now(),
             )
 
             update_result = DearDiary.update(
                 DearDiary.Metric,
                 metric_id;
                 value=0.0005,
+                step=42,
             )
 
             @test update_result === DearDiary.Updated
 
             metric = DearDiary.fetch(DearDiary.Metric, metric_id)
             @test metric.value == 0.0005
+            @test metric.step == 42
         end
 
         @testset verbose = true "delete" begin
@@ -136,6 +161,8 @@
                     iteration_id,
                     "auc",
                     0.97,
+                    0,
+                    now(),
                 )
 
                 @test DearDiary.delete(DearDiary.Metric, metric_id)
@@ -157,12 +184,16 @@
                     iteration_id,
                     "accuracy",
                     0.93,
+                    0,
+                    now(),
                 )
                 DearDiary.insert(
                     DearDiary.Metric,
                     iteration_id,
                     "precision",
                     0.91,
+                    0,
+                    now(),
                 )
 
                 @test DearDiary.delete(DearDiary.Metric, iteration)

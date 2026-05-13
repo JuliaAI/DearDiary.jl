@@ -99,6 +99,8 @@ const SQL_CREATE_METRIC = """
         iteration_id INTEGER NOT NULL,
         key TEXT NOT NULL CHECK (key <> ''),
         value REAL NOT NULL,
+        step INTEGER NOT NULL DEFAULT 0,
+        recorded_at TEXT NOT NULL CHECK (recorded_at <> ''),
         FOREIGN KEY(iteration_id) REFERENCES iteration(id)
     )
     """

@@ -157,3 +157,34 @@ const SQL_CREATE_ITERATIONTAG = """
         UNIQUE(iteration_id, tag_id)
     )
     """
+
+const SQL_CREATE_MODEL = """
+    CREATE TABLE IF NOT EXISTS model (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        project_id INTEGER NOT NULL,
+        name TEXT NOT NULL CHECK (name <> ''),
+        description TEXT DEFAULT '',
+        created_date TEXT NOT NULL CHECK (created_date <> ''),
+        updated_date TEXT DEFAULT '',
+        FOREIGN KEY(project_id) REFERENCES project(id),
+        UNIQUE(project_id, name)
+    )
+    """
+
+const SQL_CREATE_MODELVERSION = """
+    CREATE TABLE IF NOT EXISTS model_version (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        model_id INTEGER NOT NULL,
+        version INTEGER NOT NULL CHECK (version > 0),
+        iteration_id INTEGER NOT NULL,
+        resource_id INTEGER,
+        stage_id INTEGER NOT NULL CHECK (stage_id IN (1, 2, 3, 4)),
+        description TEXT DEFAULT '',
+        created_date TEXT NOT NULL CHECK (created_date <> ''),
+        updated_date TEXT DEFAULT '',
+        FOREIGN KEY(model_id) REFERENCES model(id),
+        FOREIGN KEY(iteration_id) REFERENCES iteration(id),
+        FOREIGN KEY(resource_id) REFERENCES resource(id),
+        UNIQUE(model_id, version)
+    )
+    """

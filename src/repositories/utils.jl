@@ -66,7 +66,7 @@ The count value, or `0` if the query returns no rows.
 """
 function fetch_count(query::AbstractString; parameters::NamedTuple=(;))::Int64
     row = fetch(query, parameters)
-    return row |> isnothing ? 0 : Int64(row[:count])
+    return (row |> isnothing) ? 0 : (row[:count] |> Int64)
 end
 
 """

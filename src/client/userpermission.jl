@@ -29,7 +29,7 @@ function get_userpermissions(
     client::Client, ::Type{User}, user_id::Integer,
 )::Array{UserPermission,1}
     response = _request(client, "GET", "/user/$user_id/permissions")
-    decoded = JSON.parse(response.body |> String)
+    decoded = response.body |> String |> JSON.parse
     return [item |> UserPermission for item in decoded]
 end
 
@@ -43,7 +43,7 @@ function get_userpermissions(
     client::Client, ::Type{Project}, project_id::Integer,
 )::Array{UserPermission,1}
     response = _request(client, "GET", "/project/$project_id/members")
-    decoded = JSON.parse(response.body |> String)
+    decoded = response.body |> String |> JSON.parse
     return [item |> UserPermission for item in decoded]
 end
 

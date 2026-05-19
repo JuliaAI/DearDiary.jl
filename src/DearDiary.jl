@@ -8,7 +8,9 @@ using Dates
 using Bcrypt
 using Compat
 using Oxygen
+using SHA
 using SQLite
+using UUIDs
 
 include("utils.jl")
 
@@ -25,6 +27,14 @@ include("types/parameter.jl")
 include("types/metric.jl")
 include("types/resource.jl")
 include("types/tag.jl")
+include("types/model.jl")
+include("types/modelversion.jl")
+
+include("artifacts/store.jl")
+include("artifacts/sqlite.jl")
+include("artifacts/filesystem.jl")
+include("artifacts/s3.jl")
+include("artifacts/migrate.jl")
 
 include("repositories/sql/database.jl")
 include("repositories/sql/user.jl")
@@ -36,6 +46,8 @@ include("repositories/sql/parameter.jl")
 include("repositories/sql/metric.jl")
 include("repositories/sql/resource.jl")
 include("repositories/sql/tag.jl")
+include("repositories/sql/model.jl")
+include("repositories/sql/modelversion.jl")
 include("repositories/sql/migrations.jl")
 
 include("repositories/utils.jl")
@@ -49,6 +61,8 @@ include("repositories/parameter.jl")
 include("repositories/metric.jl")
 include("repositories/resource.jl")
 include("repositories/tag.jl")
+include("repositories/model.jl")
+include("repositories/modelversion.jl")
 
 include("services/utils.jl")
 include("services/user.jl")
@@ -60,6 +74,8 @@ include("services/parameter.jl")
 include("services/metric.jl")
 include("services/resource.jl")
 include("services/tag.jl")
+include("services/model.jl")
+include("services/modelversion.jl")
 
 include("routes/utils.jl")
 include("routes/user.jl")
@@ -71,6 +87,8 @@ include("routes/parameter.jl")
 include("routes/metric.jl")
 include("routes/resource.jl")
 include("routes/tag.jl")
+include("routes/model.jl")
+include("routes/modelversion.jl")
 include("routes/auth.jl")
 
 include("client/types.jl")
@@ -85,6 +103,8 @@ include("client/parameter.jl")
 include("client/metric.jl")
 include("client/resource.jl")
 include("client/tag.jl")
+include("client/model.jl")
+include("client/modelversion.jl")
 include("client/lifecycle.jl")
 
 export Client, ClientError, connect, disconnect, refresh_token!, whoami, with_iteration
@@ -97,7 +117,11 @@ export get_iteration, get_iterations, create_iteration, update_iteration, delete
 export get_parameter, get_parameters, create_parameter, update_parameter, delete_parameter
 export get_metric, get_metrics, create_metric, update_metric, delete_metric, log_metrics
 export get_resource, get_resources, create_resource, update_resource, delete_resource
+export read_resource_data
+export migrate_artifacts!, MigrateArtifactsResult
 export get_tag, get_tags, create_tag, add_tag, delete_tag
+export get_model, get_models, create_model, update_model, delete_model
+export get_modelversion, get_modelversions, create_modelversion, update_modelversion, delete_modelversion
 
 _DEARDIARY_APICONFIG = nothing
 
@@ -235,6 +259,8 @@ function run(; env_file::String=".env")
     setup_metric_routes()
     setup_resource_routes()
     setup_tag_routes()
+    setup_model_routes()
+    setup_modelversion_routes()
     setup_auth_routes()
 
     cors = Cors(;

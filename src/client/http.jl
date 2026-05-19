@@ -12,8 +12,8 @@ function _request(
     multipart::Optional{HTTP.Form}=nothing,
 )::HTTP.Response
     url = client.base_url * path
-    if !(query |> isnothing) && !isempty(query)
-        pairs = ["$(k)=$(HTTP.escapeuri(v |> string))" for (k, v) in query]
+    if !(query |> isnothing) && !(query |> isempty)
+        pairs = ["$(k)=$(v |> string |> HTTP.escapeuri)" for (k, v) in query]
         url = url * "?" * join(pairs, "&")
     end
 

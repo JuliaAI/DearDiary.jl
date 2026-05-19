@@ -308,6 +308,35 @@ function get_project_id(::Type{Resource}, request::HTTP.Request)::Optional{Int64
     return resource |> isnothing ? nothing : (resource |> get_project_id)
 end
 
+function get_project_id(::Type{Model}, request::HTTP.Request)::Optional{Int64}
+    segments = request |> path_segments
+    n = segments |> length
+    n >= 3 && segments[2] == "project" && return tryparse(Int64, segments[3])
+    n >= 2 || return nothing
+
+    model_id = tryparse(Int64, segments[2])
+    model_id |> isnothing && return nothing
+    model = model_id |> get_model
+    return model |> isnothing ? nothing : (model |> get_project_id)
+end
+
+function get_project_id(::Type{ModelVersion}, request::HTTP.Request)::Optional{Int64}
+    segments = request |> path_segments
+    n = segments |> length
+    if n >= 3 && segments[2] == "model"
+        model_id = tryparse(Int64, segments[3])
+        model_id |> isnothing && return nothing
+        model = model_id |> get_model
+        return model |> isnothing ? nothing : (model |> get_project_id)
+    end
+    n >= 2 || return nothing
+
+    version_id = tryparse(Int64, segments[2])
+    version_id |> isnothing && return nothing
+    version = version_id |> get_modelversion
+    return version |> isnothing ? nothing : (version |> get_project_id)
+end
+
 function get_project_id(::Type{Tag}, request::HTTP.Request)::Optional{Int64}
     segments = request |> path_segments
     (segments |> length) >= 3 || return nothing

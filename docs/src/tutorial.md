@@ -49,8 +49,18 @@ nothing # hide
 Before we start tracking our experiments, we need to initialize the database where the
 experiment data will be stored.
 
-```@repl tutorial
+```julia
 DearDiary.initialize_database()
+```
+
+```@setup tutorial
+# Documenter cd-resets between blocks, so `cd(mktempdir())` in a setup block does not
+# persist to the @repl/@example blocks below. Override `file_name` instead — that pins
+# the DB to a throwaway location regardless of what cwd Documenter restores. Subsequent
+# blocks reuse the connection via the global _DEARDIARY_DATABASE, so nothing else creates
+# a file in docs/build/.
+using DearDiary
+DearDiary.initialize_database(; file_name=joinpath(mktempdir(), "deardiary.db"))
 ```
 
 This will create a local SQLite database file named `deardiary.db` in the current
@@ -169,8 +179,11 @@ Then you can load the model back when needed.
 resource = get_resource(resource_id)
 ```
 
+The metadata response carries the artifact's metadata only — fetch the raw bytes via
+[`read_resource_data`](@ref).
+
 ```@example tutorial
-io = IOBuffer(resource.data)
+io = IOBuffer(read_resource_data(resource_id))
 loaded_mach = JLSO.load(io)[:machine]
 ```
 

@@ -43,6 +43,8 @@ const SQL_SELECT_SCHEMA_MIGRATIONS = """
     """
 
 include("migrations/001_initial_schema.jl")
+include("migrations/002_model_registry.jl")
+include("migrations/003_resource_artifact_columns.jl")
 
 """
     MIGRATIONS
@@ -54,6 +56,8 @@ and will not re-run it.
 """
 const MIGRATIONS = Migration[
     MIGRATION_001_INITIAL_SCHEMA,
+    MIGRATION_002_MODEL_REGISTRY,
+    MIGRATION_003_RESOURCE_ARTIFACT_COLUMNS,
 ]
 
 """
@@ -88,7 +92,19 @@ function apply_migrations(db::SQLite.DB)::Nothing
     for migration in (pending |> sort_migrations)
         @info "Applying migration $(lpad(migration.version, 3, '0'))_$(migration.name)"
         for statement in migration.statements
-            DBInterface.execute(db, statement)
+            try
+                DBInterface.execute(db, statement)
+            catch exception
+                if _is_idempotent_error(exception)
+                    # Schema is already in the target state — typically because someone
+                    # wiped `schema_migrations` on a DB whose tables were already migrated.
+                    # Tolerate it so apply_migrations is safe to re-run. The version stamp
+                    # is still recorded below, restoring the tracking table to consistency.
+                    @debug "Skipping idempotent statement" statement exception
+                else
+                    rethrow(exception)
+                end
+            end
         end
         DBInterface.execute(
             db,
@@ -101,6 +117,20 @@ function apply_migrations(db::SQLite.DB)::Nothing
         )
     end
     return nothing
+end
+
+# True when `exception` is an SQLite error signalling that the schema is already in the
+# target state — i.e. the migration statement would have been a no-op against a fresh DB
+# anyway (`CREATE TABLE IF NOT EXISTS` covers itself; `ALTER TABLE ADD COLUMN` does not, so
+# we sniff its error message instead).
+function _is_idempotent_error(exception)::Bool
+    message = try
+        exception.msg |> string
+    catch
+        return false
+    end
+    return occursin("duplicate column name", message) ||
+           occursin("already exists", message)
 end
 
 # Defensive sort — `MIGRATIONS` is expected to be in order, but a contributor adding an entry

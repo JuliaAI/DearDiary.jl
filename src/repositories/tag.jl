@@ -1,11 +1,11 @@
 function fetch(::Type{<:Tag}, id::Integer)::Optional{Tag}
     tag = fetch(SQL_SELECT_TAG_BY_ID, (id=id,))
-    return isnothing(tag) ? nothing : tag |> Tag
+    return (tag |> isnothing) ? nothing : (tag |> Tag)
 end
 
 function fetch(::Type{<:Tag}, value::AbstractString)::Optional{Tag}
     tag = fetch(SQL_SELECT_TAG_BY_VALUE, (value=value,))
-    return isnothing(tag) ? nothing : tag |> Tag
+    return (tag |> isnothing) ? nothing : (tag |> Tag)
 end
 
 function fetch_tags(::Type{<:Project}, project_id::Integer)::Array{Tag,1}
@@ -25,7 +25,7 @@ end
 
 function _tag_id_by_value(tag_value::AbstractString)::Int64
     tag = fetch(Tag, tag_value)
-    if isnothing(tag)
+    if tag |> isnothing
         # Ensure the tag exists; ignore insertion result and fetch again to get id
         insert(Tag, tag_value)
         tag = fetch(Tag, tag_value)
@@ -42,7 +42,7 @@ end
 function insert_tag(
     ::Type{<:Project}, project_id::Integer, tag_value::AbstractString
 )::@NamedTuple{id::Optional{<:Int64}, status::DataType}
-    tag_id = _tag_id_by_value(tag_value)
+    tag_id = tag_value |> _tag_id_by_value
     project_tag_fields = (project_id=project_id, tag_id=tag_id)
     return insert(SQL_INSERT_PROJECT_TAG, project_tag_fields)
 end
@@ -50,7 +50,7 @@ end
 function insert_tag(
     ::Type{<:Experiment}, experiment_id::Integer, tag_value::AbstractString
 )::@NamedTuple{id::Optional{<:Int64}, status::DataType}
-    tag_id = _tag_id_by_value(tag_value)
+    tag_id = tag_value |> _tag_id_by_value
     experiment_tag_fields = (experiment_id=experiment_id, tag_id=tag_id)
     return insert(SQL_INSERT_EXPERIMENT_TAG, experiment_tag_fields)
 end
@@ -58,7 +58,7 @@ end
 function insert_tag(
     ::Type{<:Iteration}, iteration_id::Integer, tag_value::AbstractString
 )::@NamedTuple{id::Optional{<:Int64}, status::DataType}
-    tag_id = _tag_id_by_value(tag_value)
+    tag_id = tag_value |> _tag_id_by_value
     iteration_tag_fields = (iteration_id=iteration_id, tag_id=tag_id)
     return insert(SQL_INSERT_ITERATION_TAG, iteration_tag_fields)
 end

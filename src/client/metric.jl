@@ -106,7 +106,7 @@ function log_metrics(
             "metrics" => items,
         ),
     )
-    return [Int64(id) for id in _json(response)["metric_ids"]]
+    return [id |> Int64 for id in _json(response)["metric_ids"]]
 end
 
 """

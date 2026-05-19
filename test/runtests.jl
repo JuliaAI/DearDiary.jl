@@ -5,6 +5,7 @@ using Test
 using Dates
 using Bcrypt
 using Compat
+using SHA
 using SQLite
 
 using DearDiary
@@ -76,6 +77,12 @@ include("types/parameter.jl")
 include("types/utils.jl")
 include("types/enums.jl")
 
+include("artifacts/vectors.jl")
+include("artifacts/store.jl")
+include("artifacts/filesystem.jl")
+include("artifacts/s3.jl")
+include("artifacts/migrate.jl")
+
 include("repositories/database.jl")
 include("repositories/user.jl")
 include("repositories/project.jl")
@@ -86,6 +93,8 @@ include("repositories/parameter.jl")
 include("repositories/metric.jl")
 include("repositories/resource.jl")
 include("repositories/tag.jl")
+include("repositories/model.jl")
+include("repositories/modelversion.jl")
 include("repositories/utils.jl")
 
 include("services/user.jl")
@@ -98,6 +107,8 @@ include("services/parameter.jl")
 include("services/metric.jl")
 include("services/resource.jl")
 include("services/tag.jl")
+include("services/model.jl")
+include("services/modelversion.jl")
 
 # Auth tests
 file = create_test_env_file(; enable_auth=true, jwt_secret="testsecret")
@@ -123,6 +134,8 @@ include("routes/parameter.jl")
 include("routes/metric.jl")
 include("routes/resource.jl")
 include("routes/tag.jl")
+include("routes/model.jl")
+include("routes/modelversion.jl")
 
 include("client/client.jl")
 

@@ -60,7 +60,7 @@ function create_user(
         first_name,
         last_name,
         username,
-        GenerateFromPassword(password) |> String,
+        password |> GenerateFromPassword |> String,
     )
 end
 

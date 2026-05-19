@@ -120,13 +120,21 @@ function type_from_dict(::Type{T}, data::AbstractDict)::T where {T}
             return nothing
         end
 
+        # SQLite hands back `missing` for NULL columns; treat it the same as
+        # `nothing` when the destination field allows it. Without this branch a
+        # nullable INTEGER column (e.g. `model_version.resource_id`) would fail to
+        # `convert(::Type{Union{Nothing,Int64}}, missing)` on every fetch.
+        if value isa Missing && Nothing <: field_type
+            return nothing
+        end
+
         if value isa field_type
             return value
         end
 
         if DateTime <: field_type && !(value isa DateTime)
             try
-                if Nothing <: field_type && isempty(value)
+                if Nothing <: field_type && (value |> isempty)
                     return nothing
                 end
                 return value |> DateTime
@@ -138,7 +146,7 @@ function type_from_dict(::Type{T}, data::AbstractDict)::T where {T}
         try
             return convert(field_type, value)
         catch e
-            throw(ArgumentError("Cannot convert value '$value' ($(typeof(value))) to $(field_type) for field $field: $e"))
+            throw(ArgumentError("Cannot convert value '$value' ($(value |> typeof)) to $(field_type) for field $field: $e"))
         end
     end
     return T(values...)
@@ -224,9 +232,9 @@ end
 
 function Base.show(io::IO, ::MIME"text/plain", x::NamedTuple{K,V}) where {K,V}
     print(io, "(")
-    for (i, key) in enumerate(K)
+    for (i, key) in (K |> enumerate)
         print(io, "$(key) = $(getfield(x, key))")
-        i < length(K) && print(io, ", ")
+        i < (K |> length) && print(io, ", ")
     end
     print(io, ")")
 end

@@ -8,14 +8,22 @@
 ## Features
 <img src="assets/logo.svg" width="200" align="right" />
 
-- A complete experiment tracking solution for Julia.
+- Complete ML experiment tracking — projects, experiments, iterations, parameters,
+  metrics, tagged resources.
 - Built-in REST API server for remote logging and querying.
 - Native Julia client (`DearDiary.connect`, `with_iteration`, …) for logging from training
   scripts running on another machine.
-- Portable and easy-to-use SQLite backend.
+- Model registry with run-to-checkpoint lineage and a
+  `NO_STAGE → STAGING → PRODUCTION → ARCHIVED` lifecycle; promoting a version to
+  `PRODUCTION` auto-archives the prior incumbent.
+- Pluggable artifact storage: bytes can live inline in SQLite, on a local filesystem,
+  or in any S3-compatible object store (AWS S3, MinIO, Cloudflare R2).
+- Portable SQLite metadata store — one file, no separate service to run.
 - **Built in Julia**
 
-Learn to use it with the [Tutorial](https://juliaai.github.io/DearDiary.jl/dev/tutorial/).
+Learn to use it with the [tutorials](https://juliaai.github.io/DearDiary.jl/dev/tutorial/) — a
+quickstart walk-through plus dedicated guides for the model registry, filesystem artifact
+storage, and S3-compatible object stores.
 
 ## Installation
 You can install DearDiary.jl via the Julia package manager:

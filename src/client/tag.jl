@@ -31,7 +31,7 @@ function get_tags(
     client::Client, ::Type{T}, parent_id::Integer,
 )::Array{Tag,1} where {T<:Union{Project,Experiment,Iteration}}
     response = _request(client, "GET", "/tag/$(_tag_segment(T))/$parent_id")
-    decoded = JSON.parse(response.body |> String)
+    decoded = response.body |> String |> JSON.parse
     return [item |> Tag for item in decoded]
 end
 

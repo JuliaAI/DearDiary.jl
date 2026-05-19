@@ -53,7 +53,22 @@
                 @test resource.id isa Int
                 @test resource.experiment_id == 1
                 @test resource.name == "model_weights"
-                @test length(resource.data) == 1024
+                # `data` is omitted from the metadata response as of v0.7.0; the bytes are
+                # only reachable via /resource/{id}/data.
+                @test resource.data |> isnothing
+                @test resource.size_bytes == 1024
+                @test resource.content_hash |> !isempty
+            end
+
+            @testset verbose = true "get resource data streams bytes" begin
+                response = HTTP.get(
+                    "http://127.0.0.1:9000/resource/1/data";
+                    status_exception=false,
+                )
+                @test response.status == HTTP.StatusCodes.OK
+                @test (response.body |> length) == 1024
+                content_type = Dict(response.headers)["Content-Type"]
+                @test content_type == "application/octet-stream"
             end
 
             @testset verbose = true "get resources" begin
@@ -107,7 +122,14 @@
                 resource = data |> DearDiary.Resource
                 @test resource.name == "model_weights_v2"
                 @test resource.description == "Updated model weights"
-                @test length(resource.data) == 1024
+                @test resource.size_bytes == 1024
+
+                # Confirm the bytes round-trip through the streaming endpoint.
+                bytes_response = HTTP.get(
+                    "http://127.0.0.1:9000/resource/2/data";
+                    status_exception=false,
+                )
+                @test (bytes_response.body |> length) == 1024
             end
 
             @testset verbose = true "delete resource" begin

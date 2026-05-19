@@ -1,13 +1,34 @@
 """
     get_resource(client::Client, id::Integer)::Optional{Resource}
 
-Fetch a [`Resource`](@ref) (including its raw `data` bytes) via `GET /resource/{id}`.
+Fetch the metadata for a [`Resource`](@ref) via `GET /resource/{id}`. The returned struct's
+`data` field is always `nothing` — the JSON response carries metadata only. Fetch the
+artifact bytes separately with [`read_resource_data`](@ref).
+
 Returns `nothing` when the server replies 404 and raises [`ClientError`](@ref) for other
 failures.
 """
 function get_resource(client::Client, id::Integer)::Optional{Resource}
     try
         return _json(_request(client, "GET", "/resource/$id")) |> Resource
+    catch err
+        err isa ClientError && err.status == 404 && return nothing
+        rethrow(err)
+    end
+end
+
+"""
+    read_resource_data(client::Client, id::Integer)::Optional{Vector{UInt8}}
+
+Download the raw bytes of a [`Resource`](@ref) via `GET /resource/{id}/data`. Returns the
+full body as a `Vector{UInt8}`, or `nothing` when the resource does not exist. The endpoint
+is backend-agnostic: SQLite-backed rows hand back the inline bytes, filesystem-backed rows
+stream from disk, and S3-backed rows are proxied through the object store.
+"""
+function read_resource_data(client::Client, id::Integer)::Optional{Vector{UInt8}}
+    try
+        response = _request(client, "GET", "/resource/$id/data")
+        return response.body |> Vector{UInt8}
     catch err
         err isa ClientError && err.status == 404 && return nothing
         rethrow(err)
@@ -57,7 +78,7 @@ function create_resource(
 )::Int64
     form = HTTP.Form(Dict(
         "name" => name,
-        "data" => HTTP.Multipart(name, IOBuffer(data)),
+        "data" => HTTP.Multipart(name, data |> IOBuffer),
     ))
     response = _request(
         client, "POST", "/resource/experiment/$experiment_id"; multipart=form,
@@ -96,7 +117,7 @@ function update_resource(
     if !(data |> isnothing)
         # Reuse the resource's stored name as the multipart filename when only bytes are given.
         filename = (name |> isnothing) ? "data" : name
-        parts["data"] = HTTP.Multipart(filename, IOBuffer(data))
+        parts["data"] = HTTP.Multipart(filename, data |> IOBuffer)
     end
     _request(client, "PATCH", "/resource/$id"; multipart=HTTP.Form(parts))
     return nothing

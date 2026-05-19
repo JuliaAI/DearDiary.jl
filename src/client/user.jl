@@ -25,7 +25,7 @@ values never include password hashes.
 """
 function get_users(client::Client)::Array{UserResponse,1}
     response = _request(client, "GET", "/user/")
-    decoded = JSON.parse(response.body |> String)
+    decoded = response.body |> String |> JSON.parse
     return [item |> UserResponse for item in decoded]
 end
 

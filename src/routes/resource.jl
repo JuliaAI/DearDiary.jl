@@ -23,6 +23,38 @@ function setup_resource_routes()
         return json(response_resource; status=HTTP.StatusCodes.OK)
     end
 
+    # Streaming bytes endpoint. Returns the raw artifact contents with an
+    # `application/octet-stream` Content-Type — backend-agnostic, so SQLite-backed rows
+    # return their inline bytes and external rows are dereferenced through the artifact
+    # store.
+    @get root("/{id}/data", middleware=[
+        ProjectPermissionRequiredMiddleware(Resource, ReadPermission),
+    ]) function (::HTTP.Request, id::Integer)
+        response_resource = id |> get_resource
+        if (response_resource |> isnothing)
+            return error_response(
+                NotFound, "Resource not found";
+                status=HTTP.StatusCodes.NOT_FOUND,
+            )
+        end
+
+        bytes = id |> read_resource_data
+        if bytes |> isnothing
+            return error_response(
+                NotFound, "Resource not found";
+                status=HTTP.StatusCodes.NOT_FOUND,
+            )
+        end
+        return HTTP.Response(
+            HTTP.StatusCodes.OK,
+            [
+                "Content-Type" => "application/octet-stream",
+                "Content-Length" => bytes |> length |> string,
+            ],
+            bytes,
+        )
+    end
+
     @get root("/experiment/{experiment_id}", middleware=[
         ProjectPermissionRequiredMiddleware(Resource, ReadPermission),
     ]) function (request::HTTP.Request, experiment_id::Integer)

@@ -16,6 +16,13 @@ function load_config(file::AbstractString)::APIConfig
     jwt_secret = "deardiary_secret"
     enable_auth = false
     cors_origins = ["*"]
+    artifact_backend = "sqlite"
+    artifact_fs_root = joinpath(pwd(), "deardiary_artifacts")
+    artifact_s3_bucket = ""
+    artifact_s3_endpoint = ""
+    artifact_s3_region = "us-east-1"
+    artifact_s3_access_key = ""
+    artifact_s3_secret_key = ""
 
     if (file |> isfile)
         env_vars = Dict{String,String}()
@@ -47,6 +54,29 @@ function load_config(file::AbstractString)::APIConfig
         else
             cors_origins
         end
+
+        artifact_backend = get(env_vars, "DEARDIARY_ARTIFACT_BACKEND", artifact_backend)
+        artifact_fs_root = get(env_vars, "DEARDIARY_ARTIFACT_FS_ROOT", artifact_fs_root)
+        artifact_s3_bucket = get(
+            env_vars, "DEARDIARY_ARTIFACT_S3_BUCKET", artifact_s3_bucket,
+        )
+        artifact_s3_endpoint = get(
+            env_vars, "DEARDIARY_ARTIFACT_S3_ENDPOINT", artifact_s3_endpoint,
+        )
+        artifact_s3_region = get(
+            env_vars, "DEARDIARY_ARTIFACT_S3_REGION", artifact_s3_region,
+        )
+        artifact_s3_access_key = get(
+            env_vars, "DEARDIARY_ARTIFACT_S3_ACCESS_KEY", artifact_s3_access_key,
+        )
+        artifact_s3_secret_key = get(
+            env_vars, "DEARDIARY_ARTIFACT_S3_SECRET_KEY", artifact_s3_secret_key,
+        )
     end
-    return APIConfig(host, port, db_file, jwt_secret, enable_auth, cors_origins)
+    return APIConfig(
+        host, port, db_file, jwt_secret, enable_auth, cors_origins,
+        artifact_backend, artifact_fs_root,
+        artifact_s3_bucket, artifact_s3_endpoint, artifact_s3_region,
+        artifact_s3_access_key, artifact_s3_secret_key,
+    )
 end

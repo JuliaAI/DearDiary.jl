@@ -33,7 +33,7 @@ auto-assign `step` when the caller does not pass one.
 """
 function next_metric_step(iteration_id::Integer, key::AbstractString)::Int64
     row = fetch(SQL_SELECT_NEXT_METRIC_STEP, (iteration_id=iteration_id, key=key))
-    return row |> isnothing ? 0 : Int64(row[:next_step])
+    return (row |> isnothing) ? 0 : (row[:next_step] |> Int64)
 end
 
 function insert(

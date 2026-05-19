@@ -44,7 +44,7 @@ function seed_default_user(db::SQLite.DB)::Nothing
     DBInterface.execute(
         db,
         SQL_INSERT_DEFAULT_ADMIN_USER,
-        (password=GenerateFromPassword("default") |> String,),
+        (password="default" |> GenerateFromPassword |> String,),
     )
     return nothing
 end

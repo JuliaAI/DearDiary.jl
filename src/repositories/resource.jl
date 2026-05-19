@@ -29,14 +29,38 @@ function insert(
     experiment_id::Integer,
     name::AbstractString,
     data::AbstractArray{UInt8,1},
+    backend::AbstractString,
+    uri::AbstractString,
+    size_bytes::Integer,
+    content_hash::AbstractString,
 )::@NamedTuple{id::Optional{<:Int64}, status::DataType}
     fields = (
         experiment_id=experiment_id,
         name=name,
         data=data,
         created_date=(now() |> string),
+        backend=backend,
+        uri=uri,
+        size_bytes=size_bytes,
+        content_hash=content_hash,
     )
     return insert(SQL_INSERT_RESOURCE, fields)
+end
+
+# Convenience overload that mirrors the pre-artifact-store signature: bytes go straight
+# inline into `resource.data` under the SQLite backend, and the metadata columns are
+# computed locally. Kept so direct repository-layer callers (notably the test suite) do not
+# have to pre-compute hash + size at every insertion site.
+function insert(
+    ::Type{<:Resource},
+    experiment_id::Integer,
+    name::AbstractString,
+    data::AbstractArray{UInt8,1},
+)::@NamedTuple{id::Optional{<:Int64}, status::DataType}
+    return insert(
+        Resource, experiment_id, name, data,
+        "sqlite", "", (data |> length), data |> sha256_hex,
+    )
 end
 
 function update(
@@ -44,12 +68,18 @@ function update(
     name::Optional{AbstractString}=nothing,
     description::Optional{AbstractString}=nothing,
     data::Optional{AbstractArray{UInt8,1}}=nothing,
+    uri::Optional{AbstractString}=nothing,
+    size_bytes::Optional{Integer}=nothing,
+    content_hash::Optional{AbstractString}=nothing,
 )::Type{<:UpsertResult}
     fields = (
         name=name,
         description=description,
         data=data,
         updated_date=(now() |> string),
+        uri=uri,
+        size_bytes=size_bytes,
+        content_hash=content_hash,
     )
     return update(SQL_UPDATE_RESOURCE, fetch(Resource, id); fields...)
 end

@@ -22,7 +22,7 @@ receive every project; non-admins receive only those with [`ReadPermission`](@re
 """
 function get_projects(client::Client)::Array{Project,1}
     response = _request(client, "GET", "/project/")
-    decoded = JSON.parse(response.body |> String)
+    decoded = response.body |> String |> JSON.parse
     return [item |> Project for item in decoded]
 end
 

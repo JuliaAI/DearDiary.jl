@@ -137,7 +137,10 @@
 
             stored = get_resource(client, resource_id)
             @test stored.name == "weights.bin"
-            @test stored.data == payload
+            # As of v0.7.0 metadata responses no longer carry bytes — fetch them separately.
+            @test stored.data |> isnothing
+            @test stored.size_bytes == (payload |> length)
+            @test read_resource_data(client, resource_id) == payload
 
             update_resource(client, resource_id; description="checkpoint #1")
             @test get_resource(client, resource_id).description == "checkpoint #1"
@@ -386,7 +389,7 @@
 
                 stored = get_resource(client, resource_id)
                 @test stored.name == basename(file_path)
-                @test stored.data == payload
+                @test read_resource_data(client, resource_id) == payload
             finally
                 isfile(file_path) && rm(file_path)
             end
@@ -403,7 +406,7 @@
             )
             after = get_resource(client, unpaged[1].id)
             @test after.name == "renamed.bin"
-            @test after.data == new_payload
+            @test read_resource_data(client, unpaged[1].id) == new_payload
         end
 
         @testset "delete_project cascades" begin

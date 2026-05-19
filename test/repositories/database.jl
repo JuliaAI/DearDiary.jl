@@ -44,6 +44,8 @@
                     ["resource"],
                     ["experiment_tag"],
                     ["iteration_tag"],
+                    ["model"],
+                    ["model_version"],
                     ["schema_migrations"],
                     ["sqlite_sequence"],
                 ]

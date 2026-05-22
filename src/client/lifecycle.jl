@@ -1,12 +1,14 @@
 """
-    with_iteration(f::Function, client::Client, experiment_id::Integer)
+    with_iteration(f::Function, client::Client, experiment_id::Integer; parent_iteration_id=nothing)
 
-Open a fresh [`Iteration`](@ref) under `experiment_id`, invoke `f(iteration)`, and finalise the
-iteration by writing `end_date` regardless of whether the body returns normally or throws.
+Open a fresh [`Iteration`](@ref) under `experiment_id`, invoke `f(iteration)`, and finalise
+the iteration regardless of whether the body returns normally or throws. On a clean return
+the iteration is marked [`SUCCEEDED`](@ref); on an exception it is marked [`FAILED`](@ref)
+with the captured exception text in `error_message`, and the exception is rethrown so the
+caller still sees it.
 
-The body's return value is returned to the caller on success. Exceptions thrown by `f` are
-rethrown after the iteration is closed, so a training script that crashes mid-run still leaves
-a terminated iteration on the server.
+When `parent_iteration_id` is supplied, the new iteration is registered as a child of the
+given parent — useful for HPO sweeps and distributed-worker fan-outs.
 
 # Example
 ```julia
@@ -21,16 +23,23 @@ end
 ```
 """
 function with_iteration(
-    f::Function, client::Client, experiment_id::Integer,
+    f::Function, client::Client, experiment_id::Integer;
+    parent_iteration_id::Optional{<:Integer}=nothing,
 )
-    iteration = create_iteration(client, experiment_id)
+    iteration = create_iteration(
+        client, experiment_id; parent_iteration_id=parent_iteration_id,
+    )
     try
         result = f(iteration)
-        update_iteration(client, iteration.id; end_date=now())
+        update_iteration(client, iteration.id; status=SUCCEEDED, end_date=now())
         return result
     catch err
         try
-            update_iteration(client, iteration.id; end_date=now())
+            update_iteration(
+                client, iteration.id;
+                status=FAILED, end_date=now(),
+                error_message=sprint(showerror, err),
+            )
         catch _
             # The original exception is more useful than a finaliser failure; keep it.
         end

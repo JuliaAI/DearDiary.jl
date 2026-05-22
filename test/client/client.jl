@@ -237,7 +237,8 @@
             )
 
             # The server requires `status_id` on every update_experiment call, so the
-            # Status-typed positional overload is the cleanest way to keep it unchanged.
+            # ExperimentStatus-typed positional overload is the cleanest way to keep it
+            # unchanged.
             update_experiment(
                 client, experiment_id, DearDiary.IN_PROGRESS;
                 name="Renamed", description="updated description",

@@ -8,10 +8,15 @@ DearDiary.close_database
 
 ## Enumerations
 ```@docs
-DearDiary.Status
+DearDiary.ExperimentStatus
 DearDiary.IN_PROGRESS
 DearDiary.STOPPED
 DearDiary.FINISHED
+DearDiary.IterationStatus
+DearDiary.RUNNING
+DearDiary.SUCCEEDED
+DearDiary.FAILED
+DearDiary.KILLED
 ```
 
 ## Marker types

@@ -85,13 +85,13 @@ function create_experiment(
 end
 
 """
-    create_experiment(project_id::Integer, status::Status, name::AbstractString)::NamedTuple{id::Optional{<:Int64},status::DataType}
+    create_experiment(project_id::Integer, status::ExperimentStatus, name::AbstractString)::NamedTuple{id::Optional{<:Int64},status::DataType}
 
 Create a [`Experiment`](@ref).
 
 # Arguments
 - `project_id::Integer`: The id of the project to create the experiment for.
-- `status::Status`: The status of the experiment.
+- `status::ExperimentStatus`: The status of the experiment.
 - `name::AbstractString`: The name of the experiment.
 
 # Returns
@@ -99,7 +99,7 @@ Create a [`Experiment`](@ref).
 - An [`UpsertResult`](@ref). [`Created`](@ref) if the record was successfully created, [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
 """
 function create_experiment(
-    project_id::Integer, status::Status, name::AbstractString
+    project_id::Integer, status::ExperimentStatus, name::AbstractString
 )::@NamedTuple{id::Optional{<:Int64}, status::DataType}
     return create_experiment(project_id, (status |> Integer), name)
 end
@@ -131,7 +131,7 @@ function update_experiment(
         return Unprocessable
     end
 
-    if !(status_id in (Status |> instances .|> Int))
+    if !(status_id in (ExperimentStatus |> instances .|> Int))
         return Unprocessable
     end
 
@@ -165,13 +165,13 @@ function update_experiment(
 end
 
 """
-    update_experiment(id::Integer, status::Status, name::Optional{AbstractString}, description::Optional{AbstractString}, end_date::Optional{DateTime})::Type{<:UpsertResult}
+    update_experiment(id::Integer, status::ExperimentStatus, name::Optional{AbstractString}, description::Optional{AbstractString}, end_date::Optional{DateTime})::Type{<:UpsertResult}
 
 Update a [`Experiment`](@ref) record.
 
 # Arguments
 - `id::Integer`: The id of the experiment to update.
-- `status_id::Status`: The new status of the experiment.
+- `status::ExperimentStatus`: The new status of the experiment.
 - `name::Optional{AbstractString}`: The new name of the experiment.
 - `description::Optional{AbstractString}`: The new description of the experiment.
 - `end_date::Optional{DateTime}`: The new end date of the experiment.
@@ -181,7 +181,7 @@ An [`UpsertResult`](@ref). [`Updated`](@ref) if the record was successfully upda
 """
 function update_experiment(
     id::Integer,
-    status::Status,
+    status::ExperimentStatus,
     name::Optional{AbstractString},
     description::Optional{AbstractString},
     end_date::Optional{DateTime},

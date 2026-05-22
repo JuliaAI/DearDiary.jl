@@ -1,29 +1,29 @@
 """
-    @enum Status IN_PROGRESS = 1 STOPPED = 2 FINISHED = 3
+    @enum ExperimentStatus IN_PROGRESS = 1 STOPPED = 2 FINISHED = 3
 
-An enumeration representing the status of an experiment.
+An enumeration representing the lifecycle status of an [`Experiment`](@ref).
 """
-@enum Status IN_PROGRESS = 1 STOPPED = 2 FINISHED = 3
+@enum ExperimentStatus IN_PROGRESS = 1 STOPPED = 2 FINISHED = 3
 
 @doc """
-    IN_PROGRESS::Status
+    IN_PROGRESS::ExperimentStatus
 
 An enumeration value representing an experiment that is currently in progress.
 """ IN_PROGRESS
 
 @doc """
-    STOPPED::Status
+    STOPPED::ExperimentStatus
 
 An enumeration value representing an experiment that has been stopped.
 """ STOPPED
 
 @doc """
-    FINISHED::Status
+    FINISHED::ExperimentStatus
 
 An enumeration value representing an experiment that has finished.
 """ FINISHED
 
-Base.convert(::Type{Status}, value::Integer) = Status(value)
+Base.convert(::Type{ExperimentStatus}, value::Integer) = ExperimentStatus(value)
 
 """
     @enum Stage NO_STAGE = 1 STAGING = 2 PRODUCTION = 3 ARCHIVED = 4
@@ -64,3 +64,42 @@ should not be used for new deployments.
 """ ARCHIVED
 
 Base.convert(::Type{Stage}, value::Integer) = Stage(value)
+
+"""
+    @enum IterationStatus RUNNING = 1 SUCCEEDED = 2 FAILED = 3 KILLED = 4
+
+An enumeration representing the lifecycle status of an [`Iteration`](@ref). A freshly
+created iteration is [`RUNNING`](@ref); the value transitions to a terminal status
+([`SUCCEEDED`](@ref), [`FAILED`](@ref), or [`KILLED`](@ref)) when the iteration ends.
+"""
+@enum IterationStatus RUNNING = 1 SUCCEEDED = 2 FAILED = 3 KILLED = 4
+
+@doc """
+    RUNNING::IterationStatus
+
+An enumeration value representing an [`Iteration`](@ref) that is still in progress. This is
+the value assigned when the iteration is created.
+""" RUNNING
+
+@doc """
+    SUCCEEDED::IterationStatus
+
+An enumeration value representing an [`Iteration`](@ref) that ran to completion without
+raising an exception.
+""" SUCCEEDED
+
+@doc """
+    FAILED::IterationStatus
+
+An enumeration value representing an [`Iteration`](@ref) that ended because of an
+exception. The captured exception text is stored in `error_message`.
+""" FAILED
+
+@doc """
+    KILLED::IterationStatus
+
+An enumeration value representing an [`Iteration`](@ref) that was terminated externally
+(operator action, timeout, scheduler kill) rather than by a clean return or an exception.
+""" KILLED
+
+Base.convert(::Type{IterationStatus}, value::Integer) = IterationStatus(value)

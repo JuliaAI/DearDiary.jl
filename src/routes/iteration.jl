@@ -30,10 +30,32 @@ function setup_iteration_routes()
         return json(get_iterations(experiment_id, page); status=HTTP.StatusCodes.OK)
     end
 
+    @get root("/{id}/children", middleware=[
+        ProjectPermissionRequiredMiddleware(Iteration, ReadPermission),
+    ]) function (::HTTP.Request, id::Integer)
+        return json(get_child_iterations(id); status=HTTP.StatusCodes.OK)
+    end
+
     @post root("/experiment/{experiment_id}", middleware=[
         ProjectPermissionRequiredMiddleware(Iteration, CreatePermission),
-    ]) function (::HTTP.Request, experiment_id::Integer)
-        iteration_id, upsert_result = experiment_id |> create_iteration
+    ]) function (request::HTTP.Request, experiment_id::Integer)
+        # Optional `?parent_iteration_id=N` query param makes the new row a child of `N`.
+        # Absent → top-level iteration (the legacy default).
+        qp = request |> queryparams
+        parent_iteration_id = nothing
+        if haskey(qp, "parent_iteration_id")
+            parent_iteration_id = tryparse(Int64, qp["parent_iteration_id"])
+            if parent_iteration_id |> isnothing
+                return error_response(
+                    InvalidPayload, "parent_iteration_id must be an integer";
+                    status=HTTP.StatusCodes.UNPROCESSABLE_ENTITY,
+                )
+            end
+        end
+
+        iteration_id, upsert_result = create_iteration(
+            experiment_id; parent_iteration_id=parent_iteration_id,
+        )
         if !(upsert_result === Created)
             return error_response(
                 upsert_to_error_code(upsert_result),
@@ -52,7 +74,9 @@ function setup_iteration_routes()
         upsert_result = update_iteration(
             id,
             parameters.payload.notes,
-            parameters.payload.end_date,
+            parameters.payload.end_date;
+            status_id=parameters.payload.status_id,
+            error_message=parameters.payload.error_message,
         )
         if !(upsert_result === Updated)
             return error_response(

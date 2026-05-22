@@ -22,6 +22,7 @@ makedocs(;
             "Filesystem artifact storage" => "tutorial/filesystem_artifacts.md",
             "S3 artifact storage" => "tutorial/s3_artifacts.md",
             "Model registry" => "tutorial/model_registry.md",
+            "Child iterations" => "tutorial/child_iterations.md",
         ],
         "Index" => "indexes.md",
         "Reference" => [

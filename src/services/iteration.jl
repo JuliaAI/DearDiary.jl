@@ -45,19 +45,42 @@ function get_iterations(
 end
 
 """
-    create_iteration(experiment_id::Integer)::NamedTuple{id::Optional{<:Int64},status::DataType}
+    get_child_iterations(parent_id::Integer)::Array{Iteration, 1}
+
+Return the direct children of `parent_id` — the iterations whose `parent_iteration_id`
+points at it — ordered by id ascending. Returns an empty array when no children exist.
+
+# Arguments
+- `parent_id::Integer`: The id of the parent iteration.
+
+# Returns
+An array of child [`Iteration`](@ref) objects.
+"""
+function get_child_iterations(parent_id::Integer)::Array{Iteration,1}
+    return fetch_children(Iteration, parent_id)
+end
+
+"""
+    create_iteration(experiment_id::Integer; parent_iteration_id=nothing)::NamedTuple{id::Optional{<:Int64},status::DataType}
 
 Create a [`Iteration`](@ref).
 
+When `parent_iteration_id` is supplied, the new row is a child run — used to model HPO
+trials, nested-CV folds, or distributed-worker fan-outs. The parent must already exist and
+must belong to the same `experiment_id`; cross-experiment lineage is rejected with
+[`Unprocessable`](@ref).
+
 # Arguments
 - `experiment_id::Integer`: The id of the experiment to create the iteration for.
+- `parent_iteration_id::Optional{Integer}`: When set, the id of the parent iteration.
 
 # Returns
-- The created iteration ID. If an error occurs, `nothing` is returned.
-- An [`UpsertResult`](@ref). [`Created`](@ref) if the record was successfully created, [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
+- The created iteration ID, or `nothing` on failure.
+- An [`UpsertResult`](@ref).
 """
 function create_iteration(
-    experiment_id::Integer
+    experiment_id::Integer;
+    parent_iteration_id::Optional{<:Integer}=nothing,
 )::@NamedTuple{id::Optional{<:Int64}, status::DataType}
     experiment = experiment_id |> get_experiment
     if experiment |> isnothing
@@ -69,7 +92,17 @@ function create_iteration(
         return (id=nothing, status=Unprocessable)
     end
 
-    iteration_id, iteration_upsert_result = insert(Iteration, experiment_id)
+    if !(parent_iteration_id |> isnothing)
+        parent = parent_iteration_id |> get_iteration
+        if (parent |> isnothing) || parent.experiment_id != experiment_id
+            return (id=nothing, status=Unprocessable)
+        end
+    end
+
+    iteration_id, iteration_upsert_result = insert(
+        Iteration, experiment_id;
+        parent_iteration_id=parent_iteration_id,
+    )
     if !(iteration_upsert_result === Created)
         return (id=nothing, status=iteration_upsert_result)
     end
@@ -77,20 +110,32 @@ function create_iteration(
 end
 
 """
-    update_iteration(id::Int, notes::Optional{AbstractString}, end_date::Optional{DateTime})::Type{<:UpsertResult}
+    update_iteration(id::Integer, notes::Optional{AbstractString}, end_date::Optional{DateTime}; status_id=nothing, error_message=nothing)::Type{<:UpsertResult}
 
 Update a [`Iteration`](@ref) record.
+
+Once an iteration has been finalised (`end_date` is set), the row is locked: further updates
+return [`Unprocessable`](@ref). The intended terminal-state flow is to pass `end_date`,
+`status_id`, and (when applicable) `error_message` together in a single call.
 
 # Arguments
 - `id::Integer`: The id of the iteration to update.
 - `notes::Optional{AbstractString}`: The new notes for the iteration.
 - `end_date::Optional{DateTime}`: The new end date for the iteration.
+- `status_id::Optional{Integer}`: The new [`IterationStatus`](@ref) value. Must be one of the
+  four valid integers (`1`..`4`) or `nothing`.
+- `error_message::Optional{AbstractString}`: The captured exception text when the iteration
+  ended in a [`FAILED`](@ref) state.
 
 # Returns
-An [`UpsertResult`](@ref). [`Updated`](@ref) if the record was successfully updated (or no changes were made), [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
+An [`UpsertResult`](@ref).
 """
 function update_iteration(
-    id::Integer, notes::Optional{AbstractString}, end_date::Optional{DateTime}
+    id::Integer,
+    notes::Optional{AbstractString},
+    end_date::Optional{DateTime};
+    status_id::Optional{<:Integer}=nothing,
+    error_message::Optional{AbstractString}=nothing,
 )::Type{<:UpsertResult}
     iteration = id |> get_iteration
     if iteration |> isnothing
@@ -102,21 +147,57 @@ function update_iteration(
         return Unprocessable
     end
 
-    should_be_updated = compare_object_fields(iteration; notes=notes, end_date=end_date)
+    if !(status_id |> isnothing) && !(status_id in (IterationStatus |> instances .|> Integer))
+        return Unprocessable
+    end
+
+    should_be_updated = compare_object_fields(
+        iteration;
+        notes=notes,
+        end_date=end_date,
+        status_id=status_id,
+        error_message=error_message,
+    )
     if !should_be_updated
         return Updated
     end
 
-    return update(Iteration, id; notes=notes, end_date=end_date)
+    return update(
+        Iteration, id;
+        notes=notes, end_date=end_date,
+        status_id=status_id, error_message=error_message,
+    )
+end
+
+"""
+    update_iteration(id::Integer, notes::Optional{AbstractString}, end_date::Optional{DateTime}, status::IterationStatus; error_message=nothing)::Type{<:UpsertResult}
+
+[`IterationStatus`](@ref)-typed overload of [`update_iteration`](@ref).
+"""
+function update_iteration(
+    id::Integer,
+    notes::Optional{AbstractString},
+    end_date::Optional{DateTime},
+    status::IterationStatus;
+    error_message::Optional{AbstractString}=nothing,
+)::Type{<:UpsertResult}
+    return update_iteration(
+        id, notes, end_date;
+        status_id=(status |> Integer),
+        error_message=error_message,
+    )
 end
 
 """
     delete_iteration(id::Integer)::Bool
 
-Delete a [`Iteration`](@ref) record.
+Delete a [`Iteration`](@ref) record. Children whose `parent_iteration_id` points at this row
+have their reference set to `NULL` by the schema's foreign-key action; they continue to
+exist as standalone iterations until explicitly deleted.
 
 # Arguments
-- `id::Integer`: The id of the iteration to delete. Also deletes all associated [`Parameter`](@ref) and [`Metric`](@ref) records.
+- `id::Integer`: The id of the iteration to delete. Also deletes all associated
+  [`Parameter`](@ref) and [`Metric`](@ref) records.
 
 # Returns
 `true` if the record was successfully deleted, `false` otherwise.
@@ -131,23 +212,30 @@ function delete_iteration(id::Integer)::Bool
 end
 
 """
-    with_iteration(f::Function, experiment_id::Integer)
+    with_iteration(f::Function, experiment_id::Integer; parent_iteration_id=nothing)
 
 Open a fresh [`Iteration`](@ref) under `experiment_id` via [`create_iteration`](@ref), pass it
-to `f`, and finalise `end_date` regardless of whether the body returns normally or throws.
-The body's return value is returned on success; exceptions are rethrown after the iteration
-has been closed, so a script that crashes mid-run still leaves a terminated iteration in the
-database.
+to `f`, and finalise the iteration's `end_date` and `status_id` regardless of whether the
+body returns normally or throws. On a clean return the iteration is marked
+[`SUCCEEDED`](@ref); on an exception it is marked [`FAILED`](@ref) with the captured
+exception text in `error_message`, and the exception is rethrown so the caller still sees it.
 
 # Arguments
 - `f::Function`: A unary function that receives the freshly-created [`Iteration`](@ref).
 - `experiment_id::Integer`: The id of the [`Experiment`](@ref) that owns the iteration.
+- `parent_iteration_id::Optional{Integer}`: When set, the new iteration is registered as a
+  child of the given parent — useful for HPO sweeps and distributed-worker fan-outs.
 
 # Returns
 Whatever `f` returns.
 """
-function with_iteration(f::Function, experiment_id::Integer)
-    iteration_id, status = experiment_id |> create_iteration
+function with_iteration(
+    f::Function, experiment_id::Integer;
+    parent_iteration_id::Optional{<:Integer}=nothing,
+)
+    iteration_id, status = create_iteration(
+        experiment_id; parent_iteration_id=parent_iteration_id,
+    )
     if !(status === Created)
         throw(ArgumentError(
             "Could not create iteration for experiment $experiment_id: $status",
@@ -156,11 +244,14 @@ function with_iteration(f::Function, experiment_id::Integer)
     iteration = iteration_id |> get_iteration
     try
         result = f(iteration)
-        update_iteration(iteration.id, nothing, now())
+        update_iteration(iteration.id, nothing, now(), SUCCEEDED)
         return result
     catch err
         try
-            update_iteration(iteration.id, nothing, now())
+            update_iteration(
+                iteration.id, nothing, now(), FAILED;
+                error_message=sprint(showerror, err),
+            )
         catch _
             # Preserve the original exception — a finaliser failure is less informative.
         end
@@ -182,5 +273,5 @@ The owning project id, or `nothing` if the parent experiment is missing.
 """
 function get_project_id(iteration::Iteration)::Optional{Int64}
     experiment = iteration.experiment_id |> get_experiment
-    return experiment |> isnothing ? nothing : (experiment |> get_project_id)
+    return (experiment |> isnothing) ? nothing : (experiment |> get_project_id)
 end

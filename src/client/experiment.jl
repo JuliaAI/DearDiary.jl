@@ -65,15 +65,15 @@ function create_experiment(
 end
 
 """
-    create_experiment(client::Client, project_id::Integer, status::Status, name::AbstractString)::Int64
+    create_experiment(client::Client, project_id::Integer, status::ExperimentStatus, name::AbstractString)::Int64
 
-[`Status`](@ref)-typed overload of [`create_experiment`](@ref). The server only accepts
+[`ExperimentStatus`](@ref)-typed overload of [`create_experiment`](@ref). The server only accepts
 [`IN_PROGRESS`](@ref); the other variants exist for symmetry with the local API.
 """
 function create_experiment(
     client::Client,
     project_id::Integer,
-    status::Status,
+    status::ExperimentStatus,
     name::AbstractString,
 )::Int64
     return create_experiment(client, project_id, (status |> Integer), name)
@@ -107,12 +107,12 @@ function update_experiment(
 end
 
 """
-    update_experiment(client::Client, id::Integer, status::Status; name=nothing, description=nothing, end_date=nothing)::Nothing
+    update_experiment(client::Client, id::Integer, status::ExperimentStatus; name=nothing, description=nothing, end_date=nothing)::Nothing
 
-[`Status`](@ref)-typed overload of [`update_experiment`](@ref).
+[`ExperimentStatus`](@ref)-typed overload of [`update_experiment`](@ref).
 """
 function update_experiment(
-    client::Client, id::Integer, status::Status;
+    client::Client, id::Integer, status::ExperimentStatus;
     name::Optional{AbstractString}=nothing,
     description::Optional{AbstractString}=nothing,
     end_date::Optional{DateTime}=nothing,

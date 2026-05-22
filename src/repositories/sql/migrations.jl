@@ -45,6 +45,7 @@ const SQL_SELECT_SCHEMA_MIGRATIONS = """
 include("migrations/001_initial_schema.jl")
 include("migrations/002_model_registry.jl")
 include("migrations/003_resource_artifact_columns.jl")
+include("migrations/004_iteration_lineage_status.jl")
 
 """
     MIGRATIONS
@@ -58,6 +59,7 @@ const MIGRATIONS = Migration[
     MIGRATION_001_INITIAL_SCHEMA,
     MIGRATION_002_MODEL_REGISTRY,
     MIGRATION_003_RESOURCE_ARTIFACT_COLUMNS,
+    MIGRATION_004_ITERATION_LINEAGE_STATUS,
 ]
 
 """

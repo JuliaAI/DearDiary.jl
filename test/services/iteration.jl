@@ -22,6 +22,96 @@
                 @test iteration_id |> isnothing
                 @test result === DearDiary.Unprocessable
             end
+
+            @testset "default status is RUNNING with no parent" begin
+                user = DearDiary.get_user("default")
+                project_id, _ = DearDiary.create_project(user.id, "Lineage Project")
+                experiment_id, _ = DearDiary.create_experiment(
+                    project_id, DearDiary.IN_PROGRESS, "Lineage Experiment",
+                )
+                iteration_id, _ = DearDiary.create_iteration(experiment_id)
+                iteration = iteration_id |> DearDiary.get_iteration
+
+                @test iteration.status_id == (DearDiary.RUNNING |> Integer)
+                @test iteration.parent_iteration_id |> isnothing
+                @test iteration.error_message |> isempty
+            end
+
+            @testset "with parent iteration in same experiment" begin
+                user = DearDiary.get_user("default")
+                project_id, _ = DearDiary.create_project(user.id, "Lineage Project")
+                experiment_id, _ = DearDiary.create_experiment(
+                    project_id, DearDiary.IN_PROGRESS, "Lineage Experiment",
+                )
+                parent_id, _ = DearDiary.create_iteration(experiment_id)
+
+                child_id, result = DearDiary.create_iteration(
+                    experiment_id; parent_iteration_id=parent_id,
+                )
+
+                @test child_id isa Integer
+                @test result === DearDiary.Created
+                child = child_id |> DearDiary.get_iteration
+                @test child.parent_iteration_id == parent_id
+            end
+
+            @testset "with parent iteration from another experiment" begin
+                user = DearDiary.get_user("default")
+                project_id, _ = DearDiary.create_project(user.id, "Lineage Project")
+                experiment_a, _ = DearDiary.create_experiment(
+                    project_id, DearDiary.IN_PROGRESS, "Exp A",
+                )
+                experiment_b, _ = DearDiary.create_experiment(
+                    project_id, DearDiary.IN_PROGRESS, "Exp B",
+                )
+                parent_id, _ = DearDiary.create_iteration(experiment_a)
+
+                child_id, result = DearDiary.create_iteration(
+                    experiment_b; parent_iteration_id=parent_id,
+                )
+                @test child_id |> isnothing
+                @test result === DearDiary.Unprocessable
+            end
+
+            @testset "with non-existing parent" begin
+                user = DearDiary.get_user("default")
+                project_id, _ = DearDiary.create_project(user.id, "Lineage Project")
+                experiment_id, _ = DearDiary.create_experiment(
+                    project_id, DearDiary.IN_PROGRESS, "Lineage Experiment",
+                )
+
+                child_id, result = DearDiary.create_iteration(
+                    experiment_id; parent_iteration_id=9999,
+                )
+                @test child_id |> isnothing
+                @test result === DearDiary.Unprocessable
+            end
+        end
+
+        @testset verbose = true "get child iterations" begin
+            user = DearDiary.get_user("default")
+            project_id, _ = DearDiary.create_project(user.id, "Children Project")
+            experiment_id, _ = DearDiary.create_experiment(
+                project_id, DearDiary.IN_PROGRESS, "Children Experiment",
+            )
+            parent_id, _ = DearDiary.create_iteration(experiment_id)
+            DearDiary.create_iteration(experiment_id; parent_iteration_id=parent_id)
+            DearDiary.create_iteration(experiment_id; parent_iteration_id=parent_id)
+            # Unrelated top-level iteration in the same experiment shouldn't appear.
+            DearDiary.create_iteration(experiment_id)
+
+            children = parent_id |> DearDiary.get_child_iterations
+            @test children isa Array{DearDiary.Iteration,1}
+            @test (children |> length) == 2
+            @test all(c -> c.parent_iteration_id == parent_id, children)
+
+            # Parent itself has no children of its own once deleted; orphans survive.
+            DearDiary.delete_iteration(parent_id)
+            survivors = experiment_id |> DearDiary.get_iterations
+            orphans = filter(i -> i.parent_iteration_id |> isnothing, survivors)
+            # The unrelated top-level iteration plus the two ex-children whose parent
+            # pointer was set to NULL by the FK action.
+            @test (orphans |> length) == 3
         end
 
         @testset verbose = true "get iteration by id" begin
@@ -138,11 +228,14 @@
                 captured_id = DearDiary.with_iteration(experiment_id) do iter
                     @test iter isa DearDiary.Iteration
                     @test iter.end_date |> isnothing
+                    @test iter.status_id == (DearDiary.RUNNING |> Integer)
                     iter.id
                 end
 
                 iteration = captured_id |> DearDiary.get_iteration
                 @test !(iteration.end_date |> isnothing)
+                @test iteration.status_id == (DearDiary.SUCCEEDED |> Integer)
+                @test iteration.error_message |> isempty
             end
 
             @testset "closes on failure and rethrows" begin
@@ -162,6 +255,27 @@
 
                 iteration = captured_id[] |> DearDiary.get_iteration
                 @test !(iteration.end_date |> isnothing)
+                @test iteration.status_id == (DearDiary.FAILED |> Integer)
+                @test occursin("boom", iteration.error_message)
+            end
+
+            @testset "propagates parent_iteration_id" begin
+                user = DearDiary.get_user("default")
+                project_id, _ = DearDiary.create_project(user.id, "Withiter Sweep Project")
+                experiment_id, _ = DearDiary.create_experiment(
+                    project_id, DearDiary.IN_PROGRESS, "Sweep",
+                )
+                parent_id, _ = DearDiary.create_iteration(experiment_id)
+
+                child_id = DearDiary.with_iteration(
+                    experiment_id; parent_iteration_id=parent_id,
+                ) do iter
+                    iter.id
+                end
+
+                child = child_id |> DearDiary.get_iteration
+                @test child.parent_iteration_id == parent_id
+                @test child.status_id == (DearDiary.SUCCEEDED |> Integer)
             end
 
             @testset "raises when experiment cannot accept iterations" begin

@@ -23,6 +23,7 @@ makedocs(;
             "S3 artifact storage" => "tutorial/s3_artifacts.md",
             "Model registry" => "tutorial/model_registry.md",
             "Child iterations" => "tutorial/child_iterations.md",
+            "Reproducibility" => "tutorial/reproducibility.md",
         ],
         "Index" => "indexes.md",
         "Reference" => [
@@ -36,6 +37,7 @@ makedocs(;
             "Metric" => "reference/metric.md",
             "Resource" => "reference/resource.md",
             "Artifact Storage" => "reference/artifacts.md",
+            "Reproducibility" => "reference/reproducibility.md",
             "Model" => "reference/model.md",
             "Model Version" => "reference/modelversion.md",
             "Miscellaneous" => "reference/misc.md",

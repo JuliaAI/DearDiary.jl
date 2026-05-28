@@ -113,6 +113,34 @@ function update_iteration(
 end
 
 """
+    snapshot_environment!(client::Client, id::Integer; entrypoint=PROGRAM_FILE)::Nothing
+
+Capture the calling process's reproducibility state via [`capture_environment`](@ref) and
+POST it to `POST /iteration/{id}/snapshot`. Requires [`UpdatePermission`](@ref) on the
+iteration's project.
+
+Capture happens **locally** — `LibGit2` and `Pkg` operate on the client process's working
+tree, not the server's — and the resulting metadata is wired through to the iteration row.
+"""
+function snapshot_environment!(
+    client::Client, id::Integer; entrypoint::AbstractString=PROGRAM_FILE,
+)::Nothing
+    snapshot = capture_environment(; entrypoint=entrypoint)
+    _request(
+        client, "POST", "/iteration/$id/snapshot";
+        body=Dict(
+            "julia_version" => snapshot.julia_version,
+            "git_sha" => snapshot.git_sha,
+            "git_dirty" => snapshot.git_dirty,
+            "entrypoint" => snapshot.entrypoint,
+            "project_toml" => snapshot.project_toml,
+            "manifest_toml" => snapshot.manifest_toml,
+        ),
+    )
+    return nothing
+end
+
+"""
     delete_iteration(client::Client, id::Integer)::Nothing
 
 Delete an [`Iteration`](@ref) (and its [`Parameter`](@ref)s + [`Metric`](@ref)s) via

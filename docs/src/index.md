@@ -7,7 +7,7 @@ CurrentModule = DearDiary
 ```
 
 # DearDiary.jl
-*A lightweight but **powerful** machine learning experiment tracking tool for Julia.*
+*An ML experiment tracker made in Julia.*
 
 ```@raw html
 <a class="github-button"
@@ -20,43 +20,39 @@ CurrentModule = DearDiary
 ```
 
 ## Features
-- Complete ML experiment tracking — projects, experiments, iterations, parameters,
-  metrics, tagged resources.
-- Built-in REST API server for remote logging and querying.
-- Native Julia client (`DearDiary.connect`, `with_iteration`, …) for logging from training
-  scripts running on another machine.
-- Model registry with run-to-checkpoint lineage and a
-  `NO_STAGE → STAGING → PRODUCTION → ARCHIVED` lifecycle; promoting a version to
-  `PRODUCTION` auto-archives the prior incumbent.
-- Pluggable artifact storage: bytes can live inline in SQLite, on a local filesystem,
-  or in any S3-compatible object store (AWS S3, MinIO, Cloudflare R2).
-- Portable SQLite metadata store — one file, no separate service to run.
-- **Built in Julia**
+- **Tracking surface**: projects, experiments, iterations, parameters, metrics, tagged resources. Iterations form parent/child trees for HPO sweeps and distributed workers, and a status enum records failures with the captured exception text.
+- **Server + client**: built-in REST API for remote logging and a native Julia client (`DearDiary.connect`, `with_iteration`, …) that auto-finalises iterations whether the body returns or throws.
+- **Bit-exact environment replay**: every iteration records a `Manifest.toml` snapshot, the Julia version, and the git SHA. `DearDiary.restore(iteration_id)` writes the captured environment to a fresh directory for `Pkg.instantiate`.
+- **Pluggable storage**: portable SQLite metadata store. Artifact bytes live inline, on a local filesystem, or in any S3-compatible object store (AWS S3, MinIO, Cloudflare R2). `migrate_artifacts!` moves rows between backends on a live database.
 
-Start with the [quickstart](@ref Tutorial), then dive into the dedicated guides for the
-[model registry](@ref "Model registry"),
-[filesystem artifact storage](@ref "Filesystem artifact storage"),
-and [S3 artifact storage](@ref "S3 artifact storage").
+Start with the [quickstart](@ref Tutorial), then read the dedicated guides for the [model registry](@ref "Model registry"), [child iterations](@ref "Child iterations"), [filesystem](@ref "Filesystem artifact storage") and [S3](@ref "S3 artifact storage") artifact storage, and [reproducibility](@ref "Reproducibility").
 
 ## Installation
-You can install DearDiary.jl via the Julia package manager:
 ```julia
 using Pkg
 Pkg.add("DearDiary")
 ```
-
 or from the REPL, type `]add DearDiary`.
 
+## Quickstart
+```julia
+using DearDiary
+DearDiary.initialize_database()
+
+user = DearDiary.get_user("default")
+project_id, _ = create_project(user.id, "Iris classification")
+experiment_id, _ = create_experiment(project_id, DearDiary.IN_PROGRESS, "Decision-tree sweep")
+
+with_iteration(experiment_id) do iter
+    create_parameter(iter.id, "max_depth", 7)
+    create_metric(iter.id, "accuracy", 0.96)
+end
+```
+
+`with_iteration` opens an iteration, runs the body, marks it `SUCCEEDED` on a clean return or `FAILED` (carrying the captured exception text) on a throw, and snapshots the active Julia environment so you can replay the run later. The tutorials linked above cover remote logging through the REST client, the model registry, and the reproducibility workflow.
+
 ## Motivation
-Experiment tracking is a crucial aspect of machine learning and data science projects.
-It helps you keep track of your experiments, models, hyperparameters, and results.
-However, many existing experiment tracking tools are either too complex or not
-well-integrated with Julia. This package aims to fill that gap by providing a simple yet
-powerful solution specifically designed for Julia users.
+Reproducible ML depends on knowing what code, data, and environment produced each result. Existing trackers either route every interaction through a Python client (MLflow, Weights & Biases, Aim) or capture environments as `pip freeze` strings that re-resolve their transitive dependencies at install time. DearDiary is Julia-native and persists the exact `Manifest.toml` per run, so you can reconstruct an iteration months later by running `DearDiary.restore(iteration_id)`. You use the same tracking API whether you run a single-file SQLite database on a laptop or a multi-worker S3-backed deployment.
 
 ## Contributing
-Contributions are welcome! If you find a bug or have a feature request, please open an
-issue on the [GitHub repository](https://github.com/JuliaAI/DearDiary.jl). Pull requests
-are also encouraged. Please make sure to follow the existing
-[code style](https://github.com/JuliaDiff/BlueStyle) and include tests for any new
-features.
+Open an issue or pull request on the [GitHub repository](https://github.com/JuliaAI/DearDiary.jl). Follow the existing [code style](https://github.com/JuliaDiff/BlueStyle) and include tests for new features.

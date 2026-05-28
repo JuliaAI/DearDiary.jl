@@ -189,6 +189,41 @@ function update_iteration(
 end
 
 """
+    snapshot_environment!(iteration_id::Integer; entrypoint=PROGRAM_FILE)::Type{<:UpsertResult}
+
+Capture the calling process's reproducibility-relevant state via
+[`capture_environment`](@ref) and persist it on iteration `iteration_id`. Idempotent —
+re-running on the same iteration overwrites the previous snapshot.
+
+# Arguments
+- `iteration_id::Integer`: The iteration to attach the snapshot to.
+- `entrypoint::AbstractString`: Override the captured script path. Defaults to
+  `PROGRAM_FILE`.
+
+# Returns
+An [`UpsertResult`](@ref) — `Updated` on success, `Unprocessable` if the iteration does
+not exist.
+"""
+function snapshot_environment!(
+    iteration_id::Integer; entrypoint::AbstractString=PROGRAM_FILE,
+)::Type{<:UpsertResult}
+    iteration = iteration_id |> get_iteration
+    if iteration |> isnothing
+        return Unprocessable
+    end
+    snapshot = capture_environment(; entrypoint=entrypoint)
+    return update(
+        Iteration, iteration_id;
+        julia_version=snapshot.julia_version,
+        git_sha=snapshot.git_sha,
+        git_dirty=(snapshot.git_dirty |> Int),
+        entrypoint=snapshot.entrypoint,
+        project_toml=snapshot.project_toml,
+        manifest_toml=snapshot.manifest_toml,
+    )
+end
+
+"""
     delete_iteration(id::Integer)::Bool
 
 Delete a [`Iteration`](@ref) record. Children whose `parent_iteration_id` points at this row
@@ -212,7 +247,7 @@ function delete_iteration(id::Integer)::Bool
 end
 
 """
-    with_iteration(f::Function, experiment_id::Integer; parent_iteration_id=nothing)
+    with_iteration(f::Function, experiment_id::Integer; parent_iteration_id=nothing, snapshot=parent_iteration_id |> isnothing)
 
 Open a fresh [`Iteration`](@ref) under `experiment_id` via [`create_iteration`](@ref), pass it
 to `f`, and finalise the iteration's `end_date` and `status_id` regardless of whether the
@@ -220,11 +255,19 @@ body returns normally or throws. On a clean return the iteration is marked
 [`SUCCEEDED`](@ref); on an exception it is marked [`FAILED`](@ref) with the captured
 exception text in `error_message`, and the exception is rethrown so the caller still sees it.
 
+By default the function calls [`snapshot_environment!`](@ref) on the new iteration right
+after creation, but only when it has no parent — driver runs capture the env, child runs
+inherit it. Pass `snapshot=true` to force a per-child capture (each child gets its own
+snapshot, useful when workers run in different processes) or `snapshot=false` to skip
+entirely.
+
 # Arguments
 - `f::Function`: A unary function that receives the freshly-created [`Iteration`](@ref).
 - `experiment_id::Integer`: The id of the [`Experiment`](@ref) that owns the iteration.
 - `parent_iteration_id::Optional{Integer}`: When set, the new iteration is registered as a
   child of the given parent — useful for HPO sweeps and distributed-worker fan-outs.
+- `snapshot::Bool`: Whether to call [`snapshot_environment!`](@ref) after creation.
+  Defaults to `true` for driver iterations and `false` for children.
 
 # Returns
 Whatever `f` returns.
@@ -232,6 +275,7 @@ Whatever `f` returns.
 function with_iteration(
     f::Function, experiment_id::Integer;
     parent_iteration_id::Optional{<:Integer}=nothing,
+    snapshot::Bool=(parent_iteration_id |> isnothing),
 )
     iteration_id, status = create_iteration(
         experiment_id; parent_iteration_id=parent_iteration_id,
@@ -240,6 +284,9 @@ function with_iteration(
         throw(ArgumentError(
             "Could not create iteration for experiment $experiment_id: $status",
         ))
+    end
+    if snapshot
+        snapshot_environment!(iteration_id)
     end
     iteration = iteration_id |> get_iteration
     try

@@ -1,39 +1,35 @@
+const _SQL_ITERATION_COLUMNS = """
+    i.id,
+    i.experiment_id,
+    i.notes,
+    i.created_date,
+    i.end_date,
+    i.parent_iteration_id,
+    i.status_id,
+    i.error_message,
+    i.julia_version,
+    i.git_sha,
+    i.git_dirty,
+    i.entrypoint,
+    i.project_toml,
+    i.manifest_toml
+    """
+
 const SQL_SELECT_ITERATION_BY_ID = """
     SELECT
-        i.id,
-        i.experiment_id,
-        i.notes,
-        i.created_date,
-        i.end_date,
-        i.parent_iteration_id,
-        i.status_id,
-        i.error_message
+        $(_SQL_ITERATION_COLUMNS)
     FROM iteration i WHERE i.id = :id
     """
 
 const SQL_SELECT_ITERATIONS_BY_EXPERIMENT_ID = """
     SELECT
-        i.id,
-        i.experiment_id,
-        i.notes,
-        i.created_date,
-        i.end_date,
-        i.parent_iteration_id,
-        i.status_id,
-        i.error_message
+        $(_SQL_ITERATION_COLUMNS)
     FROM iteration i WHERE i.experiment_id = :id
     """
 
 const SQL_SELECT_ITERATIONS_BY_PARENT_ID = """
     SELECT
-        i.id,
-        i.experiment_id,
-        i.notes,
-        i.created_date,
-        i.end_date,
-        i.parent_iteration_id,
-        i.status_id,
-        i.error_message
+        $(_SQL_ITERATION_COLUMNS)
     FROM iteration i WHERE i.parent_iteration_id = :id ORDER BY i.id ASC
     """
 

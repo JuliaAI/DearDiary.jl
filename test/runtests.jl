@@ -83,6 +83,8 @@ include("artifacts/filesystem.jl")
 include("artifacts/s3.jl")
 include("artifacts/migrate.jl")
 
+include("reproducibility/snapshot.jl")
+
 include("repositories/database.jl")
 include("repositories/user.jl")
 include("repositories/project.jl")

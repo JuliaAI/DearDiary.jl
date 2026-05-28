@@ -8,6 +8,8 @@ using Dates
 using Bcrypt
 using Compat
 using Oxygen
+using LibGit2
+using Pkg
 using SHA
 using SQLite
 using UUIDs
@@ -35,6 +37,8 @@ include("artifacts/sqlite.jl")
 include("artifacts/filesystem.jl")
 include("artifacts/s3.jl")
 include("artifacts/migrate.jl")
+
+include("reproducibility/snapshot.jl")
 
 include("repositories/sql/database.jl")
 include("repositories/sql/user.jl")
@@ -70,6 +74,7 @@ include("services/project.jl")
 include("services/userpermission.jl")
 include("services/experiment.jl")
 include("services/iteration.jl")
+include("reproducibility/restore.jl")
 include("services/parameter.jl")
 include("services/metric.jl")
 include("services/resource.jl")
@@ -115,6 +120,8 @@ export get_userpermission, get_userpermissions, create_userpermission, update_us
 export get_experiment, get_experiments, create_experiment, update_experiment, delete_experiment
 export get_iteration, get_iterations, create_iteration, update_iteration, delete_iteration
 export get_child_iterations
+export snapshot_environment!, capture_environment, restore
+export EnvironmentSnapshot, RestoreResult
 export get_parameter, get_parameters, create_parameter, update_parameter, delete_parameter
 export get_metric, get_metrics, create_metric, update_metric, delete_metric, log_metrics
 export get_resource, get_resources, create_resource, update_resource, delete_resource

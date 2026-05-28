@@ -46,6 +46,7 @@ include("migrations/001_initial_schema.jl")
 include("migrations/002_model_registry.jl")
 include("migrations/003_resource_artifact_columns.jl")
 include("migrations/004_iteration_lineage_status.jl")
+include("migrations/005_iteration_environment_snapshot.jl")
 
 """
     MIGRATIONS
@@ -60,6 +61,7 @@ const MIGRATIONS = Migration[
     MIGRATION_002_MODEL_REGISTRY,
     MIGRATION_003_RESOURCE_ARTIFACT_COLUMNS,
     MIGRATION_004_ITERATION_LINEAGE_STATUS,
+    MIGRATION_005_ITERATION_ENVIRONMENT_SNAPSHOT,
 ]
 
 """

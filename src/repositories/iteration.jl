@@ -58,6 +58,12 @@ function update(
     end_date::Optional{DateTime}=nothing,
     status_id::Optional{<:Integer}=nothing,
     error_message::Optional{AbstractString}=nothing,
+    julia_version::Optional{AbstractString}=nothing,
+    git_sha::Optional{AbstractString}=nothing,
+    git_dirty::Optional{<:Integer}=nothing,
+    entrypoint::Optional{AbstractString}=nothing,
+    project_toml::Optional{AbstractString}=nothing,
+    manifest_toml::Optional{AbstractString}=nothing,
 )::Type{<:UpsertResult}
     # The column is TEXT — stringify so SQLite stores ISO text instead of a
     # Julia-binary blob (which `sqldeserialize` can't read across versions).
@@ -67,6 +73,12 @@ function update(
         end_date=end_date_text,
         status_id=status_id,
         error_message=error_message,
+        julia_version=julia_version,
+        git_sha=git_sha,
+        git_dirty=git_dirty,
+        entrypoint=entrypoint,
+        project_toml=project_toml,
+        manifest_toml=manifest_toml,
     )
     return update(SQL_UPDATE_ITERATION, fetch(Iteration, id); fields...)
 end

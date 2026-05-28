@@ -36,6 +36,41 @@ function setup_iteration_routes()
         return json(get_child_iterations(id); status=HTTP.StatusCodes.OK)
     end
 
+    # Snapshot endpoint: the client captures local git + Pkg state in its own process and
+    # POSTs the bundle; the server persists it on the iteration row. Modelled as POST (not
+    # PATCH) because semantically it's a single "attach a snapshot to this run" action,
+    # never a partial field update.
+    @post root("/{id}/snapshot", middleware=[
+        ProjectPermissionRequiredMiddleware(Iteration, UpdatePermission),
+    ]) function (
+        ::HTTP.Request, id::Integer, parameters::Json{IterationSnapshotPayload},
+    )
+        iteration = id |> get_iteration
+        if iteration |> isnothing
+            return error_response(
+                NotFound, "Iteration not found";
+                status=HTTP.StatusCodes.NOT_FOUND,
+            )
+        end
+        upsert_result = update(
+            Iteration, id;
+            julia_version=parameters.payload.julia_version,
+            git_sha=parameters.payload.git_sha,
+            git_dirty=(parameters.payload.git_dirty |> Int),
+            entrypoint=parameters.payload.entrypoint,
+            project_toml=parameters.payload.project_toml,
+            manifest_toml=parameters.payload.manifest_toml,
+        )
+        if !(upsert_result === Updated)
+            return error_response(
+                upsert_to_error_code(upsert_result),
+                "Failed to attach snapshot";
+                status=upsert_result |> get_status_by_upsert_result,
+            )
+        end
+        return json(("message" => (upsert_result |> String)); status=HTTP.StatusCodes.OK)
+    end
+
     @post root("/experiment/{experiment_id}", middleware=[
         ProjectPermissionRequiredMiddleware(Iteration, CreatePermission),
     ]) function (request::HTTP.Request, experiment_id::Integer)

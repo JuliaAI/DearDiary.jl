@@ -60,15 +60,15 @@ model = TunedModel(
   logger = nothing)</code></pre><pre><code class="language-julia-repl hljs" style="display:block;">julia&gt; mach = machine(model, train_X, train_y)</code><code class="nohighlight hljs ansi" style="display:block;">untrained Machine; does not cache data
   model: ProbabilisticTunedModel(model = DecisionTreeClassifier(max_depth = -1, …), …)
   args:
-    1:	Source @731 ⏎ ScientificTypesBase.Table{AbstractVector{ScientificTypesBase.Continuous}}
-    2:	Source @084 ⏎ AbstractVector{ScientificTypesBase.Multiclass{3}}</code></pre><pre><code class="language-julia-repl hljs" style="display:block;">julia&gt; fit!(mach)</code><code class="nohighlight hljs ansi" style="display:block;">[ Info: Training machine(ProbabilisticTunedModel(model = DecisionTreeClassifier(max_depth = -1, …), …), …).
+    1:	Source @293 ⏎ ScientificTypesBase.Table{AbstractVector{ScientificTypesBase.Continuous}}
+    2:	Source @654 ⏎ AbstractVector{ScientificTypesBase.Multiclass{3}}</code></pre><pre><code class="language-julia-repl hljs" style="display:block;">julia&gt; fit!(mach)</code><code class="nohighlight hljs ansi" style="display:block;">[ Info: Training machine(ProbabilisticTunedModel(model = DecisionTreeClassifier(max_depth = -1, …), …), …).
 [ Info: Attempting to evaluate 9 models.
-Evaluating over 9 metamodels:   0%[&gt;                        ]  ETA: N/AEvaluating over 9 metamodels:  11%[==&gt;                      ]  ETA: 0:01:41Evaluating over 9 metamodels:  22%[=====&gt;                   ]  ETA: 0:00:44Evaluating over 9 metamodels:  33%[========&gt;                ]  ETA: 0:00:25Evaluating over 9 metamodels: 100%[=========================] Time: 0:00:12
+Evaluating over 9 metamodels:  22%[=====&gt;                   ]  ETA: 0:00:41Evaluating over 9 metamodels: 100%[=========================] Time: 0:00:11
 trained Machine; does not cache data
   model: ProbabilisticTunedModel(model = DecisionTreeClassifier(max_depth = -1, …), …)
   args:
-    1:	Source @731 ⏎ ScientificTypesBase.Table{AbstractVector{ScientificTypesBase.Continuous}}
-    2:	Source @084 ⏎ AbstractVector{ScientificTypesBase.Multiclass{3}}</code></pre><p>After training the model, we can log the results of the experiment to the database.</p><pre><code class="language-julia hljs">model_values = report(mach).history .|&gt; (x -&gt; (x.measure, x.measurement, x.model.max_depth))
+    1:	Source @293 ⏎ ScientificTypesBase.Table{AbstractVector{ScientificTypesBase.Continuous}}
+    2:	Source @654 ⏎ AbstractVector{ScientificTypesBase.Multiclass{3}}</code></pre><p>After training the model, we can log the results of the experiment to the database.</p><pre><code class="language-julia hljs">model_values = report(mach).history .|&gt; (x -&gt; (x.measure, x.measurement, x.model.max_depth))
 
 for (measure, measurements, max_depth) in model_values
     iteration_id, _ = create_iteration(experiment_id)
@@ -85,7 +85,7 @@ end</code></pre><h2 id="Viewing-the-logged-data"><a class="docs-heading-anchor" 
  ├ id = 9
  ├ experiment_id = 1
  ├ notes = &quot;&quot;
- ├ created_date = 2026-05-28T15:17:48.129
+ ├ created_date = 2026-05-28T16:02:05.472
  ├ end_date = nothing
  ├ parent_iteration_id = nothing
  ├ status_id = 1
@@ -100,35 +100,35 @@ DearDiary.Parameter
  ├ id = 9
  ├ iteration_id = 9
  ├ key = &quot;max_depth&quot;
- └ value = &quot;8&quot;</code></pre><pre><code class="language-julia-repl hljs" style="display:block;">julia&gt; get_metrics(iteration.id)</code><code class="nohighlight hljs ansi" style="display:block;">4-element Vector{DearDiary.Metric}:
+ └ value = &quot;5&quot;</code></pre><pre><code class="language-julia-repl hljs" style="display:block;">julia&gt; get_metrics(iteration.id)</code><code class="nohighlight hljs ansi" style="display:block;">4-element Vector{DearDiary.Metric}:
 DearDiary.Metric
  ├ id = 33
  ├ iteration_id = 9
  ├ key = &quot;MisclassificationRate&quot;
- ├ value = 0.08333333333333333
+ ├ value = 0.05833333333333333
  ├ step = 0
- └ recorded_at = 2026-05-28T15:17:48.129
+ └ recorded_at = 2026-05-28T16:02:05.473
 DearDiary.Metric
  ├ id = 34
  ├ iteration_id = 9
  ├ key = &quot;Accuracy&quot;
- ├ value = 0.9166666666666666
+ ├ value = 0.9416666666666668
  ├ step = 0
- └ recorded_at = 2026-05-28T15:17:48.129
+ └ recorded_at = 2026-05-28T16:02:05.473
 DearDiary.Metric
  ├ id = 35
  ├ iteration_id = 9
  ├ key = &quot;LogLoss&quot;
- ├ value = 3.0036377824264293
+ ├ value = 2.1025464476985007
  ├ step = 0
- └ recorded_at = 2026-05-28T15:17:48.129
+ └ recorded_at = 2026-05-28T16:02:05.473
 DearDiary.Metric
  ├ id = 36
  ├ iteration_id = 9
  ├ key = &quot;BrierScore&quot;
- ├ value = -0.16666666666666666
+ ├ value = -0.11666666666666665
  ├ step = 0
- └ recorded_at = 2026-05-28T15:17:48.129</code></pre><h2 id="Save-and-load-the-trained-model"><a class="docs-heading-anchor" href="#Save-and-load-the-trained-model">Save and load the trained model</a><a id="Save-and-load-the-trained-model-1"></a><a class="docs-heading-anchor-permalink" href="#Save-and-load-the-trained-model" title="Permalink"></a></h2><p>You can save serialized objects, files, or any other resources related to your experiments.</p><pre><code class="language-julia hljs">smach = serializable(mach)
+ └ recorded_at = 2026-05-28T16:02:05.473</code></pre><h2 id="Save-and-load-the-trained-model"><a class="docs-heading-anchor" href="#Save-and-load-the-trained-model">Save and load the trained model</a><a id="Save-and-load-the-trained-model-1"></a><a class="docs-heading-anchor-permalink" href="#Save-and-load-the-trained-model" title="Permalink"></a></h2><p>You can save serialized objects, files, or any other resources related to your experiments.</p><pre><code class="language-julia hljs">smach = serializable(mach)
 io = IOBuffer()
 JLSO.save(io, :machine =&gt; smach)
 
@@ -137,13 +137,13 @@ bytes = take!(io)</code></pre><pre><code class="language-julia-repl hljs" style=
  ├ experiment_id = 1
  ├ name = &quot;Iris DTC MLJ Machine&quot;
  ├ description = &quot;&quot;
- ├ data = UInt8[0x52, 0x51, 0x00, …, 0x75, 0x00, 0x00]
- ├ created_date = 2026-05-28T15:17:57.385
+ ├ data = UInt8[0x52, 0x51, 0x00, …, 0x74, 0x00, 0x00]
+ ├ created_date = 2026-05-28T16:02:14.211
  ├ updated_date = nothing
  ├ backend = &quot;sqlite&quot;
  ├ uri = &quot;&quot;
- ├ size_bytes = 25130
- └ content_hash = &quot;12649291417dd2d1174ba6d10d668a13a96b12f79f6871115570ac9370c725e6&quot;</code></pre><p>The metadata response carries the artifact&#39;s metadata only — fetch the raw bytes via <a href="../reference/resource/#DearDiary.read_resource_data"><code>read_resource_data</code></a>.</p><pre><code class="language-julia hljs">io = IOBuffer(read_resource_data(resource_id))
+ ├ size_bytes = 24838
+ └ content_hash = &quot;c5f9e0be0a1365932b35a749e233e86d1c66ecfe41c93430787f6d839e7b49dc&quot;</code></pre><p>The metadata response carries the artifact&#39;s metadata only — fetch the raw bytes via <a href="../reference/resource/#DearDiary.read_resource_data"><code>read_resource_data</code></a>.</p><pre><code class="language-julia hljs">io = IOBuffer(read_resource_data(resource_id))
 loaded_mach = JLSO.load(io)[:machine]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">serializable Machine
   model: ProbabilisticTunedModel(model = DecisionTreeClassifier(max_depth = -1, …), …)
   args: 
@@ -163,4 +163,4 @@ experiment_id = create_experiment(
 with_iteration(client, experiment_id) do iter
     create_parameter(client, iter.id, &quot;max_depth&quot;, 4)
     create_metric(client, iter.id, &quot;accuracy&quot;, 0.96)
-end</code></pre><p>See the <a href="../reference/client/#Client">Client</a> reference for the full list of helpers.</p><h2 id="Conclusion"><a class="docs-heading-anchor" href="#Conclusion">Conclusion</a><a id="Conclusion-1"></a><a class="docs-heading-anchor-permalink" href="#Conclusion" title="Permalink"></a></h2><p>And that&#39;s it! You have successfully completed the tutorial and learned how to use the core features of this library. You can now track your machine learning experiments effectively. For more advanced features and options, refer to the rest of the documentation.</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../">« Home</a><a class="docs-footer-nextpage" href="filesystem_artifacts/">Filesystem artifact storage »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Thursday 28 May 2026 15:18">Thursday 28 May 2026</span>. Using Julia version 1.12.6.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+end</code></pre><p>See the <a href="../reference/client/#Client">Client</a> reference for the full list of helpers.</p><h2 id="Conclusion"><a class="docs-heading-anchor" href="#Conclusion">Conclusion</a><a id="Conclusion-1"></a><a class="docs-heading-anchor-permalink" href="#Conclusion" title="Permalink"></a></h2><p>And that&#39;s it! You have successfully completed the tutorial and learned how to use the core features of this library. You can now track your machine learning experiments effectively. For more advanced features and options, refer to the rest of the documentation.</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../">« Home</a><a class="docs-footer-nextpage" href="filesystem_artifacts/">Filesystem artifact storage »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Thursday 28 May 2026 16:02">Thursday 28 May 2026</span>. Using Julia version 1.12.6.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

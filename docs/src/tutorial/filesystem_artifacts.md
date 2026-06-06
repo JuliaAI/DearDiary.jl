@@ -33,6 +33,7 @@ DearDiary._DEARDIARY_APICONFIG = DearDiary.APIConfig(
     "tutorial-secret", false, ["*"],
     "filesystem", artifact_root,
     "", "", "us-east-1", "", "",
+    false, "127.0.0.1", UInt16(0),
 )
 DearDiary.initialize_database(; file_name=DearDiary._DEARDIARY_APICONFIG.db_file)
 ```

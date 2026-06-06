@@ -6,6 +6,7 @@ using Dates
 using Bcrypt
 using Compat
 using SHA
+using Sockets
 using SQLite
 
 using DearDiary
@@ -111,6 +112,9 @@ include("services/resource.jl")
 include("services/tag.jl")
 include("services/model.jl")
 include("services/modelversion.jl")
+
+include("ui/app.jl")
+include("ui/server.jl")
 
 # Auth tests
 file = create_test_env_file(; enable_auth=true, jwt_secret="testsecret")

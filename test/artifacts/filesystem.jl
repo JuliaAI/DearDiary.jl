@@ -62,6 +62,7 @@ end
                 "127.0.0.1", UInt16(0), "fs_test.db", "secret", false, ["*"],
                 "filesystem", root,
                 "", "", "us-east-1", "", "",
+                false, "127.0.0.1", UInt16(0),
             )
 
             DearDiary.initialize_database(; file_name="fs_test.db")

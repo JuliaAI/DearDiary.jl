@@ -23,6 +23,9 @@ function load_config(file::AbstractString)::APIConfig
     artifact_s3_region = "us-east-1"
     artifact_s3_access_key = ""
     artifact_s3_secret_key = ""
+    enable_ui = true
+    ui_host = "127.0.0.1"
+    ui_port = 9001
 
     if (file |> isfile)
         env_vars = Dict{String,String}()
@@ -72,11 +75,24 @@ function load_config(file::AbstractString)::APIConfig
         artifact_s3_secret_key = get(
             env_vars, "DEARDIARY_ARTIFACT_S3_SECRET_KEY", artifact_s3_secret_key,
         )
+
+        enable_ui = if haskey(env_vars, "DEARDIARY_ENABLE_UI")
+            parse(Bool, env_vars["DEARDIARY_ENABLE_UI"])
+        else
+            enable_ui
+        end
+        ui_host = get(env_vars, "DEARDIARY_UI_HOST", ui_host)
+        ui_port = if haskey(env_vars, "DEARDIARY_UI_PORT")
+            parse(Int, env_vars["DEARDIARY_UI_PORT"])
+        else
+            ui_port
+        end
     end
     return APIConfig(
         host, port, db_file, jwt_secret, enable_auth, cors_origins,
         artifact_backend, artifact_fs_root,
         artifact_s3_bucket, artifact_s3_endpoint, artifact_s3_region,
         artifact_s3_access_key, artifact_s3_secret_key,
+        enable_ui, ui_host, ui_port,
     )
 end

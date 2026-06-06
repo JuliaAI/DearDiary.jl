@@ -22,6 +22,10 @@ Fields
   (e.g. `https://s3.us-east-1.amazonaws.com`, `http://localhost:9000` for MinIO).
 - `artifact_s3_region::String`: Region used in the SigV4 credential scope.
 - `artifact_s3_access_key::String`, `artifact_s3_secret_key::String`: SigV4 credentials.
+- `enable_ui::Bool`: Set `true` to make [`DearDiary.run`](@ref) boot the embedded Bonito
+  dashboard on `ui_host:ui_port` alongside the REST API server. Defaults to `true`.
+- `ui_host::String`: Host the dashboard binds to. Defaults to `127.0.0.1`.
+- `ui_port::UInt16`: Port the dashboard binds to. Defaults to `9001`.
 """
 struct APIConfig
     host::String
@@ -37,4 +41,7 @@ struct APIConfig
     artifact_s3_region::String
     artifact_s3_access_key::String
     artifact_s3_secret_key::String
+    enable_ui::Bool
+    ui_host::String
+    ui_port::UInt16
 end

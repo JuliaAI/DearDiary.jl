@@ -45,6 +45,9 @@ makedocs(;
             "Client" => "reference/client.md",
             "Migrations" => "reference/migrations.md",
         ],
+        "Experimental" => [
+            "Embedded UI" => "experimental/ui.md",
+        ],
     ],
     warnonly=[:cross_references, :missing_docs],
 )

@@ -156,6 +156,86 @@
             end
         end
 
+        @testset verbose = true "user admin-field authorization" begin
+            admin_token = JSON.parse(
+                HTTP.post(
+                    "http://127.0.0.1:9000/auth";
+                    body=(
+                        Dict("username" => "default", "password" => "default") |> JSON.json
+                    ),
+                    status_exception=false,
+                ).body |> String,
+                Dict{String,Any},
+            )["access_token"]
+            admin_headers = Dict("Authorization" => "Bearer $admin_token")
+
+            HTTP.post(
+                "http://127.0.0.1:9000/user";
+                headers=admin_headers,
+                body=(
+                    Dict(
+                        "first_name" => "Promo",
+                        "last_name" => "Seeker",
+                        "username" => "promo",
+                        "password" => "secret",
+                    ) |> JSON.json
+                ),
+                status_exception=false,
+            )
+            promo = DearDiary.get_user("promo")
+            promo_token = JSON.parse(
+                HTTP.post(
+                    "http://127.0.0.1:9000/auth";
+                    body=(
+                        Dict("username" => "promo", "password" => "secret") |> JSON.json
+                    ),
+                    status_exception=false,
+                ).body |> String,
+                Dict{String,Any},
+            )["access_token"]
+            promo_headers = Dict("Authorization" => "Bearer $promo_token")
+
+            @testset "non-admin cannot self-promote to admin" begin
+                response = HTTP.patch(
+                    "http://127.0.0.1:9000/user/$(promo.id)";
+                    headers=promo_headers,
+                    body=(Dict("is_admin" => true) |> JSON.json),
+                    status_exception=false,
+                )
+
+                @test response.status == HTTP.StatusCodes.FORBIDDEN
+                data = JSON.parse(response.body |> String, Dict{String,Any})
+                @test data["code"] == "ADMIN_REQUIRED"
+                @test DearDiary.get_user("promo").is_admin == false
+            end
+
+            @testset "non-admin can still edit own non-privileged fields" begin
+                response = HTTP.patch(
+                    "http://127.0.0.1:9000/user/$(promo.id)";
+                    headers=promo_headers,
+                    body=(Dict("first_name" => "Renamed") |> JSON.json),
+                    status_exception=false,
+                )
+
+                @test response.status == HTTP.StatusCodes.OK
+                refreshed = DearDiary.get_user("promo")
+                @test refreshed.first_name == "Renamed"
+                @test refreshed.is_admin == false
+            end
+
+            @testset "admin can grant admin to a user" begin
+                response = HTTP.patch(
+                    "http://127.0.0.1:9000/user/$(promo.id)";
+                    headers=admin_headers,
+                    body=(Dict("is_admin" => true) |> JSON.json),
+                    status_exception=false,
+                )
+
+                @test response.status == HTTP.StatusCodes.OK
+                @test DearDiary.get_user("promo").is_admin == true
+            end
+        end
+
         @testset verbose = true "list permissions endpoints" begin
             admin_token = JSON.parse(
                 HTTP.post(

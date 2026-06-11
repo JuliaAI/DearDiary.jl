@@ -53,8 +53,19 @@ function setup_user_routes()
     end
 
     @patch root("/{id}", middleware=[SameUserOrAdminRequiredMiddleware]) function (
-        ::HTTP.Request, id::Integer, parameters::Json{UserUpdatePayload}
+        request::HTTP.Request, id::Integer, parameters::Json{UserUpdatePayload}
     )
+        # `is_admin` is a privilege boundary: only an admin may change it. A non-admin
+        # reaches this handler solely for their own id (SameUserOrAdminRequiredMiddleware),
+        # so without this guard they could self-promote by patching their own record.
+        requester = request.context[:user]
+        if !(parameters.payload.is_admin |> isnothing) && !requester.is_admin
+            return error_response(
+                AdminRequired, "Admin privileges required to change admin status";
+                status=HTTP.StatusCodes.FORBIDDEN,
+            )
+        end
+
         upsert_result = update_user(
             id,
             parameters.payload.first_name,

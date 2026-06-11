@@ -4,7 +4,7 @@
  ├ project_id = 1
  ├ name = &quot;fraud-classifier&quot;
  ├ description = &quot;&quot;
- ├ created_date = 2026-06-11T17:08:26.030
+ ├ created_date = 2026-06-11T19:35:47.001
  └ updated_date = nothing</code></pre><h2 id="Register-a-version"><a class="docs-heading-anchor" href="#Register-a-version">Register a version</a><a id="Register-a-version-1"></a><a class="docs-heading-anchor-permalink" href="#Register-a-version" title="Permalink"></a></h2><p>A <code>ModelVersion</code> ties a <a href="../../reference/resource/#Resource"><code>Resource</code></a> to the <a href="../../reference/iteration/#Iteration"><code>Iteration</code></a> that produced it. The per-model version number is assigned by the server (gap-free, monotonic, unique within the model):</p><pre><code class="language-julia-repl hljs" style="display:block;">julia&gt; version_a_id, _ = create_modelversion(
            model_id, iteration_id, resource_id,
            &quot;Decision tree, max_depth=7&quot;,
@@ -16,7 +16,7 @@
  ├ resource_id = 1
  ├ stage_id = 1
  ├ description = &quot;Decision tree, max_depth=7&quot;
- ├ created_date = 2026-06-11T17:08:26.509
+ ├ created_date = 2026-06-11T19:35:47.494
  └ updated_date = nothing</code></pre><p>A freshly registered version starts in <a href="../../reference/modelversion/#DearDiary.NO_STAGE"><code>DearDiary.NO_STAGE</code></a>. Promote it through the lifecycle as the model proves itself in evaluation:</p><pre><code class="language-julia-repl hljs" style="display:block;">julia&gt; update_modelversion(version_a_id, DearDiary.STAGING, nothing, nothing);</code></pre><pre><code class="language-julia-repl hljs" style="display:block;">julia&gt; update_modelversion(version_a_id, DearDiary.PRODUCTION, nothing, nothing);</code></pre><h2 id="Roll-forward-to-a-new-checkpoint"><a class="docs-heading-anchor" href="#Roll-forward-to-a-new-checkpoint">Roll forward to a new checkpoint</a><a id="Roll-forward-to-a-new-checkpoint-1"></a><a class="docs-heading-anchor-permalink" href="#Roll-forward-to-a-new-checkpoint" title="Permalink"></a></h2><p>Train another iteration, register a second version, and promote it to <code>PRODUCTION</code>. The previous incumbent is auto-archived in the same transaction:</p><pre><code class="language-julia-repl hljs" style="display:block;">julia&gt; iteration_b_id, _ = create_iteration(experiment_id);</code><br/><code class="language-julia-repl hljs" style="display:block;">julia&gt; create_parameter(iteration_b_id, &quot;max_depth&quot;, 9);</code><br/><code class="language-julia-repl hljs" style="display:block;">julia&gt; create_metric(iteration_b_id, &quot;accuracy&quot;, 0.974);</code><br/><code class="language-julia-repl hljs" style="display:block;">julia&gt; resource_b_id, _ = create_resource(experiment_id, &quot;fraud-clf-v2.jlso&quot;, rand(UInt8, 1024));</code><br/><code class="language-julia-repl hljs" style="display:block;">julia&gt; version_b_id, _ = create_modelversion(
            model_id, iteration_b_id, resource_b_id,
            &quot;Decision tree, max_depth=9&quot;,
@@ -24,7 +24,7 @@
  ├ id = 2
  ├ experiment_id = 1
  ├ notes = &quot;&quot;
- ├ created_date = 2026-06-11T17:08:27.382
+ ├ created_date = 2026-06-11T19:35:48.271
  ├ end_date = nothing
  ├ parent_iteration_id = nothing
  ├ status_id = 1
@@ -39,4 +39,4 @@ DearDiary.Parameter
  ├ id = 2
  ├ iteration_id = 2
  ├ key = &quot;max_depth&quot;
- └ value = &quot;9&quot;</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../s3_artifacts/">« S3 artifact storage</a><a class="docs-footer-nextpage" href="../child_iterations/">Child iterations »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Thursday 11 June 2026 17:08">Thursday 11 June 2026</span>. Using Julia version 1.12.6.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+ └ value = &quot;9&quot;</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../s3_artifacts/">« S3 artifact storage</a><a class="docs-footer-nextpage" href="../child_iterations/">Child iterations »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Thursday 11 June 2026 19:35">Thursday 11 June 2026</span>. Using Julia version 1.12.6.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

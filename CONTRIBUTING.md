@@ -1,131 +1,140 @@
-# Contributing to the project 
-Nothing far from the usual process:
+# Contributing to DearDiary
 
-> 1. Fork the repository
-> 2. Create a new branch
-> 3. Make your changes
-> 4. Write tests and documentation
-> 5. Create a pull request
+We welcome bug fixes, new features, documentation, tests, and ideas. Below is the path from a fresh clone to an open pull request, followed by the conventions we follow.
 
-This project welcomes contributions of all kinds, including bug fixes, new features, documentation improvements, and more. If you're unsure about how to contribute or have any questions, feel free to open an issue or reach out to the maintainers.
+If you get stuck, **open an issue** on the [GitHub repository](https://github.com/JuliaAI/DearDiary.jl). A question is a fine reason to open one.
 
-## Paradigm and architecture
-The project follows a fully-functional programming paradigm, with a focus on immutability and exploiting multiple dispatch. The architecture is a n-layered design, including the following layers:
+## Getting started
 
-- **Routes layer**: Responsible for defining the API endpoints and handling incoming requests.
-- **Services layer**: Contains the business logic and interacts with the repository layer to perform operations.
-- **Repositories layer**: Responsible for data access and manipulation, interacting with the database or other data sources.
+You need Julia ≥ 1.10 (CI runs on the current `lts` and latest `1` releases).
 
-The goal is to ensure a clear separation of concerns, which makes the codebase maintainable and scalable. Always think about how another developer would understand your code when making changes, and strive to keep the code clean and well-documented.
+```bash
+git clone https://github.com/JuliaAI/DearDiary.jl
+cd DearDiary.jl
+```
 
-## AI-assisted contributions
-**TL;DR** you should not be replaced by AI tools, but rather use them as a tool to assist you in your work.
+Instantiate the project and run the test suite from the package REPL:
 
-This project encourages the use of AI tools to **assist** in the development process. As a contributor of this project, you are bound to the following rules when using AI tools:
-- AI tools can be used for code generation, but the generated code must be reviewed and tested by a human before being merged into the main branch.
-- Documentation can be generated using AI tools, but it must be reviewed and edited by a human to ensure accuracy and clarity.
-- AI tools can be used for code refactoring, but the changes must be reviewed and tested by a human to ensure that they do not introduce bugs or reduce code readability.
-- AI tools can be used for code review, but the final decision on whether to accept or reject a pull request must be made by a human.
-- AI tools can be used for testing, but the tests must be reviewed and executed by a human to ensure that they are effective and do not introduce false positives or negatives.
+```julia
+using Pkg
+Pkg.activate(".")
+Pkg.instantiate()
+Pkg.test()
+```
 
+or in one line from your shell:
+
+```bash
+julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.test()'
+```
+
+The tests are self-contained: they create their own temporary database and environment file and clean up afterwards, so you don't need to set up a database to run them.
+
+When everything passes, you're ready to make changes:
+
+> 1. Create a branch off `dev`
+> 2. Make your changes, with tests and documentation
+> 3. Open a pull request **against the `dev` branch** (CI runs there)
+
+## Finding something to work on
+
+- Browse the [open issues](https://github.com/JuliaAI/DearDiary.jl/issues) and look for the *good first issue* label.
+- For a larger change, open an issue first so we can agree on the approach before you write the code. It usually gets the PR merged faster.
+
+## Running the server locally (optional)
+
+If you want to exercise the REST API while developing, copy the sample environment file and fill in the values:
+
+```bash
+cp .env.sample .env
+```
+
+Then start the server with `DearDiary.run()`. See the [tutorials](https://juliaai.github.io/DearDiary.jl/dev/tutorial/) for the full workflow.
+
+To build the documentation locally:
+
+```bash
+julia --project=docs -e 'using Pkg; Pkg.instantiate()' && julia --project=docs docs/make.jl
+```
+
+## Project architecture
+
+DearDiary uses a functional style (immutability and multiple dispatch) and is organised into modules under `src/`, each owning one job. A server request flows down through the layers and back up:
+
+- **`types/`** holds the domain model: structs for users, projects, experiments, iterations, parameters, metrics, resources, tags, and models, plus the enums, errors, and `APIConfig`. Everything else builds on these.
+- **`routes/`** defines the REST API: thin HTTP handlers that parse a request and delegate to a service. `routes/auth.jl` and the `AuthMiddleware` in `src/DearDiary.jl` handle JWT auth.
+- **`services/`** holds the business logic. It validates input, hashes passwords, enforces rules, and orchestrates repositories. Both the routes and the client call into here.
+- **`repositories/`** is backend-agnostic data access. Functions like `fetch`, `insert`, and `update` dispatch on the domain type, e.g. `fetch(::Type{<:User}, id)`.
+- **`repositories/sql/`** is the SQLite implementation behind them: the `SQL_*` query constants and the forward-only migration system (see [Schema migrations](#schema-migrations)).
+
+A few modules sit alongside those layers:
+
+- **`artifacts/`** is pluggable artifact storage. `store.jl` dispatches to the `sqlite`, `filesystem`, or `s3` backend chosen by `DEARDIARY_ARTIFACT_BACKEND`, and `migrate.jl` moves bytes between backends on a live database.
+- **`reproducibility/`** captures and replays environments. `snapshot.jl` records the `Manifest.toml`, Julia version, and git SHA per iteration; `restore.jl` rebuilds that environment.
+- **`client/`** is the native Julia client (`connect`, `with_iteration`, and friends) that talks to the REST API, mirroring the route surface for remote logging.
+- **`ui/`** is the [Bonito](https://github.com/SimonDanisch/Bonito.jl) web frontend: `app.jl` builds it, `server.jl` serves it, and `DEARDIARY_ENABLE_UI` toggles it.
+
+Keep each change in the module that owns that responsibility, and picture the next person who will read your code.
 
 ## Code style
-The project follows the [BlueStyle](https://github.com/JuliaDiff/BlueStyle) guidelines, but with slight modifications.
+
+We follow the [BlueStyle](https://github.com/JuliaDiff/BlueStyle) guidelines, applied with [JuliaFormatter.jl](https://github.com/domluna/JuliaFormatter.jl). The repository ships a `.JuliaFormatter.toml`, so run the formatter from the repository root before you open a PR:
+
+```julia
+using JuliaFormatter
+format(".")
+```
 
 > [!NOTE]
-> The following rules are not enforced, so keep in mind that they are just recommendations, not strict requirements.
+> The formatter handles layout. The conventions below are **house preferences** it can't check for you. We won't block a useful PR over them. A maintainer might tidy them on merge or point them out so you can pick up the local style. Don't let them stop you from contributing.
 
-### Pipeline operators first
-Always use the pipe operator (`|>`) when chaining function calls with a single argument. Inside complex expressions, use parentheses to clarify the order of operations and improve readability.
+### Multiple dispatch over branching
+
+Dispatch on types instead of branching on them at runtime. It reads as idiomatic Julia and keeps the code open to extension.
 
 ```julia
-# Good
-result = data |> process |> analyze
+# Preferred
+process(data::DataType1) = ...
+process(data::DataType2) = ...
 
-# Good
-result = (data |> process) ? true : false
-
-# Bad
-result = analyze(process(data))
-```
-
-### Multiple dispatch
-The greatest feature of Julia, which allows us to write flexible and reusable code. Always consider how to leverage multiple dispatch when designing your functions and types. This can help to reduce code duplication and improve the overall structure of the codebase.
-```julia
-# Good
-function process(data::DataType1)
-    # process data of type DataType1
-end
-function process(data::DataType2)
-    # process data of type DataType2
-end
-
-# Bad
+# Avoid: runtime type checks
 function process(data)
     if isa(data, DataType1)
-        # process data of type DataType1
+        ...
     elseif isa(data, DataType2)
-        # process data of type DataType2
-    else
-        error("Unsupported data type")
+        ...
     end
-end
-
-# Bad
-function process_datatype1(data::DataType1)
-    # process data of type DataType1
-end
-
-function process_datatype2(data::DataType2)
-    # process data of type DataType2
 end
 ```
 
-### Typing
-Use type annotations for functions and types. This helps to improve code readability and maintainability, and also allows for better performance and error checking.
+### Type annotations
 
-- For functions, always annotate abstract types for arguments, and concrete types for return types. This allows for maximum flexibility while still providing type safety.
-- For types, always annotate the fields with their concrete types. This helps to ensure that the data is structured correctly and can be easily understood by other developers.
+Annotate where it documents intent or constrains a public API; don't over-annotate.
+
+- **Struct fields**: annotate with concrete types. It keeps stored data well-defined and helps performance.
+- **Function arguments**: annotate with abstract types so functions stay generic and composable.
+- **Return types**: annotate only when it clarifies or constrains the contract. Julia specializes on call, so a blanket `::ConcreteType` on every return buys no performance and can hide bugs by inserting an implicit `convert`. Add one where you want to constrain the type.
 
 ```julia
-# Good
 struct ExampleType
     field1::Int64
     field2::String
 end
 
-# Good
-function example_function(arg1::Integer, arg2::AbstractString)::Float64
-    # function body
-end
-
-# Bad
-struct ExampleType
-    field1
-    field2
-end
-
-# Bad
-function example_function(arg1, arg2)
+function example_function(arg1::Integer, arg2::AbstractString)
     # function body
 end
 ```
 
 ### Schema migrations
-Every change to the SQLite schema goes through the forward-only migration system rooted at
-`src/repositories/sql/migrations.jl`. There is no rollback path — once a migration is
-released, treat it as immutable.
+
+Every change to the SQLite schema goes through the forward-only migration system rooted at `src/repositories/sql/migrations.jl`. There is no rollback path. Once a migration is released, treat it as immutable.
 
 To add a new migration:
 
-1. Create `src/repositories/sql/migrations/NNN_short_name.jl` where `NNN` is the next free
-   three-digit version number.
-2. In that file, define a `const MIGRATION_NNN_SHORT_NAME = Migration(NNN, "short_name", [...])`
-   whose `statements` list the SQL to apply in order. Re-use the existing `SQL_*` constants
-   when the change is idempotent (e.g. an `IF NOT EXISTS` rebuild) and write inline
-   `ALTER TABLE` strings for additive column changes.
-3. Append the new constant to the `MIGRATIONS` vector at the bottom of
-   `src/repositories/sql/migrations.jl`, and add the file to the ordered `include`s there.
+1. Create `src/repositories/sql/migrations/NNN_short_name.jl` where `NNN` is the next free three-digit version number.
+2. In that file, define a `const MIGRATION_NNN_SHORT_NAME = Migration(NNN, "short_name", [...])` whose `statements` list the SQL to apply in order. Re-use the existing `SQL_*` constants when the change is idempotent (e.g. an `IF NOT EXISTS` rebuild) and write inline `ALTER TABLE` strings for additive column changes.
+3. Append the new constant to the `MIGRATIONS` vector at the bottom of `src/repositories/sql/migrations.jl`, and add the file to the ordered `include`s there.
 
 ```julia
 # 002_add_metric_step_recorded_at.jl
@@ -139,43 +148,34 @@ const MIGRATION_002_ADD_METRIC_STEP_RECORDED_AT = Migration(
 )
 ```
 
-When the server starts, `initialize_database()` runs every pending migration in version
-order and stamps each one into the `schema_migrations` table, so an existing database
-only ever sees the new statements.
+When the server starts, `initialize_database()` runs every pending migration in version order and stamps each one into the `schema_migrations` table, so an existing database only ever sees the new statements.
 
 ### Documentation
-If something is pointed to be used by the user, it must be documented. If something is pointed to be used internally, it does not need to be documented, but it should be well-named and self-explanatory.
+
+Document anything users will touch with a docstring. Internal helpers don't need one, but name them so they explain themselves.
 
 ```julia
-# For functions
 """
-    example_function(arg1::Integer, arg2::AbstractString)::Float64
+    example_function(arg1::Integer, arg2::AbstractString)
 
-This function takes an integer and a string as arguments and returns a float.
+Take an integer and a string and return a float.
 
 # Arguments
-- `arg1::Integer`: The first argument, which is an integer.
-- `arg2::AbstractString`: The second argument, which is a string.
+- `arg1::Integer`: the first argument.
+- `arg2::AbstractString`: the second argument.
 
 # Returns
-- `Float64`: The result of the function, which is a float.
+- `Float64`: the result.
 """
-function example_function(arg1::Integer, arg2::AbstractString)::Float64
+function example_function(arg1::Integer, arg2::AbstractString)
     return 0.0
 end
-
-# For types
-"""
-    ExampleType
-
-This type represents an example with two fields: `field1` and `field2`.
-
-# Fields
-- `field1::Int64`: The first field, which is an integer.
-- `field2::String`: The second field, which is a string.
-"""
-struct ExampleType
-    field1::Int64
-    field2::String
-end
 ```
+
+## AI-assisted contributions
+
+Use AI tools if they help, but review, understand, and test everything yourself before it goes into a PR. You answer for what you submit.
+
+## Being kind
+
+We want DearDiary to be a welcoming place to contribute. Be respectful in issues and pull requests, and assume good faith.

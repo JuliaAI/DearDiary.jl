@@ -37,7 +37,35 @@ jobs:
           arch: ${{ matrix.arch }}
       - uses: julia-actions/cache@v3
       - uses: julia-actions/julia-buildpkg@v1
-      - uses: julia-actions/julia-runtest@v1
+      # TEMPORARY diagnostic: the test phase hangs only on CI and can't be located from the
+      # buffered logs. Run under a watchdog that SIGTERMs every Julia process on timeout, so
+      # the hung test process prints its thread backtrace into the log. The test subprocess
+      # inherits this console, so its stack shows up. Restore julia-actions/julia-runtest@v1
+      # once the hanging frame is known.
+      - name: Run tests (backtrace on hang)
+        shell: bash
+        run: |
+          set +e
+          julia --color=yes --project=. -e 'using Pkg; Pkg.test(coverage=true)' &
+          pid=$!
+          (
+            sleep 900
+            echo "::warning::diagnostic timeout reached; SIGTERM to all julia for backtraces"
+            pkill -TERM julia 2>/dev/null
+            sleep 30
+            pkill -KILL julia 2>/dev/null
+          ) &
+          watcher=$!
+          wait "$pid"; status=$?
+          # The parent julia exits first on SIGTERM; pause so the test subprocess finishes
+          # printing its backtrace to this console before the step ends.
+          sleep 15
+          kill "$watcher" 2>/dev/null
+          pkill -KILL julia 2>/dev/null
+          if [ "$status" -ne 0 ]; then
+            echo "::error::Tests failed or hung (exit $status); thread backtraces are above."
+          fi
+          exit $status
       - uses: julia-actions/julia-processcoverage@v1
       - uses: codecov/codecov-action@v6
         with:

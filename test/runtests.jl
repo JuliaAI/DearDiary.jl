@@ -25,6 +25,7 @@ function create_test_env_file(;
     db_file::AbstractString="deardiary_test.db",
     jwt_secret::Union{AbstractString,Nothing}=nothing,
     enable_auth::Bool=false,
+    enable_ui::Bool=false,
 )::String
     file = ".env.deardiarytest"
 
@@ -37,6 +38,9 @@ function create_test_env_file(;
             write(io, "DEARDIARY_JWT_SECRET=$jwt_secret\n")
         end
         write(io, "DEARDIARY_ENABLE_AUTH=$enable_auth\n")
+        # Keep the Bonito UI server off in the route tests: booting it renders the dashboard,
+        # which bundles JS via a Deno subprocess that hangs on a headless CI runner.
+        write(io, "DEARDIARY_ENABLE_UI=$enable_ui\n")
     end
     return file
 end

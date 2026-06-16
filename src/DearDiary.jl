@@ -138,6 +138,9 @@ export get_model, get_models, create_model, update_model, delete_model
 export get_modelversion, get_modelversions, create_modelversion, update_modelversion, delete_modelversion
 
 _DEARDIARY_APICONFIG = nothing
+# `run` only assigns the UI server when the UI is enabled; give it a defined default so
+# `stop` (which reads it unconditionally) does not error when the UI is disabled.
+_DEARDIARY_UI_SERVER = nothing
 
 function AuthMiddleware(handler)
     return function (request::HTTP.Request)
@@ -316,90 +319,10 @@ function stop()
     @info "DearDiary server stopped."
 end
 
-# Precompile workload: bake the cold-start cost into `Pkg.precompile` rather than the
-# first browser request. The workload exercises the render paths a user's first browser
-# request hits: service-layer queries, sidebar/detail Hyperscript construction, and the
-# Plotly trace JSON encoder.
-@setup_workload begin
-    _warm_dir = mktempdir()
-    _warm_db = joinpath(_warm_dir, "deardiary_precompile.db")
-    try
-        @compile_workload begin
-            initialize_database(; file_name=_warm_db)
-            user = "default" |> get_user
-            project_id, _ = create_project(user.id, "warmup")
-            experiment_id, _ = create_experiment(
-                project_id, IN_PROGRESS, "warmup experiment",
-            )
-
-            # One driver iteration with parameters + metrics across multiple steps,
-            # plus one child trial so the sidebar's nested-tree branch compiles.
-            driver_id, _ = create_iteration(experiment_id)
-            create_parameter(driver_id, "alpha", 0.1)
-            create_parameter(driver_id, "epochs", 3)
-            for step in 1:3
-                create_metric(driver_id, "loss", 1.0 / step; step=step)
-                create_metric(driver_id, "accuracy", 0.5 + 0.1 * step; step=step)
-            end
-            update_iteration(driver_id, nothing, now(), SUCCEEDED)
-
-            child_id, _ = create_iteration(
-                experiment_id; parent_iteration_id=driver_id,
-            )
-            create_parameter(child_id, "max_depth", 4)
-            update_iteration(child_id, nothing, now(), SUCCEEDED)
-
-            # Warm the rendering functions for both the empty-state and populated-state
-            # branches that user requests hit on first navigation.
-            _render_iteration_detail(nothing)
-            _render_iteration_detail(driver_id)
-            _render_iteration_detail(child_id)
-            _iteration_title(nothing)
-            _iteration_title(driver_id)
-            _iteration_title(-1)
-
-            # Warm the sidebar label helpers across every status branch and a few
-            # representative time-delta ranges so the cold path stays trivial.
-            for status in (RUNNING, SUCCEEDED, FAILED, KILLED)
-                _status_glyph(status |> Integer)
-            end
-            _ref = now()
-            _relative_time(_ref - Second(5), _ref)
-            _relative_time(_ref - Minute(30), _ref)
-            _relative_time(_ref - Hour(2), _ref)
-            _relative_time(_ref - Day(3), _ref)
-            _relative_time(_ref - Day(120), _ref)
-            _relative_time(_ref - Day(500), _ref)
-
-            _selected = Observables.Observable{Optional{Int64}}(nothing)
-            _render_sidebar(user, _selected)
-
-            # Round-trip the metrics-chart JSON encoder so the cache holds `JSON.json`
-            # for `Vector{Dict{…}}`.
-            _build_metrics_figure(driver_id |> get_metrics)
-
-            # Exercise the full Bonito render pipeline (Session bootstrap, DOM walking,
-            # Hyperscript serialization, asset registration) by rendering the App to
-            # static HTML on disk. With this branch removed the cold-start cost lives in
-            # Bonito's downstream codepaths that the `_render_*` functions never reach.
-            # A live `Bonito.Server` inside `@compile_workload` would warm even more code,
-            # but it leaves a TCP handle dangling that blocks precompilation.
-            try
-                _warm_app = build_ui_app()
-                _warm_export = joinpath(_warm_dir, "export")
-                mkpath(_warm_export)
-                Bonito.export_static(_warm_export, Bonito.Routes("/" => _warm_app))
-            catch _
-                # Static export is best-effort during precompile; the rendering-function
-                # warmup above carries most of the win even when Bonito's asset bundler
-                # cannot reach network or disk in a build sandbox.
-            end
-
-            close_database()
-        end
-    finally
-        rm(_warm_dir; recursive=true, force=true)
-    end
-end
+# No PrecompileTools `@compile_workload` runs here. The previous warmup rendered the Bonito
+# dashboard to exercise cold-start paths, but rendering bundles widget JS through a Deno
+# subprocess that hangs during precompilation on a CI runner, stalling the whole build. The
+# `using PrecompileTools` import above is retained so the dependency stays referenced; a
+# Deno-free, DB-only warmup can be reintroduced later if first-render latency matters.
 
 end

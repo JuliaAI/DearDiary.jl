@@ -28,8 +28,7 @@ or from the REPL, type `]add DearDiary`.
 using DearDiary
 DearDiary.initialize_database()
 
-user = DearDiary.get_user("default")
-project_id, _ = create_project(user.id, "Iris classification")
+project_id, _ = create_project("Iris classification")
 experiment_id, _ = create_experiment(project_id, DearDiary.IN_PROGRESS, "Decision-tree sweep")
 
 with_iteration(experiment_id) do iter

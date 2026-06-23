@@ -2,7 +2,7 @@
 ```@docs
 DearDiary.AbstractArtifactStore
 DearDiary.ArtifactWriteResult
-DearDiary.SQLiteStore
+DearDiary.InlineStore
 DearDiary.FilesystemStore
 DearDiary.S3Store
 DearDiary.write_artifact

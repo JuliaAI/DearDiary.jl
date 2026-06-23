@@ -43,8 +43,7 @@ DearDiary.initialize_database(; file_name=DearDiary._DEARDIARY_APICONFIG.db_file
 Create a project, experiment, and iteration, then upload an artifact through the configured store:
 
 ```@repl fs
-user = DearDiary.get_user("default");
-project_id, _ = create_project(user.id, "Filesystem tutorial");
+project_id, _ = create_project("Filesystem tutorial");
 experiment_id, _ = create_experiment(project_id, DearDiary.IN_PROGRESS, "FS experiment");
 iteration_id, _ = create_iteration(experiment_id);
 payload = rand(UInt8, 4096);

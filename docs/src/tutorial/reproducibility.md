@@ -21,8 +21,7 @@ runs (HPO trials, distributed workers) inherit. Override with the `snapshot` key
 different behavior.
 
 ```@repl repro
-user = DearDiary.get_user("default");
-project_id, _ = create_project(user.id, "Repro Project");
+project_id, _ = create_project("Repro Project");
 experiment_id, _ = create_experiment(project_id, DearDiary.IN_PROGRESS, "Training");
 
 iteration_id = DearDiary.with_iteration(experiment_id) do iter

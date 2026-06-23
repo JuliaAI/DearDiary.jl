@@ -20,8 +20,7 @@ space; its metrics summarise the result. Each configuration the sweep tries live
 child iteration that points back at the driver.
 
 ```@repl ci
-user = DearDiary.get_user("default");
-project_id, _ = create_project(user.id, "Fraud detection");
+project_id, _ = create_project("Fraud detection");
 experiment_id, _ = create_experiment(project_id, DearDiary.IN_PROGRESS, "Decision-tree sweep");
 
 driver_id, _ = create_iteration(experiment_id);

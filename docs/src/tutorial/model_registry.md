@@ -19,8 +19,7 @@ DearDiary.initialize_database(; file_name=joinpath(mktempdir(), "deardiary.db"))
 ## Scaffold a project and an iteration
 
 ```@repl mr
-user = DearDiary.get_user("default");
-project_id, _ = create_project(user.id, "Fraud detection");
+project_id, _ = create_project("Fraud detection");
 experiment_id, _ = create_experiment(project_id, DearDiary.IN_PROGRESS, "DT sweep");
 iteration_id, _ = create_iteration(experiment_id);
 create_parameter(iteration_id, "max_depth", 7);

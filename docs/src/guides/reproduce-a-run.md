@@ -1,6 +1,6 @@
-# Reproducibility
+# Reproduce a past run
 
-Every [`Iteration`](@ref) can carry a bit-exact snapshot of the Julia environment that
+Every [`Iteration`](@ref DearDiary.Iteration) can carry a bit-exact snapshot of the Julia environment that
 produced it: `julia_version`, the HEAD commit SHA, the verbatim `Project.toml` and
 `Manifest.toml` active at run start, and the entrypoint script. Months later,
 [`restore`](@ref) writes that snapshot back to disk so the exact dependency tree can be
@@ -8,7 +8,7 @@ produced it: `julia_version`, the HEAD commit SHA, the verbatim `Project.toml` a
 strings that re-resolve transitive dependencies on install. Julia's `Manifest.toml` is
 byte-exact, so the captured tree round-trips with no resolution drift.
 
-```@setup repro
+```@setup reproduce-a-run
 using DearDiary
 DearDiary.initialize_database(; file_name=joinpath(mktempdir(), "deardiary.db"))
 ```
@@ -20,7 +20,7 @@ creating the iteration, but only when the new run has no parent. Driver runs cap
 runs (HPO trials, distributed workers) inherit. Override with the `snapshot` keyword for
 different behavior.
 
-```@repl repro
+```@repl reproduce-a-run
 project_id, _ = create_project("Repro Project");
 experiment_id, _ = create_experiment(project_id, DearDiary.IN_PROGRESS, "Training");
 
@@ -30,16 +30,16 @@ iteration_id = DearDiary.with_iteration(experiment_id) do iter
 end;
 ```
 
-```@repl repro
+```@repl reproduce-a-run
 iteration = get_iteration(iteration_id);
 iteration.julia_version
 ```
 
-```@repl repro
+```@repl reproduce-a-run
 iteration.git_sha |> length
 ```
 
-```@repl repro
+```@repl reproduce-a-run
 iteration.entrypoint, iteration.git_dirty
 ```
 
@@ -48,7 +48,7 @@ iteration.entrypoint, iteration.git_dirty
 To attach a snapshot outside the `with_iteration` flow (for example, in a long-lived
 service that opens iterations imperatively), call [`snapshot_environment!`](@ref) directly:
 
-```@repl repro
+```@repl reproduce-a-run
 manual_id, _ = create_iteration(experiment_id);
 DearDiary.snapshot_environment!(manual_id; entrypoint="train.jl");
 get_iteration(manual_id).entrypoint
@@ -57,7 +57,7 @@ get_iteration(manual_id).entrypoint
 [`DearDiary.capture_environment`](@ref) returns the snapshot without persisting it, useful
 for inspection or shipping the capture across a process boundary:
 
-```@repl repro
+```@repl reproduce-a-run
 snapshot = DearDiary.capture_environment();
 snapshot.julia_version
 ```
@@ -68,12 +68,12 @@ snapshot.julia_version
 directory under `depot`. It does **not** activate the project or run `Pkg.instantiate`.
 That is left to the caller so the function stays side-effect-free outside the temp tree.
 
-```@repl repro
+```@repl reproduce-a-run
 depot = mktempdir();
 result = DearDiary.restore(iteration_id; depot=depot)
 ```
 
-```@repl repro
+```@repl reproduce-a-run
 isfile(joinpath(result.project_path, "Project.toml")), isfile(joinpath(result.project_path, "Manifest.toml"))
 ```
 
@@ -104,6 +104,6 @@ reproducibility. Uncommitted source changes must be reapplied manually. Run repr
 jobs from a clean working tree; the snapshot lets you verify after the fact whether the
 tree was clean.
 
-```@setup repro
+```@setup reproduce-a-run
 DearDiary.close_database()
 ```

@@ -87,9 +87,9 @@
                 )
 
                 @test DearDiary.delete(DearDiary.UserPermission, userpermission.id)
-                @test isnothing(DearDiary.fetch(
-                    DearDiary.UserPermission, user.id, project_id
-                ))
+                @test isnothing(
+                    DearDiary.fetch(DearDiary.UserPermission, user.id, project_id)
+                )
             end
 
             @testset verbose = true "delete using project" begin
@@ -97,18 +97,18 @@
                 project = DearDiary.fetch(DearDiary.Project, project_id)
 
                 @test DearDiary.delete(DearDiary.UserPermission, project)
-                @test isnothing(DearDiary.fetch(
-                    DearDiary.UserPermission, user.id, project.id
-                ))
+                @test isnothing(
+                    DearDiary.fetch(DearDiary.UserPermission, user.id, project.id)
+                )
             end
 
             @testset verbose = true "delete using user" begin
                 project_id, _ = DearDiary.create_project(user.id, "Test Project")
 
                 @test DearDiary.delete(DearDiary.UserPermission, user)
-                @test isnothing(DearDiary.fetch(
-                    DearDiary.UserPermission, user.id, project_id
-                ))
+                @test isnothing(
+                    DearDiary.fetch(DearDiary.UserPermission, user.id, project_id)
+                )
             end
         end
     end

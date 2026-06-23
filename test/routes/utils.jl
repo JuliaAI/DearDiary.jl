@@ -49,12 +49,14 @@
                 )
                 token = JSON.parse(String(response.body), Dict{String,Any})["access_token"]
 
-                create_payload = JSON.json(Dict(
-                    "first_name" => "Missy",
-                    "last_name" => "Gala",
-                    "username" => "missy",
-                    "password" => "gala",
-                ))
+                create_payload = JSON.json(
+                    Dict(
+                        "first_name" => "Missy",
+                        "last_name" => "Gala",
+                        "username" => "missy",
+                        "password" => "gala",
+                    ),
+                )
                 response = HTTP.post(
                     "http://127.0.0.1:9000/user";
                     headers=Dict("Authorization" => "Bearer $token"),
@@ -71,12 +73,14 @@
                 )
                 token = JSON.parse(String(response.body), Dict{String,Any})["access_token"]
 
-                create_payload = JSON.json(Dict(
-                    "first_name" => "Choclo",
-                    "last_name" => "Queso",
-                    "username" => "choclo",
-                    "password" => "queso",
-                ))
+                create_payload = JSON.json(
+                    Dict(
+                        "first_name" => "Choclo",
+                        "last_name" => "Queso",
+                        "username" => "choclo",
+                        "password" => "queso",
+                    ),
+                )
                 response = HTTP.post(
                     "http://127.0.0.1:9000/user";
                     headers=Dict("Authorization" => "Bearer $token"),
@@ -91,11 +95,13 @@
 
         @testset verbose = true "same-user-or-admin middleware" begin
             missy_token = JSON.parse(
-                String(HTTP.post(
-                    "http://127.0.0.1:9000/auth";
-                    body=(JSON.json(Dict("username" => "missy", "password" => "gala"))),
-                    status_exception=false,
-                ).body),
+                String(
+                    HTTP.post(
+                        "http://127.0.0.1:9000/auth";
+                        body=(JSON.json(Dict("username" => "missy", "password" => "gala"))),
+                        status_exception=false,
+                    ).body,
+                ),
                 Dict{String,Any},
             )["access_token"]
             missy = DearDiary.get_user("missy")
@@ -126,15 +132,15 @@
 
             @testset "admin can read any profile" begin
                 admin_token = JSON.parse(
-                    String(HTTP.post(
-                        "http://127.0.0.1:9000/auth";
-                        body=(
-                            JSON.json(Dict(
-                                "username" => "default", "password" => "default"
-                            ))
-                        ),
-                        status_exception=false,
-                    ).body),
+                    String(
+                        HTTP.post(
+                            "http://127.0.0.1:9000/auth";
+                            body=(JSON.json(
+                                Dict("username" => "default", "password" => "default")
+                            )),
+                            status_exception=false,
+                        ).body,
+                    ),
                     Dict{String,Any},
                 )["access_token"]
 
@@ -149,13 +155,15 @@
 
         @testset verbose = true "user admin-field authorization" begin
             admin_token = JSON.parse(
-                String(HTTP.post(
-                    "http://127.0.0.1:9000/auth";
-                    body=(
-                        JSON.json(Dict("username" => "default", "password" => "default"))
-                    ),
-                    status_exception=false,
-                ).body),
+                String(
+                    HTTP.post(
+                        "http://127.0.0.1:9000/auth";
+                        body=(JSON.json(
+                            Dict("username" => "default", "password" => "default")
+                        )),
+                        status_exception=false,
+                    ).body,
+                ),
                 Dict{String,Any},
             )["access_token"]
             admin_headers = Dict("Authorization" => "Bearer $admin_token")
@@ -163,23 +171,27 @@
             HTTP.post(
                 "http://127.0.0.1:9000/user";
                 headers=admin_headers,
-                body=(
-                    JSON.json(Dict(
+                body=(JSON.json(
+                    Dict(
                         "first_name" => "Promo",
                         "last_name" => "Seeker",
                         "username" => "promo",
                         "password" => "secret",
-                    ))
-                ),
+                    ),
+                )),
                 status_exception=false,
             )
             promo = DearDiary.get_user("promo")
             promo_token = JSON.parse(
-                String(HTTP.post(
-                    "http://127.0.0.1:9000/auth";
-                    body=(JSON.json(Dict("username" => "promo", "password" => "secret"))),
-                    status_exception=false,
-                ).body),
+                String(
+                    HTTP.post(
+                        "http://127.0.0.1:9000/auth";
+                        body=(JSON.json(
+                            Dict("username" => "promo", "password" => "secret")
+                        )),
+                        status_exception=false,
+                    ).body,
+                ),
                 Dict{String,Any},
             )["access_token"]
             promo_headers = Dict("Authorization" => "Bearer $promo_token")
@@ -227,13 +239,15 @@
 
         @testset verbose = true "list permissions endpoints" begin
             admin_token = JSON.parse(
-                String(HTTP.post(
-                    "http://127.0.0.1:9000/auth";
-                    body=(
-                        JSON.json(Dict("username" => "default", "password" => "default"))
-                    ),
-                    status_exception=false,
-                ).body),
+                String(
+                    HTTP.post(
+                        "http://127.0.0.1:9000/auth";
+                        body=(JSON.json(
+                            Dict("username" => "default", "password" => "default")
+                        )),
+                        status_exception=false,
+                    ).body,
+                ),
                 Dict{String,Any},
             )["access_token"]
             admin_headers = Dict("Authorization" => "Bearer $admin_token")
@@ -250,11 +264,13 @@
             DearDiary.create_userpermission(missy.id, project_id, false, true, false, false)
 
             missy_token = JSON.parse(
-                String(HTTP.post(
-                    "http://127.0.0.1:9000/auth";
-                    body=(JSON.json(Dict("username" => "missy", "password" => "gala"))),
-                    status_exception=false,
-                ).body),
+                String(
+                    HTTP.post(
+                        "http://127.0.0.1:9000/auth";
+                        body=(JSON.json(Dict("username" => "missy", "password" => "gala"))),
+                        status_exception=false,
+                    ).body,
+                ),
                 Dict{String,Any},
             )["access_token"]
             missy_headers = Dict("Authorization" => "Bearer $missy_token")
@@ -284,15 +300,15 @@
             @testset "GET /project/{id}/members forbidden for non-member" begin
                 outsider_id, _ = DearDiary.create_user("Out", "Sider", "outsider", "secret")
                 outsider_token = JSON.parse(
-                    String(HTTP.post(
-                        "http://127.0.0.1:9000/auth";
-                        body=(
-                            JSON.json(Dict(
-                                "username" => "outsider", "password" => "secret"
-                            ))
-                        ),
-                        status_exception=false,
-                    ).body),
+                    String(
+                        HTTP.post(
+                            "http://127.0.0.1:9000/auth";
+                            body=(JSON.json(
+                                Dict("username" => "outsider", "password" => "secret")
+                            )),
+                            status_exception=false,
+                        ).body,
+                    ),
                     Dict{String,Any},
                 )["access_token"]
 
@@ -337,13 +353,15 @@
 
         @testset verbose = true "project permission middleware" begin
             admin_token = JSON.parse(
-                String(HTTP.post(
-                    "http://127.0.0.1:9000/auth";
-                    body=(
-                        JSON.json(Dict("username" => "default", "password" => "default"))
-                    ),
-                    status_exception=false,
-                ).body),
+                String(
+                    HTTP.post(
+                        "http://127.0.0.1:9000/auth";
+                        body=(JSON.json(
+                            Dict("username" => "default", "password" => "default")
+                        )),
+                        status_exception=false,
+                    ).body,
+                ),
                 Dict{String,Any},
             )["access_token"]
             admin_headers = Dict("Authorization" => "Bearer $admin_token")
@@ -359,25 +377,25 @@
             experiment_response = HTTP.post(
                 "http://127.0.0.1:9000/experiment/project/$(project_id)";
                 headers=admin_headers,
-                body=(
-                    JSON.json(Dict(
+                body=(JSON.json(
+                    Dict(
                         "status_id" => (Integer(DearDiary.IN_PROGRESS)),
                         "name" => "Permission Experiment",
-                    ))
-                ),
+                    ),
+                )),
                 status_exception=false,
             )
-            experiment_id = JSON.parse(
-                String(experiment_response.body), Dict{String,Any}
-            )["experiment_id"]
+            experiment_id = JSON.parse(String(experiment_response.body), Dict{String,Any})["experiment_id"]
 
             user = DearDiary.get_user("missy")
             user_token = JSON.parse(
-                String(HTTP.post(
-                    "http://127.0.0.1:9000/auth";
-                    body=(JSON.json(Dict("username" => "missy", "password" => "gala"))),
-                    status_exception=false,
-                ).body),
+                String(
+                    HTTP.post(
+                        "http://127.0.0.1:9000/auth";
+                        body=(JSON.json(Dict("username" => "missy", "password" => "gala"))),
+                        status_exception=false,
+                    ).body,
+                ),
                 Dict{String,Any},
             )["access_token"]
             user_headers = Dict("Authorization" => "Bearer $user_token")
@@ -417,12 +435,12 @@
                 create_response = HTTP.post(
                     "http://127.0.0.1:9000/experiment/project/$(project_id)";
                     headers=user_headers,
-                    body=(
-                        JSON.json(Dict(
+                    body=(JSON.json(
+                        Dict(
                             "status_id" => (Integer(DearDiary.IN_PROGRESS)),
                             "name" => "Forbidden Experiment",
-                        ))
-                    ),
+                        ),
+                    )),
                     status_exception=false,
                 )
                 @test create_response.status == HTTP.StatusCodes.FORBIDDEN
@@ -437,12 +455,12 @@
                 response = HTTP.post(
                     "http://127.0.0.1:9000/experiment/project/$(project_id)";
                     headers=user_headers,
-                    body=(
-                        JSON.json(Dict(
+                    body=(JSON.json(
+                        Dict(
                             "status_id" => (Integer(DearDiary.IN_PROGRESS)),
                             "name" => "Allowed Experiment",
-                        ))
-                    ),
+                        ),
+                    )),
                     status_exception=false,
                 )
                 @test response.status == HTTP.StatusCodes.CREATED
@@ -451,12 +469,14 @@
             @testset "update and delete dispatch on the matching action" begin
                 permission = DearDiary.get_userpermission(user.id, project_id)
 
-                update_payload = JSON.json(Dict(
-                    "status_id" => (Integer(DearDiary.STOPPED)),
-                    "name" => nothing,
-                    "description" => "edited",
-                    "end_date" => nothing,
-                ))
+                update_payload = JSON.json(
+                    Dict(
+                        "status_id" => (Integer(DearDiary.STOPPED)),
+                        "name" => nothing,
+                        "description" => "edited",
+                        "end_date" => nothing,
+                    ),
+                )
 
                 forbidden_update = HTTP.patch(
                     "http://127.0.0.1:9000/experiment/$(experiment_id)";
@@ -527,18 +547,22 @@
                 @test DearDiary.get_project_id(
                     DearDiary.Iteration, req("/iteration/$(iteration_id)")
                 ) == project_id
-                @test isnothing(DearDiary.get_project_id(
-                    DearDiary.Iteration, req("/iteration/9999")
-                ))
-                @test isnothing(DearDiary.get_project_id(
-                    DearDiary.Iteration, req("/iteration/experiment/9999")
-                ))
-                @test isnothing(DearDiary.get_project_id(
-                    DearDiary.Iteration, req("/iteration/not-a-number")
-                ))
-                @test isnothing(DearDiary.get_project_id(
-                    DearDiary.Iteration, req("/iteration")
-                ))
+                @test isnothing(
+                    DearDiary.get_project_id(DearDiary.Iteration, req("/iteration/9999"))
+                )
+                @test isnothing(
+                    DearDiary.get_project_id(
+                        DearDiary.Iteration, req("/iteration/experiment/9999")
+                    ),
+                )
+                @test isnothing(
+                    DearDiary.get_project_id(
+                        DearDiary.Iteration, req("/iteration/not-a-number")
+                    ),
+                )
+                @test isnothing(
+                    DearDiary.get_project_id(DearDiary.Iteration, req("/iteration"))
+                )
             end
 
             @testset verbose = true "Metric" begin
@@ -548,15 +572,17 @@
                 @test DearDiary.get_project_id(
                     DearDiary.Metric, req("/metric/$(metric_id)")
                 ) == project_id
-                @test isnothing(DearDiary.get_project_id(
-                    DearDiary.Metric, req("/metric/9999")
-                ))
-                @test isnothing(DearDiary.get_project_id(
-                    DearDiary.Metric, req("/metric/iteration/9999")
-                ))
-                @test isnothing(DearDiary.get_project_id(
-                    DearDiary.Metric, req("/metric/not-a-number")
-                ))
+                @test isnothing(
+                    DearDiary.get_project_id(DearDiary.Metric, req("/metric/9999"))
+                )
+                @test isnothing(
+                    DearDiary.get_project_id(
+                        DearDiary.Metric, req("/metric/iteration/9999")
+                    ),
+                )
+                @test isnothing(
+                    DearDiary.get_project_id(DearDiary.Metric, req("/metric/not-a-number"))
+                )
             end
 
             @testset verbose = true "Parameter" begin
@@ -566,15 +592,19 @@
                 @test DearDiary.get_project_id(
                     DearDiary.Parameter, req("/parameter/$(parameter_id)")
                 ) == project_id
-                @test isnothing(DearDiary.get_project_id(
-                    DearDiary.Parameter, req("/parameter/9999")
-                ))
-                @test isnothing(DearDiary.get_project_id(
-                    DearDiary.Parameter, req("/parameter/iteration/9999")
-                ))
-                @test isnothing(DearDiary.get_project_id(
-                    DearDiary.Parameter, req("/parameter/not-a-number")
-                ))
+                @test isnothing(
+                    DearDiary.get_project_id(DearDiary.Parameter, req("/parameter/9999"))
+                )
+                @test isnothing(
+                    DearDiary.get_project_id(
+                        DearDiary.Parameter, req("/parameter/iteration/9999")
+                    ),
+                )
+                @test isnothing(
+                    DearDiary.get_project_id(
+                        DearDiary.Parameter, req("/parameter/not-a-number")
+                    ),
+                )
             end
 
             @testset verbose = true "Resource" begin
@@ -584,30 +614,38 @@
                 @test DearDiary.get_project_id(
                     DearDiary.Resource, req("/resource/$(resource_id)")
                 ) == project_id
-                @test isnothing(DearDiary.get_project_id(
-                    DearDiary.Resource, req("/resource/9999")
-                ))
-                @test isnothing(DearDiary.get_project_id(
-                    DearDiary.Resource, req("/resource/experiment/9999")
-                ))
-                @test isnothing(DearDiary.get_project_id(
-                    DearDiary.Resource, req("/resource/not-a-number")
-                ))
+                @test isnothing(
+                    DearDiary.get_project_id(DearDiary.Resource, req("/resource/9999"))
+                )
+                @test isnothing(
+                    DearDiary.get_project_id(
+                        DearDiary.Resource, req("/resource/experiment/9999")
+                    ),
+                )
+                @test isnothing(
+                    DearDiary.get_project_id(
+                        DearDiary.Resource, req("/resource/not-a-number")
+                    ),
+                )
             end
 
             @testset verbose = true "UserPermission" begin
                 @test DearDiary.get_project_id(
                     DearDiary.UserPermission, req("/project/$(project_id)/members")
                 ) == project_id
-                @test isnothing(DearDiary.get_project_id(
-                    DearDiary.UserPermission, req("/project/not-a-number/members")
-                ))
-                @test isnothing(DearDiary.get_project_id(
-                    DearDiary.UserPermission, req("/userpermission/$(project_id)")
-                ))
-                @test isnothing(DearDiary.get_project_id(
-                    DearDiary.UserPermission, req("/project")
-                ))
+                @test isnothing(
+                    DearDiary.get_project_id(
+                        DearDiary.UserPermission, req("/project/not-a-number/members")
+                    ),
+                )
+                @test isnothing(
+                    DearDiary.get_project_id(
+                        DearDiary.UserPermission, req("/userpermission/$(project_id)")
+                    ),
+                )
+                @test isnothing(
+                    DearDiary.get_project_id(DearDiary.UserPermission, req("/project"))
+                )
             end
 
             @testset verbose = true "Tag" begin
@@ -620,21 +658,25 @@
                 @test DearDiary.get_project_id(
                     DearDiary.Tag, req("/tag/iteration/$(iteration_id)")
                 ) == project_id
-                @test isnothing(DearDiary.get_project_id(
-                    DearDiary.Tag, req("/tag/experiment/9999")
-                ))
-                @test isnothing(DearDiary.get_project_id(
-                    DearDiary.Tag, req("/tag/iteration/9999")
-                ))
-                @test isnothing(DearDiary.get_project_id(
-                    DearDiary.Tag, req("/tag/project/not-a-number")
-                ))
-                @test isnothing(DearDiary.get_project_id(
-                    DearDiary.Tag, req("/tag/unknown/$(project_id)")
-                ))
-                @test isnothing(DearDiary.get_project_id(
-                    DearDiary.Tag, req("/tag/$(project_id)")
-                ))
+                @test isnothing(
+                    DearDiary.get_project_id(DearDiary.Tag, req("/tag/experiment/9999"))
+                )
+                @test isnothing(
+                    DearDiary.get_project_id(DearDiary.Tag, req("/tag/iteration/9999"))
+                )
+                @test isnothing(
+                    DearDiary.get_project_id(
+                        DearDiary.Tag, req("/tag/project/not-a-number")
+                    ),
+                )
+                @test isnothing(
+                    DearDiary.get_project_id(
+                        DearDiary.Tag, req("/tag/unknown/$(project_id)")
+                    ),
+                )
+                @test isnothing(
+                    DearDiary.get_project_id(DearDiary.Tag, req("/tag/$(project_id)"))
+                )
             end
         end
     end

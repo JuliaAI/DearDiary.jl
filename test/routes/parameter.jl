@@ -10,18 +10,18 @@
             project_data = JSON.parse(String(project_response.body), Dict{String,Any})
             project_id = project_data["project_id"]
 
-            experiment_payload = JSON.json(Dict(
-                "status_id" => (Integer(DearDiary.IN_PROGRESS)),
-                "name" => "Experiment for Parameters",
-            ))
+            experiment_payload = JSON.json(
+                Dict(
+                    "status_id" => (Integer(DearDiary.IN_PROGRESS)),
+                    "name" => "Experiment for Parameters",
+                ),
+            )
             experiment_response = HTTP.post(
                 "http://127.0.0.1:9000/experiment/project/$(project_id)";
                 body=experiment_payload,
                 status_exception=false,
             )
-            experiment_data = JSON.parse(
-                String(experiment_response.body), Dict{String,Any}
-            )
+            experiment_data = JSON.parse(String(experiment_response.body), Dict{String,Any})
             experiment_id = experiment_data["experiment_id"]
 
             iteration_response = HTTP.post(

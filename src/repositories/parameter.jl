@@ -27,9 +27,7 @@ end
 function insert(
     ::Type{<:Parameter}, iteration_id::Integer, key::AbstractString, value::AbstractString
 )::@NamedTuple{id::Optional{<:Int64}, status::DataType}
-    fields = (
-        iteration_id=iteration_id, key=key, value=value, created_date=(string(now()))
-    )
+    fields = (iteration_id=iteration_id, key=key, value=value, created_date=(string(now())))
     return insert(SQL_INSERT_PARAMETER, fields)
 end
 

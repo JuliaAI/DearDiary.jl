@@ -101,12 +101,7 @@ function create_modelversion(
     end
 
     version_id, version_upsert_result = insert(
-        ModelVersion,
-        model_id,
-        iteration_id,
-        resource_id,
-        (Integer(NO_STAGE)),
-        description,
+        ModelVersion, model_id, iteration_id, resource_id, (Integer(NO_STAGE)), description
     )
     if !(version_upsert_result === Created)
         return (id=nothing, status=version_upsert_result)

@@ -123,9 +123,9 @@
             DearDiary.delete_userpermission(
                 DearDiary.get_userpermission(user.id, empty_project_id).id
             )
-            @test isempty(DearDiary.get_userpermissions(
-                DearDiary.Project, empty_project_id
-            ))
+            @test isempty(
+                DearDiary.get_userpermissions(DearDiary.Project, empty_project_id)
+            )
         end
 
         @testset verbose = true "list by user" begin

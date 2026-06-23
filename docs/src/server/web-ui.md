@@ -1,4 +1,4 @@
-# Embedded UI
+# Embedded web UI
 
 !!! warning "Experimental"
     The embedded web dashboard is experimental. Its DOM structure, URL paths,

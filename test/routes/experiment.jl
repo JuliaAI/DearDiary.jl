@@ -10,10 +10,12 @@
             project_data = JSON.parse(String(project_response.body), Dict{String,Any})
             project_id = project_data["project_id"]
 
-            payload = JSON.json(Dict(
-                "status_id" => (Integer(DearDiary.IN_PROGRESS)),
-                "name" => "Test Experiment",
-            ))
+            payload = JSON.json(
+                Dict(
+                    "status_id" => (Integer(DearDiary.IN_PROGRESS)),
+                    "name" => "Test Experiment",
+                ),
+            )
             response = HTTP.post(
                 "http://127.0.0.1:9000/experiment/project/$(project_id)";
                 body=payload,
@@ -43,10 +45,12 @@
         end
 
         @testset verbose = true "get experiments" begin
-            payload = JSON.json(Dict(
-                "status_id" => Integer(DearDiary.IN_PROGRESS),
-                "name" => "Second Experiment",
-            ))
+            payload = JSON.json(
+                Dict(
+                    "status_id" => Integer(DearDiary.IN_PROGRESS),
+                    "name" => "Second Experiment",
+                ),
+            )
             HTTP.post(
                 "http://127.0.0.1:9000/experiment/project/1";
                 body=payload,
@@ -117,12 +121,14 @@
         end
 
         @testset verbose = true "update experiment" begin
-            payload = JSON.json(Dict(
-                "status_id" => Integer(DearDiary.STOPPED),
-                "name" => nothing,
-                "description" => "Updated experiment",
-                "end_date" => nothing,
-            ))
+            payload = JSON.json(
+                Dict(
+                    "status_id" => Integer(DearDiary.STOPPED),
+                    "name" => nothing,
+                    "description" => "Updated experiment",
+                    "end_date" => nothing,
+                ),
+            )
             response = HTTP.patch(
                 "http://127.0.0.1:9000/experiment/2"; body=payload, status_exception=false
             )
@@ -154,12 +160,12 @@
         @testset verbose = true "error envelope on upsert failure" begin
             response = HTTP.post(
                 "http://127.0.0.1:9000/experiment/project/9999";
-                body=(
-                    JSON.json(Dict(
+                body=(JSON.json(
+                    Dict(
                         "status_id" => (Integer(DearDiary.IN_PROGRESS)),
                         "name" => "Orphan Experiment",
-                    ))
-                ),
+                    ),
+                )),
                 status_exception=false,
             )
             @test response.status == HTTP.StatusCodes.UNPROCESSABLE_ENTITY

@@ -7,10 +7,12 @@
         )
         project_id = JSON.parse(String(project_response.body), Dict{String,Any})["project_id"]
 
-        experiment_payload = JSON.json(Dict(
-            "status_id" => (Integer(DearDiary.IN_PROGRESS)),
-            "name" => "MV Routes Experiment",
-        ))
+        experiment_payload = JSON.json(
+            Dict(
+                "status_id" => (Integer(DearDiary.IN_PROGRESS)),
+                "name" => "MV Routes Experiment",
+            ),
+        )
         experiment_response = HTTP.post(
             "http://127.0.0.1:9000/experiment/project/$(project_id)";
             body=experiment_payload,
@@ -32,11 +34,13 @@
         model_id = JSON.parse(String(model_response.body), Dict{String,Any})["model_id"]
 
         @testset verbose = true "create model version" begin
-            payload = JSON.json(Dict(
-                "iteration_id" => iteration_id,
-                "resource_id" => nothing,
-                "description" => nothing,
-            ))
+            payload = JSON.json(
+                Dict(
+                    "iteration_id" => iteration_id,
+                    "resource_id" => nothing,
+                    "description" => nothing,
+                ),
+            )
             response = HTTP.post(
                 "http://127.0.0.1:9000/modelversion/model/$(model_id)";
                 body=payload,
@@ -52,9 +56,9 @@
                 "http://127.0.0.1:9000/modelversion/$(version_id)"; status_exception=false
             )
             @test response.status == HTTP.StatusCodes.OK
-            version = DearDiary.ModelVersion(JSON.parse(
-                String(response.body), Dict{String,Any}
-            ))
+            version = DearDiary.ModelVersion(
+                JSON.parse(String(response.body), Dict{String,Any})
+            )
             @test version.model_id == model_id
             @test version.version == 1
             @test version.stage_id == (Integer(DearDiary.NO_STAGE))
@@ -65,13 +69,13 @@
             for _ in 1:2
                 HTTP.post(
                     "http://127.0.0.1:9000/modelversion/model/$(model_id)";
-                    body=(
-                        JSON.json(Dict(
+                    body=(JSON.json(
+                        Dict(
                             "iteration_id" => iteration_id,
                             "resource_id" => nothing,
                             "description" => nothing,
-                        ))
-                    ),
+                        ),
+                    )),
                     status_exception=false,
                 )
             end
@@ -90,44 +94,52 @@
             # Promote v2 to PRODUCTION.
             HTTP.patch(
                 "http://127.0.0.1:9000/modelversion/$(v2_id)";
-                body=(
-                    JSON.json(Dict(
+                body=(JSON.json(
+                    Dict(
                         "stage_id" => (Integer(DearDiary.PRODUCTION)),
                         "description" => nothing,
                         "resource_id" => nothing,
-                    ))
-                ),
+                    ),
+                )),
                 status_exception=false,
             )
 
             # Promote v3 to PRODUCTION; v2 must auto-archive.
             response = HTTP.patch(
                 "http://127.0.0.1:9000/modelversion/$(v3_id)";
-                body=(
-                    JSON.json(Dict(
+                body=(JSON.json(
+                    Dict(
                         "stage_id" => (Integer(DearDiary.PRODUCTION)),
                         "description" => nothing,
                         "resource_id" => nothing,
-                    ))
-                ),
+                    ),
+                )),
                 status_exception=false,
             )
             @test response.status == HTTP.StatusCodes.OK
 
-            v2_after = DearDiary.ModelVersion(JSON.parse(
-                String(HTTP.get(
-                    "http://127.0.0.1:9000/modelversion/$(v2_id)";
-                    status_exception=false,
-                ).body),
-                Dict{String,Any},
-            ))
-            v3_after = DearDiary.ModelVersion(JSON.parse(
-                String(HTTP.get(
-                    "http://127.0.0.1:9000/modelversion/$(v3_id)";
-                    status_exception=false,
-                ).body),
-                Dict{String,Any},
-            ))
+            v2_after = DearDiary.ModelVersion(
+                JSON.parse(
+                    String(
+                        HTTP.get(
+                            "http://127.0.0.1:9000/modelversion/$(v2_id)";
+                            status_exception=false,
+                        ).body,
+                    ),
+                    Dict{String,Any},
+                ),
+            )
+            v3_after = DearDiary.ModelVersion(
+                JSON.parse(
+                    String(
+                        HTTP.get(
+                            "http://127.0.0.1:9000/modelversion/$(v3_id)";
+                            status_exception=false,
+                        ).body,
+                    ),
+                    Dict{String,Any},
+                ),
+            )
 
             @test v2_after.stage_id == (Integer(DearDiary.ARCHIVED))
             @test v3_after.stage_id == (Integer(DearDiary.PRODUCTION))

@@ -28,10 +28,7 @@ function insert(
     ::Type{<:Experiment}, project_id::Integer, status_id::Integer, name::AbstractString
 )::@NamedTuple{id::Optional{<:Int64}, status::DataType}
     fields = (
-        project_id=project_id,
-        status_id=status_id,
-        name=name,
-        created_date=(string(now())),
+        project_id=project_id, status_id=status_id, name=name, created_date=(string(now()))
     )
     return insert(SQL_INSERT_EXPERIMENT, fields)
 end

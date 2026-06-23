@@ -3,4 +3,5 @@
 DearDiary.Migration
 DearDiary.apply_migrations
 DearDiary.applied_versions
+DearDiary.MIGRATIONS
 ```

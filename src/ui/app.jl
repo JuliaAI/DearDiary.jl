@@ -335,13 +335,14 @@ function _render_parameters_card(iteration)
         Bonito.DOM.p("No parameters recorded."; class="dd-empty")
     else
         Bonito.DOM.table(
-        Bonito.DOM.thead(Bonito.DOM.tr(Bonito.DOM.th("Key"), Bonito.DOM.th("Value"))),
-        Bonito.DOM.tbody(
-            [
-                Bonito.DOM.tr(Bonito.DOM.td(p.key), Bonito.DOM.td(p.value)) for p in params
-            ]...,
-        ),
-    )
+            Bonito.DOM.thead(Bonito.DOM.tr(Bonito.DOM.th("Key"), Bonito.DOM.th("Value"))),
+            Bonito.DOM.tbody(
+                [
+                    Bonito.DOM.tr(Bonito.DOM.td(p.key), Bonito.DOM.td(p.value)) for
+                    p in params
+                ]...,
+            ),
+        )
     end
     return Bonito.DOM.section(Bonito.DOM.h3("Parameters"), body; class="dd-card")
 end

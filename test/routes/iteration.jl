@@ -10,18 +10,18 @@
             project_data = JSON.parse(String(project_response.body), Dict{String,Any})
             project_id = project_data["project_id"]
 
-            experiment_payload = JSON.json(Dict(
-                "status_id" => (Integer(DearDiary.IN_PROGRESS)),
-                "name" => "Experiment for Iterations",
-            ))
+            experiment_payload = JSON.json(
+                Dict(
+                    "status_id" => (Integer(DearDiary.IN_PROGRESS)),
+                    "name" => "Experiment for Iterations",
+                ),
+            )
             experiment_response = HTTP.post(
                 "http://127.0.0.1:9000/experiment/project/$(project_id)";
                 body=experiment_payload,
                 status_exception=false,
             )
-            experiment_data = JSON.parse(
-                String(experiment_response.body), Dict{String,Any}
-            )
+            experiment_data = JSON.parse(String(experiment_response.body), Dict{String,Any})
             experiment_id = experiment_data["experiment_id"]
 
             response = HTTP.post(
@@ -68,9 +68,9 @@
         end
 
         @testset verbose = true "update iteration" begin
-            payload = JSON.json(Dict(
-                "notes" => "Updated notes for iteration", "end_date" => nothing
-            ))
+            payload = JSON.json(
+                Dict("notes" => "Updated notes for iteration", "end_date" => nothing)
+            )
             response = HTTP.patch(
                 "http://127.0.0.1:9000/iteration/2"; body=payload, status_exception=false
             )
@@ -106,17 +106,15 @@
             project_data = JSON.parse(String(project_response.body), Dict{String,Any})
             project_id = project_data["project_id"]
 
-            experiment_payload = JSON.json(Dict(
-                "status_id" => (Integer(DearDiary.IN_PROGRESS)), "name" => "Sweep"
-            ))
+            experiment_payload = JSON.json(
+                Dict("status_id" => (Integer(DearDiary.IN_PROGRESS)), "name" => "Sweep")
+            )
             experiment_response = HTTP.post(
                 "http://127.0.0.1:9000/experiment/project/$(project_id)";
                 body=experiment_payload,
                 status_exception=false,
             )
-            experiment_id = JSON.parse(
-                String(experiment_response.body), Dict{String,Any}
-            )["experiment_id"]
+            experiment_id = JSON.parse(String(experiment_response.body), Dict{String,Any})["experiment_id"]
 
             parent_response = HTTP.post(
                 "http://127.0.0.1:9000/iteration/experiment/$(experiment_id)";
@@ -164,18 +162,18 @@
             )
             project_id = JSON.parse(String(project_response.body), Dict{String,Any})["project_id"]
 
-            experiment_payload = JSON.json(Dict(
-                "status_id" => (Integer(DearDiary.IN_PROGRESS)),
-                "name" => "Status Sweep",
-            ))
+            experiment_payload = JSON.json(
+                Dict(
+                    "status_id" => (Integer(DearDiary.IN_PROGRESS)),
+                    "name" => "Status Sweep",
+                ),
+            )
             experiment_response = HTTP.post(
                 "http://127.0.0.1:9000/experiment/project/$(project_id)";
                 body=experiment_payload,
                 status_exception=false,
             )
-            experiment_id = JSON.parse(
-                String(experiment_response.body), Dict{String,Any}
-            )["experiment_id"]
+            experiment_id = JSON.parse(String(experiment_response.body), Dict{String,Any})["experiment_id"]
 
             iteration_response = HTTP.post(
                 "http://127.0.0.1:9000/iteration/experiment/$(experiment_id)";
@@ -183,12 +181,14 @@
             )
             iteration_id = JSON.parse(String(iteration_response.body), Dict{String,Any})["iteration_id"]
 
-            payload = JSON.json(Dict(
-                "notes" => nothing,
-                "end_date" => string(Dates.now()),
-                "status_id" => (Integer(DearDiary.FAILED)),
-                "error_message" => "OutOfMemoryError",
-            ))
+            payload = JSON.json(
+                Dict(
+                    "notes" => nothing,
+                    "end_date" => string(Dates.now()),
+                    "status_id" => (Integer(DearDiary.FAILED)),
+                    "error_message" => "OutOfMemoryError",
+                ),
+            )
             patch_response = HTTP.patch(
                 "http://127.0.0.1:9000/iteration/$(iteration_id)";
                 body=payload,

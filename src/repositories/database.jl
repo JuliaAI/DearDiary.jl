@@ -39,10 +39,7 @@ function seed_default_user(db::DuckDB.DB)::Nothing
     DBInterface.execute(
         db,
         duckdbify(SQL_INSERT_DEFAULT_ADMIN_USER),
-        (
-            password=String(GenerateFromPassword("default")),
-            created_date=(string(now())),
-        ),
+        (password=String(GenerateFromPassword("default")), created_date=(string(now()))),
     )
     return nothing
 end

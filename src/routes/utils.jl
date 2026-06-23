@@ -118,8 +118,7 @@ function SameUserOrAdminRequiredMiddleware(handle::Function)::Function
             user = request.context[:user]
             if !user.is_admin
                 segments = path_segments(request)
-                target_id =
-                    (length(segments)) >= 2 ? tryparse(Int64, segments[2]) : nothing
+                target_id = (length(segments)) >= 2 ? tryparse(Int64, segments[2]) : nothing
                 if isnothing(target_id)
                     return error_response(
                         NotFound,

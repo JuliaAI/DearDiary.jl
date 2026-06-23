@@ -14,7 +14,7 @@
 - **Bit-exact environment replay**: every iteration records a `Manifest.toml` snapshot, the Julia version, and the git SHA. `DearDiary.restore(iteration_id)` writes the captured environment to a fresh directory for `Pkg.instantiate`.
 - **Pluggable storage**: portable DuckDB metadata store. Artifact bytes live inline, on a local filesystem, or in any S3-compatible object store (AWS S3, MinIO, Cloudflare R2). `migrate_artifacts!` moves rows between backends on a live database.
 
-The [tutorials](https://juliaai.github.io/DearDiary.jl/dev/tutorial/) cover a quickstart walk-through plus dedicated guides for the [model registry](https://juliaai.github.io/DearDiary.jl/dev/tutorial/model_registry/), [child iterations](https://juliaai.github.io/DearDiary.jl/dev/tutorial/child_iterations/), [filesystem](https://juliaai.github.io/DearDiary.jl/dev/tutorial/filesystem_artifacts/) and [S3](https://juliaai.github.io/DearDiary.jl/dev/tutorial/s3_artifacts/) artifact storage, and [Manifest-based reproducibility](https://juliaai.github.io/DearDiary.jl/dev/tutorial/reproducibility/).
+The docs cover a [quickstart](https://juliaai.github.io/DearDiary.jl/dev/getting-started/quickstart/) plus dedicated guides for the [model registry](https://juliaai.github.io/DearDiary.jl/dev/guides/model-registry/), [child iterations](https://juliaai.github.io/DearDiary.jl/dev/guides/child-iterations/), [filesystem](https://juliaai.github.io/DearDiary.jl/dev/guides/filesystem-artifacts/) and [S3](https://juliaai.github.io/DearDiary.jl/dev/guides/s3-artifacts/) artifact storage, and [Manifest-based reproducibility](https://juliaai.github.io/DearDiary.jl/dev/guides/reproduce-a-run/).
 
 ## Installation
 ```julia
@@ -37,7 +37,7 @@ with_iteration(experiment_id) do iter
 end
 ```
 
-`with_iteration` opens an iteration, runs the body, marks it `SUCCEEDED` on a clean return or `FAILED` (carrying the captured exception text) on a throw, and snapshots the active Julia environment so you can replay the run later. The [tutorials](https://juliaai.github.io/DearDiary.jl/dev/tutorial/) cover remote logging through the REST client, the model registry, and the reproducibility workflow.
+`with_iteration` opens an iteration, runs the body, marks it `SUCCEEDED` on a clean return or `FAILED` (carrying the captured exception text) on a throw, and snapshots the active Julia environment so you can replay the run later. The guides cover [remote logging](https://juliaai.github.io/DearDiary.jl/dev/guides/remote-client/) through the REST client, the model registry, and the reproducibility workflow.
 
 ## Motivation
 Reproducible ML depends on knowing what code, data, and environment produced each result. Existing trackers either route every interaction through a Python client (MLflow, Weights & Biases, Aim) or capture environments as `pip freeze` strings that re-resolve their transitive dependencies at install time. DearDiary is Julia-native and persists the exact `Manifest.toml` per run, so you can reconstruct an iteration months later by running `DearDiary.restore(iteration_id)`. You use the same tracking API whether you run a single-file DuckDB database on a laptop or a multi-worker S3-backed deployment.

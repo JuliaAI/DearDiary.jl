@@ -135,9 +135,7 @@ function update_experiment(
     # Reopening: when an experiment transitions back to `IN_PROGRESS` and a
     # previous `end_date` was recorded, that timestamp must be cleared. The
     # experiment is once again live, so it has no end yet.
-    reopening = (
-        status_id == (Integer(IN_PROGRESS)) && !(isnothing(experiment.end_date))
-    )
+    reopening = (status_id == (Integer(IN_PROGRESS)) && !(isnothing(experiment.end_date)))
     effective_end_date = reopening ? nothing : end_date
 
     should_be_updated = compare_object_fields(

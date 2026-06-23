@@ -49,7 +49,7 @@ If you want to exercise the REST API while developing, copy the sample environme
 cp .env.sample .env
 ```
 
-Then start the server with `DearDiary.run()`. See the [tutorials](https://juliaai.github.io/DearDiary.jl/dev/tutorial/) for the full workflow.
+Then start the server with `DearDiary.run()`. See the [quickstart](https://juliaai.github.io/DearDiary.jl/dev/getting-started/quickstart/) for the full workflow.
 
 To build the documentation locally:
 

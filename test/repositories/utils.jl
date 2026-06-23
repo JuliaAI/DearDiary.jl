@@ -58,9 +58,9 @@
         @testset verbose = true "delete" begin
             @test DearDiary.delete(DearDiary.SQL_DELETE_USER, 2)
 
-            @test isnothing(DearDiary.fetch(
-                DearDiary.SQL_SELECT_USER_BY_USERNAME, (username="missy",)
-            ))
+            @test isnothing(
+                DearDiary.fetch(DearDiary.SQL_SELECT_USER_BY_USERNAME, (username="missy",))
+            )
         end
 
         @testset verbose = true "row to dict" begin

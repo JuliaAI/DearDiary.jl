@@ -10,8 +10,9 @@
             project_data = JSON.parse(String(project_response.body), Dict{String,Any})
             project_id = project_data["project_id"]
 
-            payload =
-                JSON.json(Dict("name" => "fraud-classifier", "description" => nothing))
+            payload = JSON.json(
+                Dict("name" => "fraud-classifier", "description" => nothing)
+            )
             response = HTTP.post(
                 "http://127.0.0.1:9000/model/project/$(project_id)";
                 body=payload,
@@ -39,9 +40,7 @@
         @testset verbose = true "get models paginated" begin
             HTTP.post(
                 "http://127.0.0.1:9000/model/project/1";
-                body=(
-                    JSON.json(Dict("name" => "second-model", "description" => nothing))
-                ),
+                body=(JSON.json(Dict("name" => "second-model", "description" => nothing))),
                 status_exception=false,
             )
 
@@ -56,9 +55,9 @@
         end
 
         @testset verbose = true "update model" begin
-            payload = JSON.json(Dict(
-                "name" => nothing, "description" => "Updated registry description"
-            ))
+            payload = JSON.json(
+                Dict("name" => nothing, "description" => "Updated registry description")
+            )
             response = HTTP.patch(
                 "http://127.0.0.1:9000/model/1"; body=payload, status_exception=false
             )
@@ -89,9 +88,9 @@
         @testset verbose = true "duplicate name surfaces CONFLICT" begin
             response = HTTP.post(
                 "http://127.0.0.1:9000/model/project/1";
-                body=(
-                    JSON.json(Dict("name" => "fraud-classifier", "description" => nothing))
-                ),
+                body=(JSON.json(
+                    Dict("name" => "fraud-classifier", "description" => nothing)
+                )),
                 status_exception=false,
             )
             @test response.status == HTTP.StatusCodes.CONFLICT

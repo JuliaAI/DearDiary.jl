@@ -16,7 +16,7 @@ Fields
 - `region::String`: Region used in the SigV4 credential scope (e.g. `us-east-1`).
 - `access_key::String`, `secret_key::String`: SigV4 credentials.
 - `http_transport::Function`: `(method, url, headers, body) -> response`. Defaults to
-  [`_default_s3_transport`](@ref). Overridden by tests with a closure that captures the
+  `_default_s3_transport`. Overridden by tests with a closure that captures the
   request rather than hitting the network.
 """
 struct S3Store <: AbstractArtifactStore
@@ -201,8 +201,9 @@ function sigv4_sign!(
     # Canonical headers: lowercased name, trimmed value, sorted by name.
     canonical_headers_entries = [(lowercase(k), strip(v)) for (k, v) in headers]
     sort!(canonical_headers_entries; by=p -> p[1])
-    canonical_headers =
-        join(["$(name):$(value)\n" for (name, value) in canonical_headers_entries])
+    canonical_headers = join([
+        "$(name):$(value)\n" for (name, value) in canonical_headers_entries
+    ])
     signed_headers = join([name for (name, _) in canonical_headers_entries], ";")
 
     canonical_path = (isempty(uri.path)) ? "/" : uri.path

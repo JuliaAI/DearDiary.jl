@@ -1,6 +1,6 @@
-# Child iterations
+# Parent and child iterations
 
-An [`Iteration`](@ref) can declare another iteration as its parent via
+An [`Iteration`](@ref DearDiary.Iteration) can declare another iteration as its parent via
 `parent_iteration_id`, which models any one-to-many "owner run produced N child runs"
 relationship: a hyperparameter sweep that spawns one trial per configuration, a nested
 cross-validation outer loop that owns each fold, or a distributed training job whose driver
@@ -8,7 +8,7 @@ fans out to per-worker iterations. The parent must be in the same experiment as 
 (cross-experiment lineage is rejected), and each child also tracks its own
 [`DearDiary.IterationStatus`](@ref) (`RUNNING` / `SUCCEEDED` / `FAILED` / `KILLED`).
 
-```@setup ci
+```@setup child-iterations
 using DearDiary
 DearDiary.initialize_database(; file_name=joinpath(mktempdir(), "deardiary.db"))
 ```
@@ -19,7 +19,7 @@ The driver iteration represents the sweep as a whole. Its parameters describe th
 space; its metrics summarise the result. Each configuration the sweep tries lives in a
 child iteration that points back at the driver.
 
-```@repl ci
+```@repl child-iterations
 project_id, _ = create_project("Fraud detection");
 experiment_id, _ = create_experiment(project_id, DearDiary.IN_PROGRESS, "Decision-tree sweep");
 
@@ -35,7 +35,7 @@ service layer validates that the parent exists and belongs to the same experimen
 cross-experiment parent returns [`DearDiary.Unprocessable`](@ref), so a misconfigured
 sweep cannot produce orphaned children.
 
-```@repl ci
+```@repl child-iterations
 trial_ids = Int64[];
 for depth in 2:5
     trial_id, _ = create_iteration(experiment_id; parent_iteration_id=driver_id)
@@ -54,7 +54,7 @@ iteration, runs the body, marks the row [`DearDiary.SUCCEEDED`](@ref) on a clean
 or marks it [`DearDiary.FAILED`](@ref) with the captured exception text in `error_message`
 and rethrows so the caller still sees the error:
 
-```@repl ci
+```@repl child-iterations
 succeeded_id = DearDiary.with_iteration(experiment_id; parent_iteration_id=driver_id) do iter
     create_parameter(iter.id, "max_depth", 6)
     create_metric(iter.id, "accuracy", 0.972)
@@ -62,14 +62,14 @@ succeeded_id = DearDiary.with_iteration(experiment_id; parent_iteration_id=drive
 end;
 ```
 
-```@repl ci
+```@repl child-iterations
 succeeded = get_iteration(succeeded_id);
 (succeeded.status_id == (DearDiary.SUCCEEDED |> Integer), succeeded.error_message)
 ```
 
 A trial that throws is captured the same way: the exception body is preserved on the row.
 
-```@example ci
+```@example child-iterations
 failed_id = Ref{Int64}(0)
 try
     DearDiary.with_iteration(experiment_id; parent_iteration_id=driver_id) do iter
@@ -82,7 +82,7 @@ end
 nothing # hide
 ```
 
-```@repl ci
+```@repl child-iterations
 failed = get_iteration(failed_id[]);
 (failed.status_id == (DearDiary.FAILED |> Integer), failed.error_message)
 ```
@@ -93,12 +93,12 @@ failed = get_iteration(failed_id[]);
 ascending. Combine it with [`get_parameters`](@ref) and [`get_metrics`](@ref) to find the
 best trial of a sweep:
 
-```@repl ci
+```@repl child-iterations
 children = get_child_iterations(driver_id);
 (children |> length)
 ```
 
-```@repl ci
+```@repl child-iterations
 best = argmax(c -> get_metrics(c.id)[1].value, filter(c -> c.status_id == (DearDiary.SUCCEEDED |> Integer), children));
 best_depth = get_parameters(best.id)[1].value
 ```
@@ -110,7 +110,7 @@ The schema's foreign-key action sets each surviving child's `parent_iteration_id
 `NULL`, so they continue to exist as standalone iterations until explicitly removed. This
 preserves historical training results even when the driver run is pruned.
 
-```@repl ci
+```@repl child-iterations
 delete_iteration(driver_id);
 get_iteration(succeeded_id).parent_iteration_id |> isnothing
 ```
@@ -141,6 +141,6 @@ end
 A worker that crashes records a [`DearDiary.FAILED`](@ref) row with the stack-trace text in
 `error_message` while sibling workers and the driver continue.
 
-```@setup ci
+```@setup child-iterations
 DearDiary.close_database()
 ```

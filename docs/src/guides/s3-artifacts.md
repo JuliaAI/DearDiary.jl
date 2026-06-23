@@ -1,4 +1,4 @@
-# S3 artifact storage
+# Store artifacts in an S3-compatible store
 
 For multi-machine deployments or large checkpoints, artifact bytes belong in an object store
 rather than on a single server's disk. DearDiary's [`DearDiary.S3Store`](@ref) backend
@@ -52,11 +52,11 @@ DEARDIARY_ARTIFACT_S3_SECRET_KEY=minioadmin
 Each artifact is written to `s3://<bucket>/<aa>/<uuid>`. Like the
 [`DearDiary.FilesystemStore`](@ref) backend, paths are UUID-keyed rather than
 content-hashed, so identical payloads from two writes never collide and deleting one
-[`Resource`](@ref) cannot break another.
+[`Resource`](@ref DearDiary.Resource) cannot break another.
 
 ## Using the backend
 
-Once the env vars are in place, the rest of the code is identical to the SQLite-backed
+Once the env vars are in place, the rest of the code is identical to the inline-backed
 flow. The artifact store layer is transparent to the service layer.
 
 ### Start the server
@@ -112,7 +112,7 @@ DearDiary.migrate_artifacts!()
 ```
 
 Per-row failures (network blip, AWS 503, etc.) are logged and skipped. The offending row
-keeps its `backend = "sqlite"` value and is retried on the next invocation. Already-migrated
+keeps its `backend = "inline"` value and is retried on the next invocation. Already-migrated
 rows are detected by their `backend` field and skipped, so re-running picks up where it
 stopped.
 

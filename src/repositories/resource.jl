@@ -58,14 +58,7 @@ function insert(
     data::AbstractArray{UInt8,1},
 )::@NamedTuple{id::Optional{<:Int64}, status::DataType}
     return insert(
-        Resource,
-        experiment_id,
-        name,
-        data,
-        "inline",
-        "",
-        (length(data)),
-        sha256_hex(data),
+        Resource, experiment_id, name, data, "inline", "", (length(data)), sha256_hex(data)
     )
 end
 

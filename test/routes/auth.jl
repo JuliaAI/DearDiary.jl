@@ -159,9 +159,7 @@
             @testset "INVALID_CREDENTIALS" begin
                 response = HTTP.post(
                     "http://127.0.0.1:9000/auth";
-                    body=(
-                        JSON.json(Dict("username" => "default", "password" => "wrong"))
-                    ),
+                    body=(JSON.json(Dict("username" => "default", "password" => "wrong"))),
                     status_exception=false,
                 )
                 data = JSON.parse(String(response.body), Dict{String,Any})

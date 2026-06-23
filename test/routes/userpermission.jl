@@ -4,12 +4,14 @@
             user = DearDiary.get_user("default")
             project_id, _ = DearDiary.create_project(user.id, "Test Project")
             new_user_id, _ = DearDiary.create_user("Choclo", "Dokie", "choclo", "dokie")
-            payload = JSON.json(Dict(
-                "create_permission" => true,
-                "read_permission" => true,
-                "update_permission" => false,
-                "delete_permission" => false,
-            ))
+            payload = JSON.json(
+                Dict(
+                    "create_permission" => true,
+                    "read_permission" => true,
+                    "update_permission" => false,
+                    "delete_permission" => false,
+                ),
+            )
 
             response = HTTP.post(
                 "http://127.0.0.1:9000/userpermission/user/$(new_user_id)/project/$(project_id)";
@@ -59,12 +61,14 @@
                 new_user_id, project_id, false, true, false, false
             )
 
-            payload = JSON.json(Dict(
-                "create_permission" => true,
-                "read_permission" => true,
-                "update_permission" => true,
-                "delete_permission" => false,
-            ))
+            payload = JSON.json(
+                Dict(
+                    "create_permission" => true,
+                    "read_permission" => true,
+                    "update_permission" => true,
+                    "delete_permission" => false,
+                ),
+            )
 
             response = HTTP.patch(
                 "http://127.0.1:9000/userpermission/$(userpermission_id)";

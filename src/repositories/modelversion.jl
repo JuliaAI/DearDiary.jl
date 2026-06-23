@@ -1,26 +1,24 @@
 function fetch(::Type{<:ModelVersion}, id::Integer)::Optional{ModelVersion}
     version = fetch(SQL_SELECT_MODELVERSION_BY_ID, (id=id,))
-    return (version |> isnothing) ? nothing : (version |> ModelVersion)
+    return (isnothing(version)) ? nothing : (ModelVersion(version))
 end
 
 function fetch_all(::Type{<:ModelVersion}, model_id::Integer)::Array{ModelVersion,1}
-    versions = fetch_all(
-        SQL_SELECT_MODELVERSIONS_BY_MODEL_ID;
-        parameters=(id=model_id,),
-    )
-    return versions .|> ModelVersion
+    versions = fetch_all(SQL_SELECT_MODELVERSIONS_BY_MODEL_ID; parameters=(id=model_id,))
+    return ModelVersion.(versions)
 end
 
 function fetch_page(
-    ::Type{<:ModelVersion}, model_id::Integer, page::Pagination,
+    ::Type{<:ModelVersion}, model_id::Integer, page::Pagination
 )::PaginatedResponse{ModelVersion}
     paged = fetch_page(
         SQL_SELECT_MODELVERSIONS_BY_MODEL_ID,
         SQL_COUNT_MODELVERSIONS_BY_MODEL_ID;
-        parameters=(id=model_id,), page=page,
+        parameters=(id=model_id,),
+        page=page,
     )
     return PaginatedResponse{ModelVersion}(
-        paged.rows .|> ModelVersion, paged.total, page.limit, page.offset,
+        ModelVersion.(paged.rows), paged.total, page.limit, page.offset
     )
 end
 
@@ -38,13 +36,14 @@ function insert(
         resource_id=resource_id,
         stage_id=stage_id,
         description=description,
-        created_date=(now() |> string),
+        created_date=(string(now())),
     )
     return insert(SQL_INSERT_MODELVERSION, fields)
 end
 
 function update(
-    ::Type{<:ModelVersion}, id::Integer;
+    ::Type{<:ModelVersion},
+    id::Integer;
     stage_id::Optional{Integer}=nothing,
     description::Optional{AbstractString}=nothing,
     resource_id::Optional{Integer}=nothing,
@@ -53,7 +52,7 @@ function update(
         stage_id=stage_id,
         description=description,
         resource_id=resource_id,
-        updated_date=(now() |> string),
+        updated_date=(string(now())),
     )
     return update(SQL_UPDATE_MODELVERSION, fetch(ModelVersion, id); fields...)
 end
@@ -69,9 +68,7 @@ service-layer cascade when a [`Model`](@ref) is deleted.
 function delete_all(::Type{<:ModelVersion}, model_id::Integer)::Bool
     try
         DBInterface.execute(
-            get_database(),
-            SQL_DELETE_MODELVERSIONS_BY_MODEL_ID,
-            (id=model_id,),
+            get_database(), duckdbify(SQL_DELETE_MODELVERSIONS_BY_MODEL_ID), (id=model_id,)
         )
         return true
     catch _
@@ -83,21 +80,21 @@ end
     archive_production_siblings(model_id::Integer, excluded_id::Integer)::Bool
 
 Demote every [`ModelVersion`](@ref) under `model_id` that currently holds [`PRODUCTION`](@ref)
-to [`ARCHIVED`](@ref), skipping `excluded_id`. Called by the service layer immediately after a
-new version is promoted to `PRODUCTION` so that the "at most one production version per model"
-invariant is restored.
+to [`ARCHIVED`](@ref), skipping `excluded_id`. The service layer calls this immediately after
+promoting a new version to `PRODUCTION` to restore the "at most one production version per
+model" invariant.
 """
 function archive_production_siblings(model_id::Integer, excluded_id::Integer)::Bool
     try
         DBInterface.execute(
             get_database(),
-            SQL_ARCHIVE_PRODUCTION_SIBLINGS,
+            duckdbify(SQL_ARCHIVE_PRODUCTION_SIBLINGS),
             (
                 model_id=model_id,
-                production_stage=(PRODUCTION |> Integer),
-                archived_stage=(ARCHIVED |> Integer),
+                production_stage=(Integer(PRODUCTION)),
+                archived_stage=(Integer(ARCHIVED)),
                 excluded_id=excluded_id,
-                updated_date=(now() |> string),
+                updated_date=(string(now())),
             ),
         )
         return true

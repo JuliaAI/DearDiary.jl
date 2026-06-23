@@ -39,7 +39,7 @@ Get a page of [`Parameter`](@ref) records for an iteration, with `total` count p
 A [`PaginatedResponse`](@ref) of `Parameter`.
 """
 function get_parameters(
-    iteration_id::Integer, page::Pagination,
+    iteration_id::Integer, page::Pagination
 )::PaginatedResponse{Parameter}
     return fetch_page(Parameter, iteration_id, page)
 end
@@ -61,13 +61,13 @@ Create a [`Parameter`](@ref).
 function create_parameter(
     iteration_id::Integer, key::AbstractString, value::AbstractString
 )::@NamedTuple{id::Optional{<:Int64}, status::DataType}
-    iteration = iteration_id |> get_iteration
-    if iteration |> isnothing
+    iteration = get_iteration(iteration_id)
+    if isnothing(iteration)
         return (id=nothing, status=Unprocessable)
     end
 
     # Ended iterations are immutable.
-    if !(iteration.end_date |> isnothing)
+    if !(isnothing(iteration.end_date))
         return (id=nothing, status=Unprocessable)
     end
 
@@ -95,7 +95,7 @@ Create a [`Parameter`](@ref).
 function create_parameter(
     iteration_id::Integer, key::AbstractString, value::Real
 )::@NamedTuple{id::Optional{<:Int64}, status::DataType}
-    return create_parameter(iteration_id, key, value |> string)
+    return create_parameter(iteration_id, key, string(value))
 end
 
 """
@@ -114,14 +114,14 @@ An [`UpsertResult`](@ref). [`Updated`](@ref) if the record was successfully upda
 function update_parameter(
     id::Integer, key::Optional{AbstractString}, value::Optional{AbstractString}
 )::Type{<:UpsertResult}
-    parameter = id |> get_parameter
-    if parameter |> isnothing
+    parameter = get_parameter(id)
+    if isnothing(parameter)
         return Unprocessable
     end
 
     # Ended iterations are immutable.
-    iteration = parameter.iteration_id |> get_iteration
-    if !(iteration |> isnothing) && !(iteration.end_date |> isnothing)
+    iteration = get_iteration(parameter.iteration_id)
+    if !(isnothing(iteration)) && !(isnothing(iteration.end_date))
         return Unprocessable
     end
 
@@ -149,7 +149,7 @@ An [`UpsertResult`](@ref). [`Updated`](@ref) if the record was successfully upda
 function update_parameter(
     id::Integer, key::Optional{AbstractString}, value::Real
 )::Type{<:UpsertResult}
-    return update_parameter(id, key, (value |> string))
+    return update_parameter(id, key, (string(value)))
 end
 
 """
@@ -164,13 +164,13 @@ Delete a [`Parameter`](@ref) record.
 `true` if the record was successfully deleted, `false` otherwise.
 """
 function delete_parameter(id::Integer)::Bool
-    parameter = id |> get_parameter
-    if parameter |> isnothing
+    parameter = get_parameter(id)
+    if isnothing(parameter)
         return false
     end
-    iteration = parameter.iteration_id |> get_iteration
-    if !(iteration |> isnothing) && !(iteration.end_date |> isnothing)
-        # Ended iterations are immutable — refuse single-row deletes. The
+    iteration = get_iteration(parameter.iteration_id)
+    if !(isnothing(iteration)) && !(isnothing(iteration.end_date))
+        # Ended iterations are immutable; refuse single-row deletes. The
         # cascade path used by `delete_iteration` calls the bulk
         # `delete_parameters(iteration)` helper instead.
         return false
@@ -204,6 +204,6 @@ parent [`Iteration`](@ref) and [`Experiment`](@ref).
 The owning project id, or `nothing` if any ancestor is missing.
 """
 function get_project_id(parameter::Parameter)::Optional{Int64}
-    iteration = parameter.iteration_id |> get_iteration
-    return iteration |> isnothing ? nothing : (iteration |> get_project_id)
+    iteration = get_iteration(parameter.iteration_id)
+    return isnothing(iteration) ? nothing : (get_project_id(iteration))
 end

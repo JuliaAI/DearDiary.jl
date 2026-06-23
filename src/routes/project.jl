@@ -1,23 +1,19 @@
 """
     setup_project_routes()
 
-This function sets up the project-related routes for the API.
-
-!!! warning
-    This function is intended for internal use. Users should not call this function directly.
+Register project routes (`/project`). Internal use only.
 """
 function setup_project_routes()
-    root = router("/project", tags=["project"])
+    root = router("/project"; tags=["project"])
 
-    @get root("/{id}", middleware=[
-        ProjectPermissionRequiredMiddleware(Project, ReadPermission),
-    ]) function (::HTTP.Request, id::Integer)
-        response_project = id |> get_project
+    @get root(
+        "/{id}", middleware=[ProjectPermissionRequiredMiddleware(Project, ReadPermission)]
+    ) function (::HTTP.Request, id::Integer)
+        response_project = get_project(id)
 
-        if (response_project |> isnothing)
+        if (isnothing(response_project))
             return error_response(
-                NotFound, "Project not found";
-                status=HTTP.StatusCodes.NOT_FOUND,
+                NotFound, "Project not found"; status=HTTP.StatusCodes.NOT_FOUND
             )
         end
         return json(response_project; status=HTTP.StatusCodes.OK)
@@ -36,26 +32,24 @@ function setup_project_routes()
         return json(get_projects(viewer); status=HTTP.StatusCodes.OK)
     end
 
-    @get root("/{project_id}/members", middleware=[
-        ProjectPermissionRequiredMiddleware(UserPermission, ReadPermission),
-    ]) function (::HTTP.Request, project_id::Integer)
-        return json(
-            get_userpermissions(Project, project_id); status=HTTP.StatusCodes.OK,
-        )
+    @get root(
+        "/{project_id}/members",
+        middleware=[ProjectPermissionRequiredMiddleware(UserPermission, ReadPermission)],
+    ) function (::HTTP.Request, project_id::Integer)
+        return json(get_userpermissions(Project, project_id); status=HTTP.StatusCodes.OK)
     end
 
     @post root("/", middleware=[AdminRequiredMiddleware]) function (
         request::HTTP.Request, parameters::Json{ProjectCreatePayload}
     )
         project_id, upsert_result = create_project(
-            request.context[:user].id,
-            parameters.payload.name,
+            request.context[:user].id, parameters.payload.name
         )
         if !(upsert_result === Created)
             return error_response(
                 upsert_to_error_code(upsert_result),
                 "Failed to create project";
-                status=upsert_result |> get_status_by_upsert_result,
+                status=get_status_by_upsert_result(upsert_result),
             )
         end
         return json(("project_id" => project_id); status=HTTP.StatusCodes.CREATED)
@@ -65,33 +59,32 @@ function setup_project_routes()
         ::HTTP.Request, id::Integer, parameters::Json{ProjectUpdatePayload}
     )
         upsert_result = update_project(
-            id,
-            parameters.payload.name,
-            parameters.payload.description,
+            id, parameters.payload.name, parameters.payload.description
         )
         if !(upsert_result === Updated)
             return error_response(
                 upsert_to_error_code(upsert_result),
                 "Failed to update project";
-                status=upsert_result |> get_status_by_upsert_result,
+                status=get_status_by_upsert_result(upsert_result),
             )
         end
-        return json(("message" => (upsert_result |> String)); status=HTTP.StatusCodes.OK)
+        return json(("message" => (String(upsert_result))); status=HTTP.StatusCodes.OK)
     end
 
     @delete root("/{id}", middleware=[AdminRequiredMiddleware]) function (
         ::HTTP.Request, id::Integer
     )
-        success = id |> delete_project
+        success = delete_project(id)
 
         if !success
             return error_response(
-                ServerError, "Failed to delete project";
+                ServerError,
+                "Failed to delete project";
                 status=HTTP.StatusCodes.INTERNAL_SERVER_ERROR,
             )
         end
         return json(
-            ("message" => (HTTP.StatusCodes.OK |> HTTP.statustext));
+            ("message" => (HTTP.statustext(HTTP.StatusCodes.OK)));
             status=HTTP.StatusCodes.OK,
         )
     end

@@ -3,7 +3,7 @@
 
 S3-compatible object-store backend. Speaks the S3 protocol via a minimal hand-rolled
 SigV4 signer, so the same struct talks to AWS S3, MinIO, Cloudflare R2, Backblaze B2, or any
-endpoint that implements the wire format — pick the right `endpoint` URL and bucket name.
+endpoint that implements the wire format. Pick the right `endpoint` URL and bucket name.
 
 Path-style addressing is used (`<endpoint>/<bucket>/<key>`) so this works against MinIO out
 of the box; AWS S3 still accepts path-style for buckets created before the virtual-hosted
@@ -31,8 +31,8 @@ end
 """
     S3Store(; bucket, endpoint, region, access_key, secret_key, http_transport=_default_s3_transport)
 
-Keyword constructor with a sensible default transport. Tests inject their own transport to
-avoid hitting the network.
+Keyword constructor with a default transport. Tests inject their own transport to avoid
+hitting the network.
 """
 function S3Store(;
     bucket::AbstractString,
@@ -42,9 +42,7 @@ function S3Store(;
     secret_key::AbstractString,
     http_transport::Function=_default_s3_transport,
 )::S3Store
-    return S3Store(
-        bucket, endpoint, region, access_key, secret_key, http_transport,
-    )
+    return S3Store(bucket, endpoint, region, access_key, secret_key, http_transport)
 end
 
 backend_id(::S3Store)::String = "s3"
@@ -64,9 +62,10 @@ function _default_s3_transport(
     body::AbstractVector{UInt8},
 )
     return HTTP.request(
-        method, url;
+        method,
+        url;
         headers=[k => v for (k, v) in headers],
-        body=(body |> Vector{UInt8}),
+        body=(Vector{UInt8}(body)),
         status_exception=false,
     )
 end
@@ -78,48 +77,48 @@ Upload `data` to `s3://<bucket>/<aa>/<uuid>` via a signed PUT. Each call uses a 
 so two writes of identical bytes never overwrite each other, mirroring the
 [`FilesystemStore`](@ref) deletion-safety contract.
 """
-function write_artifact(
-    store::S3Store, data::AbstractVector{UInt8},
-)::ArtifactWriteResult
-    id = UUIDs.uuid4() |> string
+function write_artifact(store::S3Store, data::AbstractVector{UInt8})::ArtifactWriteResult
+    id = string(UUIDs.uuid4())
     key = string(id[1:2], '/', id)
-    response = _s3_request(store, "PUT", key, data |> Vector{UInt8})
+    response = _s3_request(store, "PUT", key, Vector{UInt8}(data))
     if response.status >= 400
-        throw(ErrorException(
-            "S3Store PUT failed: HTTP $(response.status) — $(response.body |> String)",
-        ))
+        throw(
+            ErrorException(
+                "S3Store PUT failed: HTTP $(response.status): $(response.body |> String)"
+            ),
+        )
     end
     uri = string(S3_URI_PREFIX, store.bucket, '/', key)
-    return ArtifactWriteResult(uri, (data |> length), data |> sha256_hex)
+    return ArtifactWriteResult(uri, (length(data)), sha256_hex(data))
 end
 
 """
     read_artifact(store::S3Store, uri, inline)::Vector{UInt8}
 
-Fetch the object identified by an `s3://<bucket>/<key>` URI. `inline` is ignored — the
+Fetch the object identified by an `s3://<bucket>/<key>` URI. `inline` is ignored; the
 canonical bytes live in the object store. Raises an [`ErrorException`](@ref) on non-2xx
 responses.
 """
 function read_artifact(
-    store::S3Store,
-    uri::AbstractString,
-    ::Optional{<:AbstractVector{UInt8}},
+    store::S3Store, uri::AbstractString, ::Optional{<:AbstractVector{UInt8}}
 )::Vector{UInt8}
     key = _key_from_uri(store, uri)
     response = _s3_request(store, "GET", key, UInt8[])
     if response.status >= 400
-        throw(ErrorException(
-            "S3Store GET failed: HTTP $(response.status) — $(response.body |> String)",
-        ))
+        throw(
+            ErrorException(
+                "S3Store GET failed: HTTP $(response.status): $(response.body |> String)"
+            ),
+        )
     end
-    return response.body |> Vector{UInt8}
+    return Vector{UInt8}(response.body)
 end
 
 """
     delete_artifact(store::S3Store, uri)::Bool
 
 Delete the object at `uri`. Returns `true` on both `2xx` and `404` (idempotent delete), and
-`false` on any other status — so a caller can log a partial failure without bringing down
+`false` on any other status, so a caller can log a partial failure without bringing down
 the surrounding service-layer operation.
 """
 function delete_artifact(store::S3Store, uri::AbstractString)::Bool
@@ -132,24 +131,31 @@ function _key_from_uri(store::S3Store, uri::AbstractString)::String
     if !startswith(uri, S3_URI_PREFIX)
         throw(ArgumentError("S3Store expects '$S3_URI_PREFIX' URIs, got '$uri'"))
     end
-    rest = uri[(S3_URI_PREFIX |> length) + 1:end]
+    rest = uri[((length(S3_URI_PREFIX)) + 1):end]
     prefix = string(store.bucket, '/')
     if !startswith(rest, prefix)
-        throw(ArgumentError(
-            "URI bucket does not match store bucket '$(store.bucket)': $uri",
-        ))
+        throw(
+            ArgumentError("URI bucket does not match store bucket '$(store.bucket)': $uri")
+        )
     end
-    return rest[(prefix |> length) + 1:end]
+    return rest[((length(prefix)) + 1):end]
 end
 
 function _s3_request(
-    store::S3Store, method::AbstractString, key::AbstractString, body::Vector{UInt8},
+    store::S3Store, method::AbstractString, key::AbstractString, body::Vector{UInt8}
 )
     url = string(store.endpoint, '/', store.bucket, '/', key)
     headers = Dict{String,String}()
     sigv4_sign!(
-        headers, method, url, body, store.region, "s3",
-        store.access_key, store.secret_key, UTC |> now,
+        headers,
+        method,
+        url,
+        body,
+        store.region,
+        "s3",
+        store.access_key,
+        store.secret_key,
+        now(UTC),
     )
     return store.http_transport(method, url, headers, body)
 end
@@ -163,9 +169,9 @@ and MinIO expect.
 
 `ts` must be a UTC [`DateTime`](@ref); the timestamp is encoded as ISO 8601 basic format.
 
-This is a deliberately minimal implementation: path-style URLs only, no query parameters
-signed, full payload sha256 (no `UNSIGNED-PAYLOAD` shortcut). That covers the four verbs
-we need (PUT/GET/DELETE/HEAD) without dragging in the full SigV4 surface area.
+This is a minimal implementation: path-style URLs only, no query parameters signed, full
+payload sha256 (no `UNSIGNED-PAYLOAD` shortcut). That covers PUT/GET/DELETE/HEAD without
+pulling in the full SigV4 surface area.
 """
 function sigv4_sign!(
     headers::Dict{String,String},
@@ -178,13 +184,13 @@ function sigv4_sign!(
     secret_key::AbstractString,
     ts::DateTime,
 )::Nothing
-    uri = url |> HTTP.URI
+    uri = HTTP.URI(url)
     host = uri.host
-    if !(uri.port |> isempty)
+    if !(isempty(uri.port))
         host = string(host, ':', uri.port)
     end
 
-    body_hash = body |> sha256_hex
+    body_hash = sha256_hex(body)
     amz_date = Dates.format(ts, dateformat"yyyymmdd\THHMMSS\Z")
     short_date = Dates.format(ts, dateformat"yyyymmdd")
 
@@ -193,46 +199,59 @@ function sigv4_sign!(
     headers["X-Amz-Content-Sha256"] = body_hash
 
     # Canonical headers: lowercased name, trimmed value, sorted by name.
-    canonical_headers_entries = [
-        (k |> lowercase, v |> strip)
-        for (k, v) in headers
-    ]
+    canonical_headers_entries = [(lowercase(k), strip(v)) for (k, v) in headers]
     sort!(canonical_headers_entries; by=p -> p[1])
-    canonical_headers = ["$(name):$(value)\n" for (name, value) in canonical_headers_entries] |> join
+    canonical_headers =
+        join(["$(name):$(value)\n" for (name, value) in canonical_headers_entries])
     signed_headers = join([name for (name, _) in canonical_headers_entries], ";")
 
-    canonical_path = (uri.path |> isempty) ? "/" : uri.path
+    canonical_path = (isempty(uri.path)) ? "/" : uri.path
     canonical_request = string(
-        method, '\n',
-        canonical_path, '\n',
+        method,
+        '\n',
+        canonical_path,
+        '\n',
         # No query parameters in this minimal implementation.
-        "", '\n',
-        canonical_headers, '\n',
-        signed_headers, '\n',
+        "",
+        '\n',
+        canonical_headers,
+        '\n',
+        signed_headers,
+        '\n',
         body_hash,
     )
-    canonical_request_hash = canonical_request |> Vector{UInt8} |> sha256_hex
+    canonical_request_hash = sha256_hex(Vector{UInt8}(canonical_request))
 
     credential_scope = string(short_date, '/', region, '/', service, "/aws4_request")
     string_to_sign = string(
-        "AWS4-HMAC-SHA256", '\n',
-        amz_date, '\n',
-        credential_scope, '\n',
+        "AWS4-HMAC-SHA256",
+        '\n',
+        amz_date,
+        '\n',
+        credential_scope,
+        '\n',
         canonical_request_hash,
     )
 
-    k_secret = ("AWS4" * secret_key) |> Vector{UInt8}
-    k_date = SHA.hmac_sha256(k_secret, short_date |> Vector{UInt8})
-    k_region = SHA.hmac_sha256(k_date, region |> Vector{UInt8})
-    k_service = SHA.hmac_sha256(k_region, service |> Vector{UInt8})
-    k_signing = SHA.hmac_sha256(k_service, "aws4_request" |> Vector{UInt8})
-    signature = SHA.hmac_sha256(k_signing, string_to_sign |> Vector{UInt8}) |> bytes2hex
+    k_secret = Vector{UInt8}(("AWS4" * secret_key))
+    k_date = SHA.hmac_sha256(k_secret, Vector{UInt8}(short_date))
+    k_region = SHA.hmac_sha256(k_date, Vector{UInt8}(region))
+    k_service = SHA.hmac_sha256(k_region, Vector{UInt8}(service))
+    k_signing = SHA.hmac_sha256(k_service, Vector{UInt8}("aws4_request"))
+    signature = bytes2hex(SHA.hmac_sha256(k_signing, Vector{UInt8}(string_to_sign)))
 
     authorization = string(
         "AWS4-HMAC-SHA256 ",
-        "Credential=", access_key, "/", credential_scope, ", ",
-        "SignedHeaders=", signed_headers, ", ",
-        "Signature=", signature,
+        "Credential=",
+        access_key,
+        "/",
+        credential_scope,
+        ", ",
+        "SignedHeaders=",
+        signed_headers,
+        ", ",
+        "Signature=",
+        signature,
     )
     headers["Authorization"] = authorization
     return nothing

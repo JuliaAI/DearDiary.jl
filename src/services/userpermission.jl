@@ -10,9 +10,7 @@ Get a [`UserPermission`](@ref) by [`User`](@ref) id and [`Project`](@ref) IDs.
 # Returns
 A [`UserPermission`](@ref) object. If the record does not exist, return `nothing`.
 """
-function get_userpermission(
-    user_id::Integer, project_id::Integer
-)::Optional{UserPermission}
+function get_userpermission(user_id::Integer, project_id::Integer)::Optional{UserPermission}
     return fetch(UserPermission, user_id, project_id)
 end
 
@@ -29,7 +27,7 @@ List every [`UserPermission`](@ref) record granting access to the given [`Projec
 An array of [`UserPermission`](@ref) records (possibly empty).
 """
 function get_userpermissions(
-    ::Type{<:Project}, project_id::Integer,
+    ::Type{<:Project}, project_id::Integer
 )::Array{UserPermission,1}
     return fetch_all(UserPermission, Project, project_id)
 end
@@ -46,9 +44,7 @@ List every [`UserPermission`](@ref) record held by the given [`User`](@ref).
 # Returns
 An array of [`UserPermission`](@ref) records (possibly empty).
 """
-function get_userpermissions(
-    ::Type{<:User}, user_id::Integer,
-)::Array{UserPermission,1}
+function get_userpermissions(::Type{<:User}, user_id::Integer)::Array{UserPermission,1}
     return fetch_all(UserPermission, User, user_id)
 end
 
@@ -77,13 +73,13 @@ function create_userpermission(
     update_permission::Bool,
     delete_permission::Bool,
 )::@NamedTuple{id::Optional{<:Int64}, status::DataType}
-    user = user_id |> get_user
-    if user |> isnothing
+    user = get_user(user_id)
+    if isnothing(user)
         return (id=nothing, status=Unprocessable)
     end
 
-    project = project_id |> get_project
-    if project |> isnothing
+    project = get_project(project_id)
+    if isnothing(project)
         return (id=nothing, status=Unprocessable)
     end
 
@@ -93,7 +89,8 @@ function create_userpermission(
     end
 
     update_result = update(
-        UserPermission, userpermission_id;
+        UserPermission,
+        userpermission_id;
         create_permission=create_permission,
         read_permission=read_permission,
         update_permission=update_permission,
@@ -130,7 +127,7 @@ function update_userpermission(
     delete_permission::Optional{Bool},
 )::Type{<:UpsertResult}
     userpermission = fetch(UserPermission, id)
-    if userpermission |> isnothing
+    if isnothing(userpermission)
         return Unprocessable
     end
 
@@ -146,7 +143,8 @@ function update_userpermission(
     end
 
     return update(
-        UserPermission, id;
+        UserPermission,
+        id;
         create_permission=create_permission,
         read_permission=read_permission,
         update_permission=update_permission,
@@ -180,7 +178,11 @@ Return whether `permission` grants the given [`PermissionAction`](@ref) on its
 # Returns
 `true` if the action is allowed by the permission, `false` otherwise.
 """
-has_permission(permission::UserPermission, ::Type{CreatePermission})::Bool = permission.create_permission
-has_permission(permission::UserPermission, ::Type{ReadPermission})::Bool = permission.read_permission
-has_permission(permission::UserPermission, ::Type{UpdatePermission})::Bool = permission.update_permission
-has_permission(permission::UserPermission, ::Type{DeletePermission})::Bool = permission.delete_permission
+has_permission(permission::UserPermission, ::Type{CreatePermission})::Bool =
+    permission.create_permission
+has_permission(permission::UserPermission, ::Type{ReadPermission})::Bool =
+    permission.read_permission
+has_permission(permission::UserPermission, ::Type{UpdatePermission})::Bool =
+    permission.update_permission
+has_permission(permission::UserPermission, ::Type{DeletePermission})::Bool =
+    permission.delete_permission

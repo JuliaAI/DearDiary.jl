@@ -39,7 +39,7 @@ Get a page of [`ModelVersion`](@ref) records for a model, with `total` count pop
 A [`PaginatedResponse`](@ref) of `ModelVersion`.
 """
 function get_modelversions(
-    model_id::Integer, page::Pagination,
+    model_id::Integer, page::Pagination
 )::PaginatedResponse{ModelVersion}
     return fetch_page(ModelVersion, model_id, page)
 end
@@ -52,7 +52,7 @@ free integer for the model (assigned by the database via a subquery on `MAX(vers
 `UNIQUE(model_id, version)`).
 
 The producing [`Iteration`](@ref) must belong to an [`Experiment`](@ref) in the same project
-as the parent [`Model`](@ref) — cross-project lineage is rejected with [`Unprocessable`](@ref).
+as the parent [`Model`](@ref); cross-project lineage is rejected with [`Unprocessable`](@ref).
 If `resource_id` is supplied, the [`Resource`](@ref) must likewise belong to the same project.
 Freshly registered versions start in [`NO_STAGE`](@ref); promote them via
 [`update_modelversion`](@ref).
@@ -74,28 +74,28 @@ function create_modelversion(
     resource_id::Optional{<:Integer},
     description::AbstractString,
 )::@NamedTuple{id::Optional{<:Int64}, status::DataType}
-    model = model_id |> get_model
-    if model |> isnothing
+    model = get_model(model_id)
+    if isnothing(model)
         return (id=nothing, status=Unprocessable)
     end
 
-    iteration = iteration_id |> get_iteration
-    if iteration |> isnothing
+    iteration = get_iteration(iteration_id)
+    if isnothing(iteration)
         return (id=nothing, status=Unprocessable)
     end
 
-    iteration_project_id = iteration |> get_project_id
-    if (iteration_project_id |> isnothing) || iteration_project_id != model.project_id
+    iteration_project_id = get_project_id(iteration)
+    if (isnothing(iteration_project_id)) || iteration_project_id != model.project_id
         return (id=nothing, status=Unprocessable)
     end
 
-    if !(resource_id |> isnothing)
-        resource = resource_id |> get_resource
-        if resource |> isnothing
+    if !(isnothing(resource_id))
+        resource = get_resource(resource_id)
+        if isnothing(resource)
             return (id=nothing, status=Unprocessable)
         end
-        resource_project_id = resource |> get_project_id
-        if (resource_project_id |> isnothing) || resource_project_id != model.project_id
+        resource_project_id = get_project_id(resource)
+        if (isnothing(resource_project_id)) || resource_project_id != model.project_id
             return (id=nothing, status=Unprocessable)
         end
     end
@@ -105,7 +105,7 @@ function create_modelversion(
         model_id,
         iteration_id,
         resource_id,
-        (NO_STAGE |> Integer),
+        (Integer(NO_STAGE)),
         description,
     )
     if !(version_upsert_result === Created)
@@ -140,47 +140,45 @@ function update_modelversion(
     description::Optional{AbstractString},
     resource_id::Optional{<:Integer},
 )::Type{<:UpsertResult}
-    version = id |> get_modelversion
-    if version |> isnothing
+    version = get_modelversion(id)
+    if isnothing(version)
         return Unprocessable
     end
 
-    if !(stage_id |> isnothing) && !(stage_id in (Stage |> instances .|> Integer))
+    if !(isnothing(stage_id)) && !(stage_id in (Integer.(instances(Stage))))
         return Unprocessable
     end
 
-    if !(resource_id |> isnothing)
-        model = version.model_id |> get_model
-        if model |> isnothing
+    if !(isnothing(resource_id))
+        model = get_model(version.model_id)
+        if isnothing(model)
             return Unprocessable
         end
-        resource = resource_id |> get_resource
-        if resource |> isnothing
+        resource = get_resource(resource_id)
+        if isnothing(resource)
             return Unprocessable
         end
-        resource_project_id = resource |> get_project_id
-        if (resource_project_id |> isnothing) || resource_project_id != model.project_id
+        resource_project_id = get_project_id(resource)
+        if (isnothing(resource_project_id)) || resource_project_id != model.project_id
             return Unprocessable
         end
     end
 
     should_be_updated = compare_object_fields(
-        version;
-        stage_id=stage_id,
-        description=description,
-        resource_id=resource_id,
+        version; stage_id=stage_id, description=description, resource_id=resource_id
     )
     if !should_be_updated
         return Updated
     end
 
     result = update(
-        ModelVersion, id;
+        ModelVersion,
+        id;
         stage_id=stage_id,
         description=description,
         resource_id=resource_id,
     )
-    if result === Updated && stage_id == (PRODUCTION |> Integer)
+    if result === Updated && stage_id == (Integer(PRODUCTION))
         archive_production_siblings(version.model_id, id)
     end
     return result
@@ -197,13 +195,13 @@ function update_modelversion(
     description::Optional{AbstractString},
     resource_id::Optional{<:Integer},
 )::Type{<:UpsertResult}
-    return update_modelversion(id, (stage |> Integer), description, resource_id)
+    return update_modelversion(id, (Integer(stage)), description, resource_id)
 end
 
 """
     delete_modelversion(id::Integer)::Bool
 
-Delete a [`ModelVersion`](@ref). The underlying [`Resource`](@ref) artifact is **not**
+Delete a [`ModelVersion`](@ref). The underlying [`Resource`](@ref) artifact is not
 removed; clean it up explicitly via [`delete_resource`](@ref) if it is no longer needed.
 
 # Arguments
@@ -227,6 +225,6 @@ Return the [`Project`](@ref) id that owns `version` by walking up to its parent
 The owning project id, or `nothing` if the parent model is missing.
 """
 function get_project_id(version::ModelVersion)::Optional{Int64}
-    model = version.model_id |> get_model
-    return model |> isnothing ? nothing : (model |> get_project_id)
+    model = get_model(version.model_id)
+    return isnothing(model) ? nothing : (get_project_id(model))
 end

@@ -1,14 +1,14 @@
 function fetch(::Type{<:User}, username::AbstractString)::Optional{User}
     user = fetch(SQL_SELECT_USER_BY_USERNAME, (username=username,))
-    return (user |> isnothing) ? nothing : (user |> User)
+    return (isnothing(user)) ? nothing : (User(user))
 end
 
 function fetch(::Type{<:User}, id::Integer)::Optional{User}
     user = fetch(SQL_SELECT_USER_BY_ID, (id=id,))
-    return (user |> isnothing) ? nothing : (user |> User)
+    return (isnothing(user)) ? nothing : (User(user))
 end
 
-fetch_all(::Type{<:User})::Array{User,1} = SQL_SELECT_USERS |> fetch_all .|> User
+fetch_all(::Type{<:User})::Array{User,1} = User.(fetch_all(SQL_SELECT_USERS))
 
 function insert(
     ::Type{<:User},
@@ -22,23 +22,21 @@ function insert(
         last_name=last_name,
         username=username,
         password=password,
-        created_date=(now() |> string),
+        created_date=(string(now())),
     )
     return insert(SQL_INSERT_USER, fields)
 end
 
 function update(
-    ::Type{<:User}, id::Integer;
+    ::Type{<:User},
+    id::Integer;
     first_name::Optional{AbstractString}=nothing,
     last_name::Optional{AbstractString}=nothing,
     password::Optional{AbstractString}=nothing,
     is_admin::Optional{Bool}=nothing,
 )::Type{<:UpsertResult}
     fields = (
-        first_name=first_name,
-        last_name=last_name,
-        password=password,
-        is_admin=is_admin,
+        first_name=first_name, last_name=last_name, password=password, is_admin=is_admin
     )
     return update(SQL_UPDATE_USER, fetch(User, id); fields...)
 end

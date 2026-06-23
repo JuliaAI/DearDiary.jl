@@ -5,9 +5,7 @@
                 user = DearDiary.get_user("default")
                 project_id, _ = DearDiary.create_project(user.id, "Test Project")
                 experiment_id, _ = DearDiary.create_experiment(
-                    project_id,
-                    DearDiary.IN_PROGRESS,
-                    "Test Experiment",
+                    project_id, DearDiary.IN_PROGRESS, "Test Experiment"
                 )
 
                 id, status = DearDiary.insert(
@@ -22,12 +20,9 @@
 
             @testset "with non-existing experiment" begin
                 id, status = DearDiary.insert(
-                    DearDiary.Resource,
-                    9999,
-                    "Test Resource",
-                    UInt8[0x01, 0x02, 0x03, 0x04],
+                    DearDiary.Resource, 9999, "Test Resource", UInt8[0x01, 0x02, 0x03, 0x04]
                 )
-                @test id |> isnothing
+                @test isnothing(id)
                 @test status === DearDiary.Unprocessable
             end
         end
@@ -37,17 +32,12 @@
                 user = DearDiary.get_user("default")
                 project_id, _ = DearDiary.create_project(user.id, "Test Project")
                 experiment_id, _ = DearDiary.create_experiment(
-                    project_id,
-                    DearDiary.IN_PROGRESS,
-                    "Test Experiment",
+                    project_id, DearDiary.IN_PROGRESS, "Test Experiment"
                 )
                 resource_data = UInt8[0x0A, 0x0B, 0x0C]
 
                 resource_id, _ = DearDiary.insert(
-                    DearDiary.Resource,
-                    experiment_id,
-                    "Test Resource",
-                    resource_data,
+                    DearDiary.Resource, experiment_id, "Test Resource", resource_data
                 )
 
                 resource = DearDiary.fetch(DearDiary.Resource, resource_id)
@@ -63,7 +53,7 @@
             @testset "non-existing resource" begin
                 resource = DearDiary.fetch(DearDiary.Resource, 9999)
 
-                @test resource |> isnothing
+                @test isnothing(resource)
             end
         end
 
@@ -71,9 +61,7 @@
             user = DearDiary.get_user("default")
             project_id, _ = DearDiary.create_project(user.id, "Test Project")
             experiment_id, _ = DearDiary.create_experiment(
-                project_id,
-                DearDiary.IN_PROGRESS,
-                "Test Experiment",
+                project_id, DearDiary.IN_PROGRESS, "Test Experiment"
             )
 
             DearDiary.insert(
@@ -91,24 +79,19 @@
             resources = DearDiary.fetch_all(DearDiary.Resource, experiment_id)
 
             @test resources isa Array{DearDiary.Resource,1}
-            @test (resources |> length) == 2
-            @test all(resource -> resource.data |> isnothing, resources)
+            @test (length(resources)) == 2
+            @test all(resource -> isnothing(resource.data), resources)
         end
 
         @testset verbose = true "update" begin
             user = DearDiary.get_user("default")
             project_id, _ = DearDiary.create_project(user.id, "Test Project")
             experiment_id, _ = DearDiary.create_experiment(
-                project_id,
-                DearDiary.IN_PROGRESS,
-                "Test Experiment",
+                project_id, DearDiary.IN_PROGRESS, "Test Experiment"
             )
 
             resource_id, _ = DearDiary.insert(
-                DearDiary.Resource,
-                experiment_id,
-                "Test Resource",
-                UInt8[0x0A, 0x0B, 0x0C],
+                DearDiary.Resource, experiment_id, "Test Resource", UInt8[0x0A, 0x0B, 0x0C]
             )
 
             update_result = DearDiary.update(
@@ -132,20 +115,15 @@
             user = DearDiary.get_user("default")
             project_id, _ = DearDiary.create_project(user.id, "Test Project")
             experiment_id, _ = DearDiary.create_experiment(
-                project_id,
-                DearDiary.IN_PROGRESS,
-                "Test Experiment",
+                project_id, DearDiary.IN_PROGRESS, "Test Experiment"
             )
 
             resource_id, _ = DearDiary.insert(
-                DearDiary.Resource,
-                experiment_id,
-                "Test Resource",
-                UInt8[0x0A, 0x0B, 0x0C],
+                DearDiary.Resource, experiment_id, "Test Resource", UInt8[0x0A, 0x0B, 0x0C]
             )
 
             @test DearDiary.delete(DearDiary.Resource, resource_id)
-            @test DearDiary.fetch(DearDiary.Resource, resource_id) |> isnothing
+            @test isnothing(DearDiary.fetch(DearDiary.Resource, resource_id))
         end
     end
 end

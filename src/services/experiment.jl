@@ -39,7 +39,7 @@ Get a page of [`Experiment`](@ref) records for a project, with `total` count pop
 A [`PaginatedResponse`](@ref) of `Experiment`.
 """
 function get_experiments(
-    project_id::Integer, page::Pagination,
+    project_id::Integer, page::Pagination
 )::PaginatedResponse{Experiment}
     return fetch_page(Experiment, project_id, page)
 end
@@ -61,22 +61,19 @@ Create a [`Experiment`](@ref).
 function create_experiment(
     project_id::Integer, status_id::Integer, name::AbstractString
 )::@NamedTuple{id::Optional{<:Int64}, status::DataType}
-    project = project_id |> get_project
-    if project |> isnothing
+    project = get_project(project_id)
+    if isnothing(project)
         return (id=nothing, status=Unprocessable)
     end
 
     # Experiments must always be created `IN_PROGRESS`. Transitioning to
     # `STOPPED` or `FINISHED` happens later via `update_experiment`.
-    if status_id != (IN_PROGRESS |> Integer)
+    if status_id != (Integer(IN_PROGRESS))
         return (id=nothing, status=Unprocessable)
     end
 
     experiment_id, experiment_upsert_result = insert(
-        Experiment,
-        project_id,
-        status_id,
-        name,
+        Experiment, project_id, status_id, name
     )
     if !(experiment_upsert_result === Created)
         return (id=nothing, status=experiment_upsert_result)
@@ -101,7 +98,7 @@ Create a [`Experiment`](@ref).
 function create_experiment(
     project_id::Integer, status::ExperimentStatus, name::AbstractString
 )::@NamedTuple{id::Optional{<:Int64}, status::DataType}
-    return create_experiment(project_id, (status |> Integer), name)
+    return create_experiment(project_id, (Integer(status)), name)
 end
 
 """
@@ -127,19 +124,19 @@ function update_experiment(
     end_date::Optional{DateTime},
 )::Type{<:UpsertResult}
     experiment = fetch(Experiment, id)
-    if experiment |> isnothing
+    if isnothing(experiment)
         return Unprocessable
     end
 
-    if !(status_id in (ExperimentStatus |> instances .|> Int))
+    if !(status_id in (Int.(instances(ExperimentStatus))))
         return Unprocessable
     end
 
     # Reopening: when an experiment transitions back to `IN_PROGRESS` and a
-    # previous `end_date` was recorded, that timestamp must be cleared — the
+    # previous `end_date` was recorded, that timestamp must be cleared. The
     # experiment is once again live, so it has no end yet.
     reopening = (
-        status_id == (IN_PROGRESS |> Integer) && !(experiment.end_date |> isnothing)
+        status_id == (Integer(IN_PROGRESS)) && !(isnothing(experiment.end_date))
     )
     effective_end_date = reopening ? nothing : end_date
 
@@ -155,7 +152,8 @@ function update_experiment(
     end
 
     return update(
-        Experiment, id;
+        Experiment,
+        id;
         status_id=status_id,
         name=name,
         description=description,
@@ -186,7 +184,7 @@ function update_experiment(
     description::Optional{AbstractString},
     end_date::Optional{DateTime},
 )::Type{<:UpsertResult}
-    return update_experiment(id, (status |> Integer), name, description, end_date)
+    return update_experiment(id, (Integer(status)), name, description, end_date)
 end
 
 """

@@ -3,7 +3,7 @@ using Pkg
 # Manifest can pin a stale registered version (the bug that surfaced as a wall of
 # "undefined binding" errors against symbols added since the last release), and
 # `julia --project=docs docs/make.jl` diverges from what the CI workflow does.
-Pkg.develop(PackageSpec(path=dirname(@__DIR__)))
+Pkg.develop(PackageSpec(; path=dirname(@__DIR__)))
 Pkg.instantiate()
 
 using Documenter
@@ -45,9 +45,7 @@ makedocs(;
             "Client" => "reference/client.md",
             "Migrations" => "reference/migrations.md",
         ],
-        "Experimental" => [
-            "Embedded UI" => "experimental/ui.md",
-        ],
+        "Experimental" => ["Embedded UI" => "experimental/ui.md"],
     ],
     warnonly=[:cross_references, :missing_docs],
 )

@@ -3,13 +3,13 @@
 
     @test response.status == HTTP.StatusCodes.OK
 
-    data = JSON.parse(response.body |> String, Dict{String,Any})
-    data_keys = data |> keys
+    data = JSON.parse(String(response.body), Dict{String,Any})
+    data_keys = keys(data)
 
     @test "app_name" in data_keys
     @test "package_version" in data_keys
     @test "server_time" in data_keys
 
     @test data["app_name"] == "DearDiary"
-    @test (data["package_version"] |> VersionNumber) == (DearDiary |> pkgversion)
+    @test (VersionNumber(data["package_version"])) == (pkgversion(DearDiary))
 end

@@ -1,6 +1,6 @@
 function fetch(::Type{<:UserPermission}, id::Integer)::Optional{UserPermission}
     user_permission = fetch(SQL_SELECT_USERPERMISSION_BY_ID, (id=id,))
-    return (user_permission |> isnothing) ? nothing : (user_permission |> UserPermission)
+    return (isnothing(user_permission)) ? nothing : (UserPermission(user_permission))
 end
 
 function fetch(
@@ -8,27 +8,23 @@ function fetch(
 )::Optional{UserPermission}
     user_permission = fetch(
         SQL_SELECT_USERPERMISSION_BY_USERID_AND_PROJECT_ID,
-        (user_id=user_id, project_id=project_id,),
+        (user_id=user_id, project_id=project_id),
     )
-    return (user_permission |> isnothing) ? nothing : (user_permission |> UserPermission)
+    return (isnothing(user_permission)) ? nothing : (UserPermission(user_permission))
 end
 
 function fetch_all(
-    ::Type{<:UserPermission}, ::Type{<:Project}, project_id::Integer,
+    ::Type{<:UserPermission}, ::Type{<:Project}, project_id::Integer
 )::Array{UserPermission,1}
-    rows = fetch_all(
-        SQL_SELECT_USERPERMISSIONS_BY_PROJECT_ID; parameters=(id=project_id,),
-    )
-    return rows .|> UserPermission
+    rows = fetch_all(SQL_SELECT_USERPERMISSIONS_BY_PROJECT_ID; parameters=(id=project_id,))
+    return UserPermission.(rows)
 end
 
 function fetch_all(
-    ::Type{<:UserPermission}, ::Type{<:User}, user_id::Integer,
+    ::Type{<:UserPermission}, ::Type{<:User}, user_id::Integer
 )::Array{UserPermission,1}
-    rows = fetch_all(
-        SQL_SELECT_USERPERMISSIONS_BY_USER_ID; parameters=(id=user_id,),
-    )
-    return rows .|> UserPermission
+    rows = fetch_all(SQL_SELECT_USERPERMISSIONS_BY_USER_ID; parameters=(id=user_id,))
+    return UserPermission.(rows)
 end
 
 function insert(
@@ -38,7 +34,8 @@ function insert(
 end
 
 function update(
-    ::Type{<:UserPermission}, id::Integer;
+    ::Type{<:UserPermission},
+    id::Integer;
     create_permission::Optional{Bool}=nothing,
     read_permission::Optional{Bool}=nothing,
     update_permission::Optional{Bool}=nothing,

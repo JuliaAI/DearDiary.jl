@@ -5,42 +5,26 @@
             project_id, _ = DearDiary.insert(DearDiary.Project, "Test Project")
 
             @testset "insert with no existing user" begin
-                id, status = DearDiary.insert(
-                    DearDiary.UserPermission,
-                    9999,
-                    project_id,
-                )
-                @test id |> isnothing
+                id, status = DearDiary.insert(DearDiary.UserPermission, 9999, project_id)
+                @test isnothing(id)
                 @test status === DearDiary.Unprocessable
             end
 
             @testset "insert with no existing project" begin
-                id, status = DearDiary.insert(
-                    DearDiary.UserPermission,
-                    user.id,
-                    9999,
-                )
-                @test id |> isnothing
+                id, status = DearDiary.insert(DearDiary.UserPermission, user.id, 9999)
+                @test isnothing(id)
                 @test status === DearDiary.Unprocessable
             end
 
             @testset "insert with existing user and project" begin
-                id, status = DearDiary.insert(
-                    DearDiary.UserPermission,
-                    user.id,
-                    project_id,
-                )
+                id, status = DearDiary.insert(DearDiary.UserPermission, user.id, project_id)
                 @test id isa Integer
                 @test status === DearDiary.Created
             end
 
             @testset "insert duplicate user permission" begin
-                id, status = DearDiary.insert(
-                    DearDiary.UserPermission,
-                    user.id,
-                    project_id,
-                )
-                @test id |> isnothing
+                id, status = DearDiary.insert(DearDiary.UserPermission, user.id, project_id)
+                @test isnothing(id)
                 @test status === DearDiary.Duplicate
             end
         end
@@ -51,9 +35,7 @@
 
             @testset "fetch with existing user and project" begin
                 userpermission = DearDiary.fetch(
-                    DearDiary.UserPermission,
-                    user.id,
-                    project_id,
+                    DearDiary.UserPermission, user.id, project_id
                 )
 
                 @test userpermission isa DearDiary.UserPermission
@@ -62,29 +44,21 @@
             end
 
             @testset "fetch with non-existing user" begin
-                userpermission = DearDiary.fetch(
-                    DearDiary.UserPermission,
-                    9999,
-                    project_id,
-                )
+                userpermission = DearDiary.fetch(DearDiary.UserPermission, 9999, project_id)
 
-                @test userpermission |> isnothing
+                @test isnothing(userpermission)
             end
 
             @testset "fetch with non-existing project" begin
-                userpermission = DearDiary.fetch(
-                    DearDiary.UserPermission,
-                    user.id,
-                    9999,
-                )
+                userpermission = DearDiary.fetch(DearDiary.UserPermission, user.id, 9999)
 
-                @test userpermission |> isnothing
+                @test isnothing(userpermission)
             end
 
             @testset "fetch with non-existing user and project" begin
                 userpermission = DearDiary.fetch(DearDiary.UserPermission, 9999, 9999)
 
-                @test userpermission |> isnothing
+                @test isnothing(userpermission)
             end
         end
 
@@ -92,23 +66,14 @@
             user = DearDiary.fetch(DearDiary.User, "default")
             project_id, _ = DearDiary.create_project(user.id, "Test Project")
 
-            userpermission = DearDiary.fetch(
-                DearDiary.UserPermission,
-                user.id,
-                project_id,
-            )
+            userpermission = DearDiary.fetch(DearDiary.UserPermission, user.id, project_id)
             @test userpermission.create_permission == false
 
             @test DearDiary.update(
-                DearDiary.UserPermission, userpermission.id;
-                create_permission=true,
+                DearDiary.UserPermission, userpermission.id; create_permission=true
             ) === DearDiary.Updated
 
-            userpermission = DearDiary.fetch(
-                DearDiary.UserPermission,
-                user.id,
-                project_id,
-            )
+            userpermission = DearDiary.fetch(DearDiary.UserPermission, user.id, project_id)
             @test userpermission.create_permission
         end
 
@@ -118,17 +83,13 @@
             @testset verbose = true "delete using userpermission id" begin
                 project_id, _ = DearDiary.create_project(user.id, "Test Project")
                 userpermission = DearDiary.fetch(
-                    DearDiary.UserPermission,
-                    user.id,
-                    project_id,
+                    DearDiary.UserPermission, user.id, project_id
                 )
 
                 @test DearDiary.delete(DearDiary.UserPermission, userpermission.id)
-                @test DearDiary.fetch(
-                    DearDiary.UserPermission,
-                    user.id,
-                    project_id,
-                ) |> isnothing
+                @test isnothing(DearDiary.fetch(
+                    DearDiary.UserPermission, user.id, project_id
+                ))
             end
 
             @testset verbose = true "delete using project" begin
@@ -136,22 +97,18 @@
                 project = DearDiary.fetch(DearDiary.Project, project_id)
 
                 @test DearDiary.delete(DearDiary.UserPermission, project)
-                @test DearDiary.fetch(
-                    DearDiary.UserPermission,
-                    user.id,
-                    project.id,
-                ) |> isnothing
+                @test isnothing(DearDiary.fetch(
+                    DearDiary.UserPermission, user.id, project.id
+                ))
             end
 
             @testset verbose = true "delete using user" begin
                 project_id, _ = DearDiary.create_project(user.id, "Test Project")
 
                 @test DearDiary.delete(DearDiary.UserPermission, user)
-                @test DearDiary.fetch(
-                    DearDiary.UserPermission,
-                    user.id,
-                    project_id,
-                ) |> isnothing
+                @test isnothing(DearDiary.fetch(
+                    DearDiary.UserPermission, user.id, project_id
+                ))
             end
         end
     end

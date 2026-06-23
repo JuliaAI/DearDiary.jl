@@ -16,7 +16,7 @@ function load_config(file::AbstractString)::APIConfig
     jwt_secret = "deardiary_secret"
     enable_auth = false
     cors_origins = ["*"]
-    artifact_backend = "sqlite"
+    artifact_backend = "inline"
     artifact_fs_root = joinpath(pwd(), "deardiary_artifacts")
     artifact_s3_bucket = ""
     artifact_s3_endpoint = ""
@@ -27,12 +27,12 @@ function load_config(file::AbstractString)::APIConfig
     ui_host = "127.0.0.1"
     ui_port = 9001
 
-    if (file |> isfile)
+    if (isfile(file))
         env_vars = Dict{String,String}()
 
-        for line in (file |> eachline)
-            if !startswith(line, "#") && (line |> !isempty)
-                key, value = split(line, "=", limit=2)
+        for line in (eachline(file))
+            if !startswith(line, "#") && (!isempty(line))
+                key, value = split(line, "="; limit=2)
                 env_vars[key] = value
             end
         end
@@ -53,7 +53,7 @@ function load_config(file::AbstractString)::APIConfig
         end
 
         cors_origins = if haskey(env_vars, "DEARDIARY_CORS_ORIGINS")
-            split(env_vars["DEARDIARY_CORS_ORIGINS"], ',') .|> strip .|> string |> collect
+            collect(string.(strip.(split(env_vars["DEARDIARY_CORS_ORIGINS"], ','))))
         else
             cors_origins
         end
@@ -61,19 +61,19 @@ function load_config(file::AbstractString)::APIConfig
         artifact_backend = get(env_vars, "DEARDIARY_ARTIFACT_BACKEND", artifact_backend)
         artifact_fs_root = get(env_vars, "DEARDIARY_ARTIFACT_FS_ROOT", artifact_fs_root)
         artifact_s3_bucket = get(
-            env_vars, "DEARDIARY_ARTIFACT_S3_BUCKET", artifact_s3_bucket,
+            env_vars, "DEARDIARY_ARTIFACT_S3_BUCKET", artifact_s3_bucket
         )
         artifact_s3_endpoint = get(
-            env_vars, "DEARDIARY_ARTIFACT_S3_ENDPOINT", artifact_s3_endpoint,
+            env_vars, "DEARDIARY_ARTIFACT_S3_ENDPOINT", artifact_s3_endpoint
         )
         artifact_s3_region = get(
-            env_vars, "DEARDIARY_ARTIFACT_S3_REGION", artifact_s3_region,
+            env_vars, "DEARDIARY_ARTIFACT_S3_REGION", artifact_s3_region
         )
         artifact_s3_access_key = get(
-            env_vars, "DEARDIARY_ARTIFACT_S3_ACCESS_KEY", artifact_s3_access_key,
+            env_vars, "DEARDIARY_ARTIFACT_S3_ACCESS_KEY", artifact_s3_access_key
         )
         artifact_s3_secret_key = get(
-            env_vars, "DEARDIARY_ARTIFACT_S3_SECRET_KEY", artifact_s3_secret_key,
+            env_vars, "DEARDIARY_ARTIFACT_S3_SECRET_KEY", artifact_s3_secret_key
         )
 
         enable_ui = if haskey(env_vars, "DEARDIARY_ENABLE_UI")
@@ -89,10 +89,21 @@ function load_config(file::AbstractString)::APIConfig
         end
     end
     return APIConfig(
-        host, port, db_file, jwt_secret, enable_auth, cors_origins,
-        artifact_backend, artifact_fs_root,
-        artifact_s3_bucket, artifact_s3_endpoint, artifact_s3_region,
-        artifact_s3_access_key, artifact_s3_secret_key,
-        enable_ui, ui_host, ui_port,
+        host,
+        port,
+        db_file,
+        jwt_secret,
+        enable_auth,
+        cors_origins,
+        artifact_backend,
+        artifact_fs_root,
+        artifact_s3_bucket,
+        artifact_s3_endpoint,
+        artifact_s3_region,
+        artifact_s3_access_key,
+        artifact_s3_secret_key,
+        enable_ui,
+        ui_host,
+        ui_port,
     )
 end

@@ -4,12 +4,10 @@
             user = DearDiary.get_user("default")
             project_id, _ = DearDiary.create_project(user.id, "ModelVersion Project")
             experiment_id, _ = DearDiary.create_experiment(
-                project_id, DearDiary.IN_PROGRESS, "Experiment for Versions",
+                project_id, DearDiary.IN_PROGRESS, "Experiment for Versions"
             )
             iteration_id, _ = DearDiary.create_iteration(experiment_id)
-            model_id, _ = DearDiary.insert(
-                DearDiary.Model, project_id, "fraud-classifier",
-            )
+            model_id, _ = DearDiary.insert(DearDiary.Model, project_id, "fraud-classifier")
             return (project_id, experiment_id, iteration_id, model_id)
         end
 
@@ -18,13 +16,19 @@
 
             id1, status1 = DearDiary.insert(
                 DearDiary.ModelVersion,
-                model_id, iteration_id, nothing,
-                DearDiary.NO_STAGE |> Integer, "v1",
+                model_id,
+                iteration_id,
+                nothing,
+                Integer(DearDiary.NO_STAGE),
+                "v1",
             )
             id2, status2 = DearDiary.insert(
                 DearDiary.ModelVersion,
-                model_id, iteration_id, nothing,
-                DearDiary.NO_STAGE |> Integer, "v2",
+                model_id,
+                iteration_id,
+                nothing,
+                Integer(DearDiary.NO_STAGE),
+                "v2",
             )
 
             @test status1 === DearDiary.Created
@@ -40,18 +44,24 @@
             _, _, iteration_id, model_id = _scaffold()
             DearDiary.insert(
                 DearDiary.ModelVersion,
-                model_id, iteration_id, nothing,
-                DearDiary.NO_STAGE |> Integer, "",
+                model_id,
+                iteration_id,
+                nothing,
+                Integer(DearDiary.NO_STAGE),
+                "",
             )
             DearDiary.insert(
                 DearDiary.ModelVersion,
-                model_id, iteration_id, nothing,
-                DearDiary.NO_STAGE |> Integer, "",
+                model_id,
+                iteration_id,
+                nothing,
+                Integer(DearDiary.NO_STAGE),
+                "",
             )
 
             versions = DearDiary.fetch_all(DearDiary.ModelVersion, model_id)
             @test versions isa Array{DearDiary.ModelVersion,1}
-            @test (versions |> length) == 2
+            @test (length(versions)) == 2
             @test versions[1].version == 1
             @test versions[2].version == 2
         end
@@ -60,19 +70,23 @@
             _, _, iteration_id, model_id = _scaffold()
             version_id, _ = DearDiary.insert(
                 DearDiary.ModelVersion,
-                model_id, iteration_id, nothing,
-                DearDiary.NO_STAGE |> Integer, "",
+                model_id,
+                iteration_id,
+                nothing,
+                Integer(DearDiary.NO_STAGE),
+                "",
             )
 
             update_result = DearDiary.update(
-                DearDiary.ModelVersion, version_id;
-                stage_id=(DearDiary.STAGING |> Integer),
+                DearDiary.ModelVersion,
+                version_id;
+                stage_id=(Integer(DearDiary.STAGING)),
                 description="Ready for review",
             )
             @test update_result === DearDiary.Updated
 
             version = DearDiary.fetch(DearDiary.ModelVersion, version_id)
-            @test version.stage_id == (DearDiary.STAGING |> Integer)
+            @test version.stage_id == (Integer(DearDiary.STAGING))
             @test version.description == "Ready for review"
             @test version.updated_date isa DateTime
         end
@@ -81,50 +95,65 @@
             _, _, iteration_id, model_id = _scaffold()
             keep_id, _ = DearDiary.insert(
                 DearDiary.ModelVersion,
-                model_id, iteration_id, nothing,
-                DearDiary.PRODUCTION |> Integer, "",
+                model_id,
+                iteration_id,
+                nothing,
+                Integer(DearDiary.PRODUCTION),
+                "",
             )
             other_id, _ = DearDiary.insert(
                 DearDiary.ModelVersion,
-                model_id, iteration_id, nothing,
-                DearDiary.PRODUCTION |> Integer, "",
+                model_id,
+                iteration_id,
+                nothing,
+                Integer(DearDiary.PRODUCTION),
+                "",
             )
 
             @test DearDiary.archive_production_siblings(model_id, keep_id)
 
             kept = DearDiary.fetch(DearDiary.ModelVersion, keep_id)
             archived = DearDiary.fetch(DearDiary.ModelVersion, other_id)
-            @test kept.stage_id == (DearDiary.PRODUCTION |> Integer)
-            @test archived.stage_id == (DearDiary.ARCHIVED |> Integer)
+            @test kept.stage_id == (Integer(DearDiary.PRODUCTION))
+            @test archived.stage_id == (Integer(DearDiary.ARCHIVED))
         end
 
         @testset verbose = true "delete" begin
             _, _, iteration_id, model_id = _scaffold()
             version_id, _ = DearDiary.insert(
                 DearDiary.ModelVersion,
-                model_id, iteration_id, nothing,
-                DearDiary.NO_STAGE |> Integer, "",
+                model_id,
+                iteration_id,
+                nothing,
+                Integer(DearDiary.NO_STAGE),
+                "",
             )
 
             @test DearDiary.delete(DearDiary.ModelVersion, version_id)
-            @test DearDiary.fetch(DearDiary.ModelVersion, version_id) |> isnothing
+            @test isnothing(DearDiary.fetch(DearDiary.ModelVersion, version_id))
         end
 
         @testset verbose = true "delete_all cascade" begin
             _, _, iteration_id, model_id = _scaffold()
             DearDiary.insert(
                 DearDiary.ModelVersion,
-                model_id, iteration_id, nothing,
-                DearDiary.NO_STAGE |> Integer, "",
+                model_id,
+                iteration_id,
+                nothing,
+                Integer(DearDiary.NO_STAGE),
+                "",
             )
             DearDiary.insert(
                 DearDiary.ModelVersion,
-                model_id, iteration_id, nothing,
-                DearDiary.NO_STAGE |> Integer, "",
+                model_id,
+                iteration_id,
+                nothing,
+                Integer(DearDiary.NO_STAGE),
+                "",
             )
 
             @test DearDiary.delete_all(DearDiary.ModelVersion, model_id)
-            @test DearDiary.fetch_all(DearDiary.ModelVersion, model_id) |> isempty
+            @test isempty(DearDiary.fetch_all(DearDiary.ModelVersion, model_id))
         end
     end
 end

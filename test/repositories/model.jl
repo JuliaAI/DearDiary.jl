@@ -6,7 +6,7 @@
                 project_id, _ = DearDiary.create_project(user.id, "Model Project")
 
                 id, status = DearDiary.insert(
-                    DearDiary.Model, project_id, "fraud-classifier",
+                    DearDiary.Model, project_id, "fraud-classifier"
                 )
                 @test id isa Integer
                 @test status === DearDiary.Created
@@ -18,17 +18,15 @@
                 DearDiary.insert(DearDiary.Model, project_id, "fraud-classifier")
 
                 id, status = DearDiary.insert(
-                    DearDiary.Model, project_id, "fraud-classifier",
+                    DearDiary.Model, project_id, "fraud-classifier"
                 )
-                @test id |> isnothing
+                @test isnothing(id)
                 @test status === DearDiary.Duplicate
             end
 
             @testset "with non-existing project" begin
-                id, status = DearDiary.insert(
-                    DearDiary.Model, 9999, "orphan-classifier",
-                )
-                @test id |> isnothing
+                id, status = DearDiary.insert(DearDiary.Model, 9999, "orphan-classifier")
+                @test isnothing(id)
                 @test status === DearDiary.Unprocessable
             end
         end
@@ -38,7 +36,7 @@
                 user = DearDiary.get_user("default")
                 project_id, _ = DearDiary.create_project(user.id, "Model Project")
                 model_id, _ = DearDiary.insert(
-                    DearDiary.Model, project_id, "fraud-classifier",
+                    DearDiary.Model, project_id, "fraud-classifier"
                 )
 
                 model = DearDiary.fetch(DearDiary.Model, model_id)
@@ -51,7 +49,7 @@
             end
 
             @testset "non-existing model" begin
-                @test DearDiary.fetch(DearDiary.Model, 9999) |> isnothing
+                @test isnothing(DearDiary.fetch(DearDiary.Model, 9999))
             end
         end
 
@@ -64,18 +62,17 @@
             models = DearDiary.fetch_all(DearDiary.Model, project_id)
 
             @test models isa Array{DearDiary.Model,1}
-            @test (models |> length) == 2
+            @test (length(models)) == 2
         end
 
         @testset verbose = true "update" begin
             user = DearDiary.get_user("default")
             project_id, _ = DearDiary.create_project(user.id, "Model Project")
-            model_id, _ = DearDiary.insert(
-                DearDiary.Model, project_id, "fraud-classifier",
-            )
+            model_id, _ = DearDiary.insert(DearDiary.Model, project_id, "fraud-classifier")
 
             update_result = DearDiary.update(
-                DearDiary.Model, model_id;
+                DearDiary.Model,
+                model_id;
                 description="Production fraud-detection classifier",
             )
 
@@ -89,12 +86,10 @@
         @testset verbose = true "delete" begin
             user = DearDiary.get_user("default")
             project_id, _ = DearDiary.create_project(user.id, "Model Project")
-            model_id, _ = DearDiary.insert(
-                DearDiary.Model, project_id, "fraud-classifier",
-            )
+            model_id, _ = DearDiary.insert(DearDiary.Model, project_id, "fraud-classifier")
 
             @test DearDiary.delete(DearDiary.Model, model_id)
-            @test DearDiary.fetch(DearDiary.Model, model_id) |> isnothing
+            @test isnothing(DearDiary.fetch(DearDiary.Model, model_id))
         end
     end
 end

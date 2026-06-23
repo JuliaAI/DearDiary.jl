@@ -9,18 +9,18 @@ Fields
 - `name::String`: The name of the resource.
 - `description::String`: A description of the resource.
 - `data::Optional{Array{UInt8,1}}`: The binary data of the resource. Populated for the
-  SQLite backend (legacy inline storage); `nothing` for rows whose canonical bytes live in
+  inline backend (legacy inline storage); `nothing` for rows whose canonical bytes live in
   an external backend (filesystem, S3) and are fetched on demand via the trait.
 - `created_date::DateTime`: The date and time when the resource was created.
 - `updated_date::Optional{DateTime}`: The date and time when the resource was last updated.
-- `backend::String`: Short backend identifier (`"sqlite"`, `"filesystem"`, `"s3"`). Drives
+- `backend::String`: Short backend identifier (`"inline"`, `"filesystem"`, `"s3"`). Drives
   dispatch on the [`AbstractArtifactStore`](@ref) trait.
 - `uri::String`: Stable pointer at the canonical bytes (`"file:///..."`, `"s3://..."`).
-  Empty string when `backend == "sqlite"` (the bytes are inline in `data`).
+  Empty string when `backend == "inline"` (the bytes are inline in `data`).
 - `size_bytes::Int64`: Exact byte count of the artifact. Surfaced in list endpoints without
   materialising the BLOB.
 - `content_hash::String`: Lower-case sha256 hex digest of the bytes. Empty string for
-  pre-phase-1 rows that have not yet been re-hashed by the backfill pass.
+  legacy rows not yet re-hashed by the backfill pass.
 """
 struct Resource <: ResultType
     id::Int64
@@ -37,8 +37,7 @@ struct Resource <: ResultType
 end
 
 # JSON.lower hook: omit the raw `data` bytes from any response that serializes a Resource.
-# The metadata response is bytes-free — clients must fetch the body via the dedicated
-# `GET /resource/{id}/data` route.
+# Clients fetch the body via the dedicated `GET /resource/{id}/data` route.
 function JSON.lower(resource::Resource)::Dict{String,Any}
     return Dict{String,Any}(
         "id" => resource.id,

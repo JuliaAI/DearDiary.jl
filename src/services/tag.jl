@@ -84,7 +84,9 @@ Create a [`Tag`](@ref).
 - The created tag ID. If an error occurs, `nothing` is returned.
 - An [`UpsertResult`](@ref). [`Created`](@ref) if the record was successfully created, [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
 """
-function create_tag(value::AbstractString)::@NamedTuple{id::Optional{<:Int64}, status::DataType}
+function create_tag(
+    value::AbstractString
+)::@NamedTuple{id::Optional{<:Int64}, status::DataType}
     return insert(Tag, value)
 end
 
@@ -105,8 +107,8 @@ Add a tag to a project.
 function add_tag(
     ::Type{<:Project}, project_id::Integer, tag_value::AbstractString
 )::@NamedTuple{id::Optional{<:Int64}, status::DataType}
-    project = project_id |> get_project
-    if project |> isnothing
+    project = get_project(project_id)
+    if isnothing(project)
         return (id=nothing, status=Unprocessable)
     end
     return insert_tag(Project, project_id, tag_value)
@@ -129,8 +131,8 @@ Add a tag to an experiment.
 function add_tag(
     ::Type{<:Experiment}, experiment_id::Integer, tag_value::AbstractString
 )::@NamedTuple{id::Optional{<:Int64}, status::DataType}
-    experiment = experiment_id |> get_experiment
-    if experiment |> isnothing
+    experiment = get_experiment(experiment_id)
+    if isnothing(experiment)
         return (id=nothing, status=Unprocessable)
     end
     return insert_tag(Experiment, experiment_id, tag_value)
@@ -153,12 +155,12 @@ Add a tag to an iteration.
 function add_tag(
     ::Type{<:Iteration}, iteration_id::Integer, tag_value::AbstractString
 )::@NamedTuple{id::Optional{<:Int64}, status::DataType}
-    iteration = iteration_id |> get_iteration
-    if iteration |> isnothing
+    iteration = get_iteration(iteration_id)
+    if isnothing(iteration)
         return (id=nothing, status=Unprocessable)
     end
     # Ended iterations are immutable.
-    if !(iteration.end_date |> isnothing)
+    if !(isnothing(iteration.end_date))
         return (id=nothing, status=Unprocessable)
     end
     return insert_tag(Iteration, iteration_id, tag_value)

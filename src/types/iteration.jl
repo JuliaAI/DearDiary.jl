@@ -13,7 +13,7 @@ Fields
 - `parent_iteration_id::Optional{Int64}`: The identifier of the parent [`Iteration`](@ref)
   when this iteration is a child run (e.g. one trial in an HPO sweep, one fold in a nested
   CV, one worker in a distributed run). `nothing` for top-level iterations.
-- `status_id::Int64`: The current lifecycle [`IterationStatus`](@ref) — `RUNNING` while the
+- `status_id::Int64`: The current lifecycle [`IterationStatus`](@ref). `RUNNING` while the
   iteration is in flight, then `SUCCEEDED`, `FAILED`, or `KILLED` once it terminates.
 - `error_message::String`: Captured exception text when `status_id` is `FAILED`. Empty
   otherwise.
@@ -25,8 +25,8 @@ Fields
 - `entrypoint::String`: `PROGRAM_FILE` captured by [`snapshot_environment!`](@ref). Empty
   for REPL-driven runs.
 - `project_toml::String`: Verbatim contents of the active `Project.toml` at snapshot time.
-- `manifest_toml::String`: Verbatim contents of the active `Manifest.toml` at snapshot time.
-  This is the bit-exact dependency tree that [`restore`](@ref) reconstructs.
+- `manifest_toml::String`: Verbatim contents of the active `Manifest.toml` at snapshot time,
+  the bit-exact dependency tree that [`restore`](@ref) reconstructs.
 """
 struct Iteration <: ResultType
     id::Int64

@@ -3,7 +3,7 @@
         snapshot = DearDiary.capture_environment(; entrypoint="my_script.jl")
 
         @test snapshot isa DearDiary.EnvironmentSnapshot
-        @test snapshot.julia_version == (VERSION |> string)
+        @test snapshot.julia_version == (string(VERSION))
         @test snapshot.entrypoint == "my_script.jl"
     end
 
@@ -11,10 +11,10 @@
         snapshot = DearDiary.capture_environment()
 
         # The test suite always runs against the live working tree, which is a git repo,
-        # so we expect a non-empty SHA. We don't assert any specific hash — those change
+        # so we expect a non-empty SHA. Specific hashes are not asserted; they change
         # per commit.
-        @test snapshot.git_sha |> !isempty
-        @test (snapshot.git_sha |> length) == 40
+        @test !isempty(snapshot.git_sha)
+        @test (length(snapshot.git_sha)) == 40
     end
 
     @testset "captures project + manifest toml as strings" begin
@@ -29,8 +29,8 @@
 
     @testset "degrades gracefully outside a git repo" begin
         # `mktempdir` lives under /tmp and has no `.git` walking upward (or, if a parent
-        # of /tmp happens to be a git repo, LibGit2 still finds it; that's OK — we're
-        # really exercising the no-crash path here).
+        # of /tmp happens to be a git repo, LibGit2 still finds it; that's fine).
+        # This test exercises the no-crash path.
         prior_cwd = pwd()
         try
             cd(mktempdir())
@@ -46,7 +46,7 @@ end
         user = DearDiary.get_user("default")
         project_id, _ = DearDiary.create_project(user.id, "Repro Project")
         experiment_id, _ = DearDiary.create_experiment(
-            project_id, DearDiary.IN_PROGRESS, "Repro Experiment",
+            project_id, DearDiary.IN_PROGRESS, "Repro Experiment"
         )
         iteration_id, _ = DearDiary.create_iteration(experiment_id)
 
@@ -54,10 +54,10 @@ end
         result = DearDiary.snapshot_environment!(iteration_id; entrypoint="run.jl")
         @test result === DearDiary.Updated
 
-        iteration = iteration_id |> DearDiary.get_iteration
-        @test iteration.julia_version == (VERSION |> string)
+        iteration = DearDiary.get_iteration(iteration_id)
+        @test iteration.julia_version == (string(VERSION))
         @test iteration.entrypoint == "run.jl"
-        @test (iteration.git_sha |> length) == 40
+        @test (length(iteration.git_sha)) == 40
         @test iteration.project_toml isa String
         @test iteration.manifest_toml isa String
     end
@@ -70,34 +70,33 @@ end
         user = DearDiary.get_user("default")
         project_id, _ = DearDiary.create_project(user.id, "Repro Auto Project")
         experiment_id, _ = DearDiary.create_experiment(
-            project_id, DearDiary.IN_PROGRESS, "Repro Auto Experiment",
+            project_id, DearDiary.IN_PROGRESS, "Repro Auto Experiment"
         )
 
         driver_id = DearDiary.with_iteration(experiment_id) do iter
             iter.id
         end
-        driver = driver_id |> DearDiary.get_iteration
-        # The driver iteration gets the env snapshot — at minimum the Julia version is
+        driver = DearDiary.get_iteration(driver_id)
+        # The driver iteration gets the env snapshot. At minimum the Julia version is
         # populated regardless of where Pkg state lives.
-        @test driver.julia_version |> !isempty
+        @test !isempty(driver.julia_version)
 
         # A child run (with_iteration on a parent) should inherit, not re-capture.
-        child_id = DearDiary.with_iteration(
-            experiment_id; parent_iteration_id=driver_id,
-        ) do iter
-            iter.id
-        end
-        child = child_id |> DearDiary.get_iteration
-        @test child.julia_version |> isempty
+        child_id =
+            DearDiary.with_iteration(experiment_id; parent_iteration_id=driver_id) do iter
+                iter.id
+            end
+        child = DearDiary.get_iteration(child_id)
+        @test isempty(child.julia_version)
 
         # Opting in via `snapshot=true` overrides the per-child default.
         opted_in_id = DearDiary.with_iteration(
-            experiment_id; parent_iteration_id=driver_id, snapshot=true,
+            experiment_id; parent_iteration_id=driver_id, snapshot=true
         ) do iter
             iter.id
         end
-        opted_in = opted_in_id |> DearDiary.get_iteration
-        @test opted_in.julia_version |> !isempty
+        opted_in = DearDiary.get_iteration(opted_in_id)
+        @test !isempty(opted_in.julia_version)
     end
 end
 
@@ -106,7 +105,7 @@ end
         user = DearDiary.get_user("default")
         project_id, _ = DearDiary.create_project(user.id, "Restore Project")
         experiment_id, _ = DearDiary.create_experiment(
-            project_id, DearDiary.IN_PROGRESS, "Restore Experiment",
+            project_id, DearDiary.IN_PROGRESS, "Restore Experiment"
         )
         iteration_id, _ = DearDiary.create_iteration(experiment_id)
         DearDiary.snapshot_environment!(iteration_id; entrypoint="train.jl")
@@ -115,16 +114,16 @@ end
             result = DearDiary.restore(iteration_id; depot=depot)
 
             @test result isa DearDiary.RestoreResult
-            @test result.julia_version == (VERSION |> string)
+            @test result.julia_version == (string(VERSION))
             @test result.entrypoint == "train.jl"
 
             project_path = joinpath(result.project_path, "Project.toml")
             manifest_path = joinpath(result.project_path, "Manifest.toml")
-            @test project_path |> isfile
-            @test manifest_path |> isfile
+            @test isfile(project_path)
+            @test isfile(manifest_path)
 
             # Round-trip integrity: the bytes written to disk match the bytes captured.
-            iteration = iteration_id |> DearDiary.get_iteration
+            iteration = DearDiary.get_iteration(iteration_id)
             @test read(project_path, String) == iteration.project_toml
             @test read(manifest_path, String) == iteration.manifest_toml
         end
@@ -138,7 +137,7 @@ end
         user = DearDiary.get_user("default")
         project_id, _ = DearDiary.create_project(user.id, "Restore Empty Project")
         experiment_id, _ = DearDiary.create_experiment(
-            project_id, DearDiary.IN_PROGRESS, "No Snapshot",
+            project_id, DearDiary.IN_PROGRESS, "No Snapshot"
         )
         iteration_id, _ = DearDiary.create_iteration(experiment_id)
 

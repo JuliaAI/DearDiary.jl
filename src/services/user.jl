@@ -32,7 +32,7 @@ Get all [`User`](@ref).
 # Returns
 An array of [`User`](@ref) objects.
 """
-get_users()::Array{User,1} = User |> fetch_all
+get_users()::Array{User,1} = fetch_all(User)
 
 """
     create_user(first_name::AbstractString, last_name::AbstractString, username::AbstractString, password::AbstractString)::NamedTuple{id::Optional{<:Int64},status::DataType}
@@ -56,11 +56,7 @@ function create_user(
     password::AbstractString,
 )::@NamedTuple{id::Optional{<:Int64}, status::DataType}
     return insert(
-        User,
-        first_name,
-        last_name,
-        username,
-        password |> GenerateFromPassword |> String,
+        User, first_name, last_name, username, String(GenerateFromPassword(password))
     )
 end
 
@@ -87,7 +83,13 @@ function update_user(
     is_admin::Optional{Bool},
 )::Type{<:UpsertResult}
     user = fetch(User, id)
-    if user |> isnothing
+    if isnothing(user)
+        return Unprocessable
+    end
+
+    # The seeded `default` user must stay an admin (previously a DB trigger; now enforced
+    # here since DuckDB has no triggers).
+    if user.username == "default" && is_admin === false
         return Unprocessable
     end
 
@@ -102,14 +104,15 @@ function update_user(
         return Updated
     end
 
-    if !(password |> isnothing)
-        hashed_password = password |> GenerateFromPassword |> String
+    if !(isnothing(password))
+        hashed_password = String(GenerateFromPassword(password))
     end
     return update(
-        User, id;
+        User,
+        id;
         first_name=first_name,
         last_name=last_name,
-        password=(password |> isnothing) ? nothing : hashed_password,
+        password=(isnothing(password)) ? nothing : hashed_password,
         is_admin=is_admin,
     )
 end
@@ -127,6 +130,11 @@ Delete an [`User`](@ref). Also deletes all associated [`UserPermission`](@ref).
 """
 function delete_user(id::Integer)::Bool
     user = fetch(User, id)
+    # The seeded `default` user is protected (previously enforced by a DB trigger; DuckDB has
+    # no triggers, so the guard lives here).
+    if !(user isa User) || user.username == "default"
+        return false
+    end
 
     delete(UserPermission, user)
     return delete(User, id)
@@ -150,5 +158,5 @@ function sanitize_user(user::User)::UserResponse
         user.is_admin,
     )
 end
-sanitize_user(users::AbstractArray{User,1})::Array{UserResponse,1} = users .|> sanitize_user
+sanitize_user(users::AbstractArray{User,1})::Array{UserResponse,1} = sanitize_user.(users)
 sanitize_user(::Nothing)::Nothing = nothing

@@ -3,11 +3,7 @@
         @testset verbose = true "insert user" begin
             @testset "insert with no existing username" begin
                 id, status = DearDiary.insert(
-                    DearDiary.User,
-                    "Missy",
-                    "Gala",
-                    "missy",
-                    "gala",
+                    DearDiary.User, "Missy", "Gala", "missy", "gala"
                 )
                 @test id isa Integer
                 @test status === DearDiary.Created
@@ -15,25 +11,15 @@
 
             @testset "insert with existing username" begin
                 id, status = DearDiary.insert(
-                    DearDiary.User,
-                    "Missy",
-                    "Gala",
-                    "missy",
-                    "gala",
+                    DearDiary.User, "Missy", "Gala", "missy", "gala"
                 )
-                @test id |> isnothing
+                @test isnothing(id)
                 @test status === DearDiary.Duplicate
             end
 
             @testset "insert with empty username" begin
-                id, status = DearDiary.insert(
-                    DearDiary.User,
-                    "Missy",
-                    "Gala",
-                    "",
-                    "gala",
-                )
-                @test id |> isnothing
+                id, status = DearDiary.insert(DearDiary.User, "Missy", "Gala", "", "gala")
+                @test isnothing(id)
                 @test status === DearDiary.Unprocessable
             end
         end
@@ -62,27 +48,24 @@
                 @test user.created_date isa DateTime
             end
 
-
             @testset "query with non-existing username" begin
-                @test DearDiary.fetch(DearDiary.User, "gala") |> isnothing
+                @test isnothing(DearDiary.fetch(DearDiary.User, "gala"))
             end
         end
 
         @testset verbose = true "fetch all" begin
             DearDiary.insert(DearDiary.User, "Gala", "Missy", "gala", "missy")
 
-            users = DearDiary.User |> DearDiary.fetch_all
+            users = DearDiary.fetch_all(DearDiary.User)
 
             @test users isa Array{DearDiary.User,1}
-            @test (users |> length) == 3 # Including the default user
+            @test (length(users)) == 3 # Including the default user
         end
 
         @testset verbose = true "update" begin
             username_user = DearDiary.fetch(DearDiary.User, "missy")
             @test DearDiary.update(
-                DearDiary.User, username_user.id;
-                first_name="Ana",
-                last_name=nothing,
+                DearDiary.User, username_user.id; first_name="Ana", last_name=nothing
             ) === DearDiary.Updated
 
             user = DearDiary.fetch(DearDiary.User, "missy")
@@ -94,8 +77,8 @@
         @testset verbose = true "delete" begin
             user = DearDiary.fetch(DearDiary.User, "missy")
             @test DearDiary.delete(DearDiary.User, user.id)
-            @test DearDiary.fetch(DearDiary.User, "missy") |> isnothing
-            @test (DearDiary.User |> DearDiary.fetch_all |> length) == 2 # Including the default user
+            @test isnothing(DearDiary.fetch(DearDiary.User, "missy"))
+            @test (length(DearDiary.fetch_all(DearDiary.User))) == 2 # Including the default user
         end
     end
 end

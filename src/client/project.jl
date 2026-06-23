@@ -7,7 +7,7 @@ Fetch a [`Project`](@ref) via `GET /project/{id}` on the API behind `client`. Re
 """
 function get_project(client::Client, id::Integer)::Optional{Project}
     try
-        return _json(_request(client, "GET", "/project/$id")) |> Project
+        return Project(_json(_request(client, "GET", "/project/$id")))
     catch err
         err isa ClientError && err.status == 404 && return nothing
         rethrow(err)
@@ -22,8 +22,8 @@ receive every project; non-admins receive only those with [`ReadPermission`](@re
 """
 function get_projects(client::Client)::Array{Project,1}
     response = _request(client, "GET", "/project/")
-    decoded = response.body |> String |> JSON.parse
-    return [item |> Project for item in decoded]
+    decoded = JSON.parse(String(response.body))
+    return [Project(item) for item in decoded]
 end
 
 """
@@ -33,9 +33,7 @@ Create a [`Project`](@ref) named `name` via `POST /project/`. The route requires
 viewer; non-admin callers receive `403 ADMIN_REQUIRED`. Returns the new project id.
 """
 function create_project(client::Client, name::AbstractString)::Int64
-    response = _request(
-        client, "POST", "/project/"; body=Dict("name" => name),
-    )
+    response = _request(client, "POST", "/project/"; body=Dict("name" => name))
     return _json(response)["project_id"]
 end
 
@@ -46,12 +44,15 @@ Patch a [`Project`](@ref) via `PATCH /project/{id}`. Any keyword left as `nothin
 untouched server-side. Admin-only. Raises [`ClientError`](@ref) on failure.
 """
 function update_project(
-    client::Client, id::Integer;
+    client::Client,
+    id::Integer;
     name::Optional{AbstractString}=nothing,
     description::Optional{AbstractString}=nothing,
 )::Nothing
     _request(
-        client, "PATCH", "/project/$id";
+        client,
+        "PATCH",
+        "/project/$id";
         body=Dict("name" => name, "description" => description),
     )
     return nothing

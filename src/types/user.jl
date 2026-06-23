@@ -8,7 +8,7 @@ Fields
 - `first_name::String`: The first name of the user.
 - `last_name::String`: The last name of the user.
 - `username::String`: The username of the user.
-- `password::String`: The password of the user. This is a hashed version of the password, not the plain text password.
+- `password::String`: Bcrypt hash of the user's password.
 - `created_date::DateTime`: The date and time the user was created.
 - `is_admin::Bool`: Whether the user is an administrator.
 """

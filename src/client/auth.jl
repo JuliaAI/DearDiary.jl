@@ -5,7 +5,7 @@ Build a [`Client`](@ref) pointed at `base_url`.
 
 Pass `username` and `password` to sign in via `POST /auth` and store the issued token. Pass
 `token` instead to attach an already-issued bearer token. Pass neither when the server runs
-with auth disabled — the client will work without an `Authorization` header.
+with auth disabled; the client will work without an `Authorization` header.
 
 # Arguments
 - `base_url::AbstractString`: Base URL of the server (with or without trailing slash).
@@ -22,22 +22,26 @@ function connect(
     password::Optional{AbstractString}=nothing,
     token::Optional{AbstractString}=nothing,
 )::Client
-    cleaned = rstrip(base_url, '/') |> String
+    cleaned = String(rstrip(base_url, '/'))
     client = Client(cleaned, nothing, nothing, nothing)
 
-    if !(token |> isnothing)
-        client.token = token |> String
+    if !(isnothing(token))
+        client.token = String(token)
         return client
     end
 
-    if !(username |> isnothing) && !(password |> isnothing)
-        envelope = _json(_request(
-            client, "POST", "/auth";
-            body=Dict("username" => username, "password" => password),
-        ))
-        client.token = envelope["access_token"] |> String
+    if !(isnothing(username)) && !(isnothing(password))
+        envelope = _json(
+            _request(
+                client,
+                "POST",
+                "/auth";
+                body=Dict("username" => username, "password" => password),
+            ),
+        )
+        client.token = String(envelope["access_token"])
         client.expires_at = envelope["expires_at"]
-        client.user = envelope["user"] |> UserResponse
+        client.user = UserResponse(envelope["user"])
     end
 
     return client
@@ -63,9 +67,9 @@ Call `POST /auth/refresh` and replace the client's token with the freshly-minted
 """
 function refresh_token!(client::Client)::Client
     envelope = _json(_request(client, "POST", "/auth/refresh"))
-    client.token = envelope["access_token"] |> String
+    client.token = String(envelope["access_token"])
     client.expires_at = envelope["expires_at"]
-    client.user = envelope["user"] |> UserResponse
+    client.user = UserResponse(envelope["user"])
     return client
 end
 
@@ -76,7 +80,7 @@ Resolve the user behind the current token via `GET /auth/me`. Also refreshes the
 `client.user`.
 """
 function whoami(client::Client)::UserResponse
-    user = _json(_request(client, "GET", "/auth/me")) |> UserResponse
+    user = UserResponse(_json(_request(client, "GET", "/auth/me")))
     client.user = user
     return user
 end

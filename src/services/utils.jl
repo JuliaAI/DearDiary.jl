@@ -10,9 +10,9 @@ Transforms a [`ResultType`](@ref) or an [`UpsertType`](@ref) object to a diction
 A dictionary representation of the object.
 """
 function Base.Dict(object::Union{ResultType,UpsertType})::Dict{Symbol,Any}
-    fields = object |> typeof |> fieldnames
+    fields = fieldnames(typeof(object))
     values = [getfield(object, field) for field in fields]
-    return zip(fields, values) |> collect |> Dict
+    return Dict(collect(zip(fields, values)))
 end
 
 """
@@ -28,7 +28,7 @@ Checks if the object fields are different from the provided keyword arguments.
 `true` if any of the object fields are different from the provided keyword arguments, `false` otherwise.
 """
 function compare_object_fields(object::ResultType; kwargs...)::Bool
-    fields = object |> typeof |> fieldnames
+    fields = fieldnames(typeof(object))
     for field in fields
         if haskey(kwargs, field)
             if getfield(object, field) != kwargs[field]

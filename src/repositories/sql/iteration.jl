@@ -51,3 +51,7 @@ const SQL_DELETE_ITERATION = """
     DELETE FROM iteration
     WHERE id = :id
     """
+
+const SQL_NULLIFY_ITERATION_CHILDREN = """
+    UPDATE iteration SET parent_iteration_id = NULL WHERE parent_iteration_id = :id
+    """

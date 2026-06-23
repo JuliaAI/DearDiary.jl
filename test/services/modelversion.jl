@@ -4,7 +4,7 @@
             user = DearDiary.get_user("default")
             project_id, _ = DearDiary.create_project(user.id, project_name)
             experiment_id, _ = DearDiary.create_experiment(
-                project_id, DearDiary.IN_PROGRESS, "Experiment",
+                project_id, DearDiary.IN_PROGRESS, "Experiment"
             )
             iteration_id, _ = DearDiary.create_iteration(experiment_id)
             model_id, _ = DearDiary.create_model(project_id, "fraud-classifier")
@@ -16,16 +16,16 @@
                 _, _, iteration_id, model_id = _scaffold()
 
                 version_id, result = DearDiary.create_modelversion(
-                    model_id, iteration_id, nothing, "",
+                    model_id, iteration_id, nothing, ""
                 )
 
                 @test version_id isa Integer
                 @test result === DearDiary.Created
 
-                version = version_id |> DearDiary.get_modelversion
+                version = DearDiary.get_modelversion(version_id)
                 @test version.version == 1
-                @test version.stage_id == (DearDiary.NO_STAGE |> Integer)
-                @test version.resource_id |> isnothing
+                @test version.stage_id == (Integer(DearDiary.NO_STAGE))
+                @test isnothing(version.resource_id)
             end
 
             @testset "subsequent registration increments version" begin
@@ -33,9 +33,9 @@
                 DearDiary.create_modelversion(model_id, iteration_id, nothing, "")
 
                 version_id, _ = DearDiary.create_modelversion(
-                    model_id, iteration_id, nothing, "",
+                    model_id, iteration_id, nothing, ""
                 )
-                version = version_id |> DearDiary.get_modelversion
+                version = DearDiary.get_modelversion(version_id)
                 @test version.version == 2
             end
 
@@ -43,9 +43,9 @@
                 _, _, iteration_id, _ = _scaffold()
 
                 version_id, result = DearDiary.create_modelversion(
-                    9999, iteration_id, nothing, "",
+                    9999, iteration_id, nothing, ""
                 )
-                @test version_id |> isnothing
+                @test isnothing(version_id)
                 @test result === DearDiary.Unprocessable
             end
 
@@ -53,22 +53,20 @@
                 _, _, _, model_id = _scaffold()
 
                 version_id, result = DearDiary.create_modelversion(
-                    model_id, 9999, nothing, "",
+                    model_id, 9999, nothing, ""
                 )
-                @test version_id |> isnothing
+                @test isnothing(version_id)
                 @test result === DearDiary.Unprocessable
             end
 
             @testset "iteration belongs to a different project" begin
                 _, _, _, model_id = _scaffold()
-                _, _, other_iteration_id, _ = _scaffold(;
-                    project_name="Other Project",
-                )
+                _, _, other_iteration_id, _ = _scaffold(; project_name="Other Project")
 
                 version_id, result = DearDiary.create_modelversion(
-                    model_id, other_iteration_id, nothing, "",
+                    model_id, other_iteration_id, nothing, ""
                 )
-                @test version_id |> isnothing
+                @test isnothing(version_id)
                 @test result === DearDiary.Unprocessable
             end
 
@@ -78,16 +76,16 @@
                 user = DearDiary.get_user("default")
                 other_project_id, _ = DearDiary.create_project(user.id, "Other Project 2")
                 other_experiment_id, _ = DearDiary.create_experiment(
-                    other_project_id, DearDiary.IN_PROGRESS, "Other Exp",
+                    other_project_id, DearDiary.IN_PROGRESS, "Other Exp"
                 )
                 resource_id, _ = DearDiary.create_resource(
-                    other_experiment_id, "model.bin", UInt8[0x00, 0x01],
+                    other_experiment_id, "model.bin", UInt8[0x00, 0x01]
                 )
 
                 version_id, result = DearDiary.create_modelversion(
-                    model_id, iteration_id, resource_id, "",
+                    model_id, iteration_id, resource_id, ""
                 )
-                @test version_id |> isnothing
+                @test isnothing(version_id)
                 @test result === DearDiary.Unprocessable
             end
         end
@@ -96,47 +94,47 @@
             @testset "valid stage promotion" begin
                 _, _, iteration_id, model_id = _scaffold()
                 version_id, _ = DearDiary.create_modelversion(
-                    model_id, iteration_id, nothing, "",
+                    model_id, iteration_id, nothing, ""
                 )
 
                 result = DearDiary.update_modelversion(
-                    version_id, DearDiary.STAGING, nothing, nothing,
+                    version_id, DearDiary.STAGING, nothing, nothing
                 )
                 @test result === DearDiary.Updated
 
-                version = version_id |> DearDiary.get_modelversion
-                @test version.stage_id == (DearDiary.STAGING |> Integer)
+                version = DearDiary.get_modelversion(version_id)
+                @test version.stage_id == (Integer(DearDiary.STAGING))
             end
 
             @testset "promotion to PRODUCTION archives siblings" begin
                 _, _, iteration_id, model_id = _scaffold()
                 old_id, _ = DearDiary.create_modelversion(
-                    model_id, iteration_id, nothing, "",
+                    model_id, iteration_id, nothing, ""
                 )
                 new_id, _ = DearDiary.create_modelversion(
-                    model_id, iteration_id, nothing, "",
+                    model_id, iteration_id, nothing, ""
                 )
                 # Put the older version in PRODUCTION first.
                 DearDiary.update_modelversion(
-                    old_id, DearDiary.PRODUCTION, nothing, nothing,
+                    old_id, DearDiary.PRODUCTION, nothing, nothing
                 )
 
                 # Promote the newer one; the older sibling should be auto-archived.
                 result = DearDiary.update_modelversion(
-                    new_id, DearDiary.PRODUCTION, nothing, nothing,
+                    new_id, DearDiary.PRODUCTION, nothing, nothing
                 )
                 @test result === DearDiary.Updated
 
-                old_version = old_id |> DearDiary.get_modelversion
-                new_version = new_id |> DearDiary.get_modelversion
-                @test old_version.stage_id == (DearDiary.ARCHIVED |> Integer)
-                @test new_version.stage_id == (DearDiary.PRODUCTION |> Integer)
+                old_version = DearDiary.get_modelversion(old_id)
+                new_version = DearDiary.get_modelversion(new_id)
+                @test old_version.stage_id == (Integer(DearDiary.ARCHIVED))
+                @test new_version.stage_id == (Integer(DearDiary.PRODUCTION))
             end
 
             @testset "invalid stage_id" begin
                 _, _, iteration_id, model_id = _scaffold()
                 version_id, _ = DearDiary.create_modelversion(
-                    model_id, iteration_id, nothing, "",
+                    model_id, iteration_id, nothing, ""
                 )
 
                 result = DearDiary.update_modelversion(version_id, 9999, nothing, nothing)
@@ -145,7 +143,7 @@
 
             @testset "non-existing id" begin
                 result = DearDiary.update_modelversion(
-                    9999, DearDiary.STAGING, nothing, nothing,
+                    9999, DearDiary.STAGING, nothing, nothing
                 )
                 @test result === DearDiary.Unprocessable
             end
@@ -154,25 +152,25 @@
         @testset verbose = true "delete model version does not touch resource" begin
             _, experiment_id, iteration_id, model_id = _scaffold()
             resource_id, _ = DearDiary.create_resource(
-                experiment_id, "model.bin", UInt8[0x00, 0x01],
+                experiment_id, "model.bin", UInt8[0x00, 0x01]
             )
             version_id, _ = DearDiary.create_modelversion(
-                model_id, iteration_id, resource_id, "",
+                model_id, iteration_id, resource_id, ""
             )
 
             @test DearDiary.delete_modelversion(version_id)
-            @test DearDiary.get_modelversion(version_id) |> isnothing
+            @test isnothing(DearDiary.get_modelversion(version_id))
             @test DearDiary.get_resource(resource_id) isa DearDiary.Resource
         end
 
         @testset verbose = true "get project id" begin
             project_id, _, iteration_id, model_id = _scaffold()
             version_id, _ = DearDiary.create_modelversion(
-                model_id, iteration_id, nothing, "",
+                model_id, iteration_id, nothing, ""
             )
 
-            version = version_id |> DearDiary.get_modelversion
-            @test (version |> DearDiary.get_project_id) == project_id
+            version = DearDiary.get_modelversion(version_id)
+            @test (DearDiary.get_project_id(version)) == project_id
         end
     end
 end

@@ -27,8 +27,8 @@ create_parameter(iteration_id, "max_depth", 7);
 create_metric(iteration_id, "accuracy", 0.96);
 ```
 
-Save the trained model bytes as a [`Resource`](@ref). Any serialisation format works — the
-registry only cares about the byte payload and its lineage.
+Save the trained model bytes as a [`Resource`](@ref). Any serialisation format works; the
+registry cares only about the byte payload and its lineage.
 
 ```@repl mr
 checkpoint_bytes = rand(UInt8, 1024);
@@ -37,7 +37,7 @@ resource_id, _ = create_resource(experiment_id, "fraud-clf.jlso", checkpoint_byt
 
 ## Register the model
 
-A `Model` is a named entry — the human-readable handle that survives across hundreds of
+A `Model` is a named entry: the human-readable handle that survives across hundreds of
 training runs.
 
 ```@repl mr

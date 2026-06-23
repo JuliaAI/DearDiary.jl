@@ -40,16 +40,12 @@ to a hard failure mid-iteration.
 # Returns
 An [`EnvironmentSnapshot`](@ref).
 """
-function capture_environment(;
-    entrypoint::AbstractString=PROGRAM_FILE,
-)::EnvironmentSnapshot
-    julia_version = VERSION |> string
+function capture_environment(; entrypoint::AbstractString=PROGRAM_FILE)::EnvironmentSnapshot
+    julia_version = string(VERSION)
     git_sha, git_dirty = _git_state()
     project_toml, manifest_toml = _pkg_state()
     return EnvironmentSnapshot(
-        julia_version, git_sha, git_dirty,
-        entrypoint |> string,
-        project_toml, manifest_toml,
+        julia_version, git_sha, git_dirty, string(entrypoint), project_toml, manifest_toml
     )
 end
 
@@ -64,11 +60,11 @@ function _git_state()::Tuple{String,Bool}
     try
         repo = LibGit2.GitRepoExt(pwd())
         try
-            sha = repo |> LibGit2.head_oid |> string
-            dirty = repo |> LibGit2.isdirty
+            sha = string(LibGit2.head_oid(repo))
+            dirty = LibGit2.isdirty(repo)
             return (sha, dirty)
         finally
-            repo |> LibGit2.close
+            LibGit2.close(repo)
         end
     catch
         return ("", false)
@@ -78,18 +74,18 @@ end
 """
     _pkg_state()::Tuple{String,String}
 
-Return the verbatim contents of the active `Project.toml` and `Manifest.toml`. Empty
-strings stand in for "no active project" or "manifest not yet resolved", so capture stays
-non-fatal in environments where Pkg state is incomplete.
+Return the verbatim contents of the active `Project.toml` and `Manifest.toml`. Returns
+empty strings when no active project is set or the manifest has not yet been resolved,
+so capture stays non-fatal in environments where Pkg state is incomplete.
 """
 function _pkg_state()::Tuple{String,String}
     project_path = Base.active_project()
-    if (project_path |> isnothing) || !(project_path |> isfile)
+    if (isnothing(project_path)) || !(isfile(project_path))
         return ("", "")
     end
-    project_dir = project_path |> dirname
-    project_toml = (project_path |> isfile) ? read(project_path, String) : ""
+    project_dir = dirname(project_path)
+    project_toml = (isfile(project_path)) ? read(project_path, String) : ""
     manifest_path = joinpath(project_dir, "Manifest.toml")
-    manifest_toml = (manifest_path |> isfile) ? read(manifest_path, String) : ""
+    manifest_toml = (isfile(manifest_path)) ? read(manifest_path, String) : ""
     return (project_toml, manifest_toml)
 end

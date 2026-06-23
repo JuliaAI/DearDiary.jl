@@ -14,7 +14,7 @@
             @testset "with non-existing project" begin
                 model_id, result = DearDiary.create_model(9999, "orphan-model")
 
-                @test model_id |> isnothing
+                @test isnothing(model_id)
                 @test result === DearDiary.Unprocessable
             end
 
@@ -25,7 +25,7 @@
 
                 model_id, result = DearDiary.create_model(project_id, "fraud-classifier")
 
-                @test model_id |> isnothing
+                @test isnothing(model_id)
                 @test result === DearDiary.Duplicate
             end
         end
@@ -35,14 +35,14 @@
             project_id, _ = DearDiary.create_project(user.id, "Service Model Project")
             model_id, _ = DearDiary.create_model(project_id, "fraud-classifier")
 
-            model = model_id |> DearDiary.get_model
+            model = DearDiary.get_model(model_id)
 
             @test model isa DearDiary.Model
             @test model.id == model_id
             @test model.project_id == project_id
             @test model.name == "fraud-classifier"
 
-            @test DearDiary.get_model(9999) |> isnothing
+            @test isnothing(DearDiary.get_model(9999))
         end
 
         @testset verbose = true "get models" begin
@@ -54,7 +54,7 @@
             models = DearDiary.get_models(project_id)
 
             @test models isa Array{DearDiary.Model,1}
-            @test (models |> length) == 2
+            @test (length(models)) == 2
         end
 
         @testset verbose = true "get models paginated" begin
@@ -67,7 +67,7 @@
             page = DearDiary.get_models(project_id, DearDiary.Pagination(2, 0))
 
             @test page isa DearDiary.PaginatedResponse{DearDiary.Model}
-            @test (page.data |> length) == 2
+            @test (length(page.data)) == 2
             @test page.total == 5
         end
 
@@ -78,11 +78,11 @@
                 model_id, _ = DearDiary.create_model(project_id, "fraud-classifier")
 
                 result = DearDiary.update_model(
-                    model_id, "fraud-classifier-v2", "Updated description",
+                    model_id, "fraud-classifier-v2", "Updated description"
                 )
                 @test result === DearDiary.Updated
 
-                model = model_id |> DearDiary.get_model
+                model = DearDiary.get_model(model_id)
                 @test model.name == "fraud-classifier-v2"
                 @test model.description == "Updated description"
             end
@@ -97,7 +97,7 @@
             user = DearDiary.get_user("default")
             project_id, _ = DearDiary.create_project(user.id, "Service Model Project")
             experiment_id, _ = DearDiary.create_experiment(
-                project_id, DearDiary.IN_PROGRESS, "Exp",
+                project_id, DearDiary.IN_PROGRESS, "Exp"
             )
             iteration_id, _ = DearDiary.create_iteration(experiment_id)
             model_id, _ = DearDiary.create_model(project_id, "fraud-classifier")
@@ -105,8 +105,8 @@
             DearDiary.create_modelversion(model_id, iteration_id, nothing, "v2")
 
             @test DearDiary.delete_model(model_id)
-            @test DearDiary.get_model(model_id) |> isnothing
-            @test DearDiary.get_modelversions(model_id) |> isempty
+            @test isnothing(DearDiary.get_model(model_id))
+            @test isempty(DearDiary.get_modelversions(model_id))
         end
 
         @testset verbose = true "get project id" begin
@@ -114,8 +114,8 @@
             project_id, _ = DearDiary.create_project(user.id, "Service Model Project")
             model_id, _ = DearDiary.create_model(project_id, "fraud-classifier")
 
-            model = model_id |> DearDiary.get_model
-            @test (model |> DearDiary.get_project_id) == project_id
+            model = DearDiary.get_model(model_id)
+            @test (DearDiary.get_project_id(model)) == project_id
         end
     end
 end

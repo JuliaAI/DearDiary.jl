@@ -93,7 +93,7 @@ struct WithSymbolKeys <: KeyConversionTrait end
 struct WithStringKeys <: KeyConversionTrait end
 
 function KeyConversionTrait(::Type{D}) where {D<:AbstractDict}
-    K = D |> keytype
+    K = keytype(D)
     message = "missy Unsupported key type $K. Supported types are Symbol and String."
     throw(ArgumentError(message))
 end
@@ -101,26 +101,27 @@ KeyConversionTrait(::Type{D}) where {D<:AbstractDict{Symbol,Any}} = WithSymbolKe
 KeyConversionTrait(::Type{D}) where {D<:AbstractDict{String,Any}} = WithStringKeys()
 
 convert_field_to_key(::WithSymbolKeys, field::Symbol) = field
-convert_field_to_key(::WithStringKeys, field::Symbol) = field |> String
+convert_field_to_key(::WithStringKeys, field::Symbol) = String(field)
 
 """
     type_from_dict(::Type{T}, data::Dict{K,Any}, trait::KeyConversionTrait)::T where {T, K}
 
-Builds an instance of type `T` from a dictionary `data` with `trait` related to the type `K`. All the fields in the struct `T` must be present in the dictionary.
+Build an instance of `T` from `data`, using `trait` to convert `K` keys to field name symbols.
+All fields of `T` must be present in the dictionary.
 """
 function type_from_dict(::Type{T}, data::AbstractDict)::T where {T}
-    type_fields = T |> fieldnames
+    type_fields = fieldnames(T)
     values = map(type_fields) do field
-        key = convert_field_to_key((data |> typeof |> KeyConversionTrait), field)
+        key = convert_field_to_key((KeyConversionTrait(typeof(data))), field)
         value = haskey(data, key) ? data[key] : nothing
 
         field_type = fieldtype(T, field)
 
-        if value |> isnothing && Nothing <: field_type
+        if isnothing(value) && Nothing <: field_type
             return nothing
         end
 
-        # SQLite hands back `missing` for NULL columns; treat it the same as
+        # The database driver hands back `missing` for NULL columns; treat it the same as
         # `nothing` when the destination field allows it. Without this branch a
         # nullable INTEGER column (e.g. `model_version.resource_id`) would fail to
         # `convert(::Type{Union{Nothing,Int64}}, missing)` on every fetch.
@@ -134,97 +135,97 @@ function type_from_dict(::Type{T}, data::AbstractDict)::T where {T}
 
         if DateTime <: field_type && !(value isa DateTime)
             try
-                if Nothing <: field_type && (value |> isempty)
+                if Nothing <: field_type && (isempty(value))
                     return nothing
                 end
-                return value |> DateTime
+                return DateTime(value)
             catch e
-                throw(ArgumentError("Cannot convert value '$value' to DateTime for field $field: $e"))
+                throw(
+                    ArgumentError(
+                        "Cannot convert value '$value' to DateTime for field $field: $e"
+                    ),
+                )
             end
         end
 
         try
             return convert(field_type, value)
         catch e
-            throw(ArgumentError("Cannot convert value '$value' ($(value |> typeof)) to $(field_type) for field $field: $e"))
+            throw(
+                ArgumentError(
+                    "Cannot convert value '$value' ($(value |> typeof)) to $(field_type) for field $field: $e",
+                ),
+            )
         end
     end
     return T(values...)
 end
 
-# Allowing construction of ResultType from Dict
+# Allow construction of ResultType from Dict
 (::Type{T})(data::AbstractDict) where {T<:ResultType} = type_from_dict(T, data)
 
 """
     Base.show(io::IO, ::MIME"text/plain", T::Type{<:UpsertResult})
 
-Show a pretty-printed representation of an [`UpsertResult`](@ref) type.
+Pretty-print an [`UpsertResult`](@ref) value to `io`.
 
 # Arguments
 - `io::IO`: The IO stream to write to.
 - `::MIME"text/plain"`: The MIME type for plain text.
-- `x::T`: The upsert result type to show.
-
-# Returns
-Nothing, but prints the representation to the IO stream.
+- `x::T`: The upsert result to print.
 """
 function Base.show(io::IO, ::MIME"text/plain", x::T) where {T<:ResultType}
     println(io, T)
-    fields = T |> fieldnames
-    for (i, name) in (fields |> enumerate)
-        prefix = i < (fields |> length) ? " ├ " : " └ "
+    fields = fieldnames(T)
+    for (i, name) in (enumerate(fields))
+        prefix = i < (length(fields)) ? " ├ " : " └ "
         value = getfield(x, name)
         value_repr = if value isa DateTime
-            value |> string
-        elseif value isa Array{UInt8,1} && (value |> length) > 6
+            string(value)
+        elseif value isa Array{UInt8,1} && (length(value)) > 6
             compressed_array_repr = [
-                (value[1:3] .|> repr)...,
-                "…",
-                (value[end-2:end] .|> repr)...,
+                (repr.(value[1:3]))..., "…", (repr.(value[(end - 2):end]))...
             ]
             "UInt8[$(join(compressed_array_repr, ", "))]"
         else
-            value |> repr
+            repr(value)
         end
-        print(io, prefix, "$(name) = $(value_repr)", i < (fields |> length) ? "\n" : "")
+        print(io, prefix, "$(name) = $(value_repr)", i < (length(fields)) ? "\n" : "")
     end
 end
 
 """
     Base.show(io::IO, ::MIME"text/plain", x::Array{T,1}) where {T<:ResultType}
 
-Show a pretty-printed representation of an array of [`ResultType`](@ref) types.
+Pretty-print an array of [`ResultType`](@ref) values to `io`.
 
 # Arguments
 - `io::IO`: The IO stream to write to.
 - `::MIME"text/plain"`: The MIME type for plain text.
-- `x::Array{T,1}`: The array of result types to show.
-
-# Returns
-Nothing, but prints the representation to the IO stream.
+- `x::Array{T,1}`: The array to print.
 """
 function Base.show(io::IO, ::MIME"text/plain", x::AbstractArray{T,1}) where {T<:ResultType}
-    n = x |> length
+    n = length(x)
     println(io, "$(n)-element Vector{$(T)}:")
     if n <= 6
-        for (i, x) in (x |> enumerate)
+        for (i, x) in (enumerate(x))
             show(io, MIME"text/plain"(), x)
             if i < n
-                io |> println
+                println(io)
             end
         end
     else
         for i in 1:3
             show(io, MIME"text/plain"(), x[i])
-            io |> println
+            println(io)
         end
-        io |> println
+        println(io)
         println(io, "  ⋮")
-        io |> println
-        for i in (n-2):n
+        println(io)
+        for i in (n - 2):n
             show(io, MIME"text/plain"(), x[i])
             if i < n
-                io |> println
+                println(io)
             end
         end
     end
@@ -232,9 +233,9 @@ end
 
 function Base.show(io::IO, ::MIME"text/plain", x::NamedTuple{K,V}) where {K,V}
     print(io, "(")
-    for (i, key) in (K |> enumerate)
+    for (i, key) in (enumerate(K))
         print(io, "$(key) = $(getfield(x, key))")
-        i < (K |> length) && print(io, ", ")
+        i < (length(K)) && print(io, ", ")
     end
     print(io, ")")
 end

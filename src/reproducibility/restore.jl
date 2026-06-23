@@ -12,8 +12,8 @@ Fields
 - `julia_version::String`: The Julia version recorded at capture time.
 - `git_sha::String`: The HEAD commit SHA at capture time, or empty when no git state was
   captured.
-- `git_dirty::Bool`: `true` when the working tree was dirty at capture time. A `true`
-  value warns that the captured Manifest may not be reproducible from `git_sha` alone.
+- `git_dirty::Bool`: `true` when the working tree was dirty at capture time. When `true`,
+  the captured Manifest may not be reproducible from `git_sha` alone.
 - `entrypoint::String`: The script that was the iteration's entrypoint, or empty for REPL
   sessions.
 """
@@ -30,7 +30,7 @@ end
 
 Materialise the captured Pkg environment of `iteration_id` into a fresh directory under
 `depot`. Writes `Project.toml` and `Manifest.toml` from the iteration row; does **not**
-itself call `Pkg.instantiate` or activate the project — that's deliberately left to the
+itself call `Pkg.instantiate` or activate the project. That is left to the
 caller so this function stays side-effect-free outside of the temp directory.
 
 A typical workflow:
@@ -53,21 +53,21 @@ A [`RestoreResult`](@ref).
 
 # Throws
 - `ArgumentError` when the iteration does not exist.
-- `ArgumentError` when the iteration has no captured manifest — i.e.
-  [`snapshot_environment!`](@ref) was never invoked on it.
+- `ArgumentError` when the iteration has no captured manifest (i.e.
+  [`snapshot_environment!`](@ref) was never invoked on it).
 """
-function restore(
-    iteration_id::Integer; depot::AbstractString=mktempdir(),
-)::RestoreResult
-    iteration = iteration_id |> get_iteration
-    if iteration |> isnothing
+function restore(iteration_id::Integer; depot::AbstractString=mktempdir())::RestoreResult
+    iteration = get_iteration(iteration_id)
+    if isnothing(iteration)
         throw(ArgumentError("Iteration $iteration_id not found"))
     end
-    if iteration.manifest_toml |> isempty
-        throw(ArgumentError(
-            "Iteration $iteration_id has no captured environment — " *
-            "call snapshot_environment! before restore.",
-        ))
+    if isempty(iteration.manifest_toml)
+        throw(
+            ArgumentError(
+                "Iteration $iteration_id has no captured environment. " *
+                "Call snapshot_environment! before restore.",
+            ),
+        )
     end
 
     project_dir = joinpath(depot, "iteration_$(iteration_id)")

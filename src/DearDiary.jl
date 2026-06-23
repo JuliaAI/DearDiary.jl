@@ -14,7 +14,9 @@ using LibGit2
 using Pkg
 using PrecompileTools: @setup_workload, @compile_workload
 using SHA
-using SQLite
+using DuckDB
+using DBInterface
+using Tables
 using UUIDs
 
 include("utils.jl")
@@ -36,7 +38,7 @@ include("types/model.jl")
 include("types/modelversion.jl")
 
 include("artifacts/store.jl")
-include("artifacts/sqlite.jl")
+include("artifacts/inline.jl")
 include("artifacts/filesystem.jl")
 include("artifacts/s3.jl")
 include("artifacts/migrate.jl")
@@ -122,8 +124,10 @@ export Client, ClientError, connect, disconnect, refresh_token!, whoami, with_it
 
 export get_user, get_users, create_user, update_user, delete_user, sanitize_user
 export get_project, get_projects, create_project, update_project, delete_project
-export get_userpermission, get_userpermissions, create_userpermission, update_userpermission, delete_userpermission
-export get_experiment, get_experiments, create_experiment, update_experiment, delete_experiment
+export get_userpermission,
+    get_userpermissions, create_userpermission, update_userpermission, delete_userpermission
+export get_experiment,
+    get_experiments, create_experiment, update_experiment, delete_experiment
 export get_iteration, get_iterations, create_iteration, update_iteration, delete_iteration
 export get_child_iterations
 export snapshot_environment!, capture_environment, restore
@@ -135,10 +139,11 @@ export read_resource_data
 export migrate_artifacts!, MigrateArtifactsResult
 export get_tag, get_tags, create_tag, add_tag, delete_tag
 export get_model, get_models, create_model, update_model, delete_model
-export get_modelversion, get_modelversions, create_modelversion, update_modelversion, delete_modelversion
+export get_modelversion,
+    get_modelversions, create_modelversion, update_modelversion, delete_modelversion
 
 _DEARDIARY_APICONFIG = nothing
-# `run` only assigns the UI server when the UI is enabled; give it a defined default so
+# `run` only assigns the UI server when the UI is enabled. Give it a defined default so
 # `stop` (which reads it unconditionally) does not error when the UI is disabled.
 _DEARDIARY_UI_SERVER = nothing
 
@@ -147,61 +152,63 @@ function AuthMiddleware(handler)
         global _DEARDIARY_APICONFIG
 
         if _DEARDIARY_APICONFIG.enable_auth
-            is_login_route = request.target in ("/auth", "/auth/") &&
-                             request.method == "POST"
-            is_health_route = request.target |> startswith("/health") && request.method == "GET"
+            is_login_route =
+                request.target in ("/auth", "/auth/") && request.method == "POST"
+            is_health_route =
+                startswith("/health")(request.target) && request.method == "GET"
 
             if !(is_login_route || is_health_route)
-                auth_header = get(request.headers |> Dict, "Authorization", missing)
+                auth_header = get(Dict(request.headers), "Authorization", missing)
 
-                if auth_header |> ismissing
+                if ismissing(auth_header)
                     return error_response(
-                        TokenMissing, "Missing authorization header";
+                        TokenMissing,
+                        "Missing authorization header";
                         status=HTTP.StatusCodes.UNAUTHORIZED,
                     )
                 end
 
-                token = split(auth_header, " ")[2] |> string
+                token = string(split(auth_header, " ")[2])
                 jwt = JWT(; jwt=token)
                 key = JWKSymmetric(
-                    JWTs.MD_SHA256,
-                    _DEARDIARY_APICONFIG.jwt_secret |> Array{UInt8,1},
+                    JWTs.MD_SHA256, Array{UInt8,1}(_DEARDIARY_APICONFIG.jwt_secret)
                 )
                 try
                     validate!(jwt, key)
                 catch _
                     return error_response(
-                        TokenInvalid, "Invalid token";
-                        status=HTTP.StatusCodes.UNAUTHORIZED,
+                        TokenInvalid, "Invalid token"; status=HTTP.StatusCodes.UNAUTHORIZED
                     )
                 end
 
-                if jwt |> isvalid
-                    payload = jwt |> claims
+                if isvalid(jwt)
+                    payload = claims(jwt)
 
-                    if payload |> isnothing
+                    if isnothing(payload)
                         return error_response(
-                            TokenPayloadInvalid, "Invalid token payload";
+                            TokenPayloadInvalid,
+                            "Invalid token payload";
                             status=HTTP.StatusCodes.UNAUTHORIZED,
                         )
                     end
 
                     is_valid_payload = all(
-                        claim -> haskey(payload, claim),
-                        ["sub", "id", "exp"],
+                        claim -> haskey(payload, claim), ["sub", "id", "exp"]
                     )
                     if !is_valid_payload
                         return error_response(
-                            TokenPayloadInvalid, "Invalid token payload";
+                            TokenPayloadInvalid,
+                            "Invalid token payload";
                             status=HTTP.StatusCodes.UNAUTHORIZED,
                         )
                     end
 
                     exp = get(payload, "exp", nothing)
-                    now_unix = (now() |> datetime2unix |> floor) |> Int
-                    if exp |> isnothing || (exp isa Integer && exp < now_unix)
+                    now_unix = Int((floor(datetime2unix(now()))))
+                    if isnothing(exp) || (exp isa Integer && exp < now_unix)
                         return error_response(
-                            TokenExpired, "Token has expired";
+                            TokenExpired,
+                            "Token has expired";
                             status=HTTP.StatusCodes.UNAUTHORIZED,
                         )
                     end
@@ -210,23 +217,24 @@ function AuthMiddleware(handler)
                     is_valid_user_id = user_id isa Int && user_id > 0
                     if !is_valid_user_id
                         return error_response(
-                            TokenPayloadInvalid, "Invalid token payload";
+                            TokenPayloadInvalid,
+                            "Invalid token payload";
                             status=HTTP.StatusCodes.UNAUTHORIZED,
                         )
                     end
 
                     user = get_user(user_id)
-                    if user |> isnothing
+                    if isnothing(user)
                         return error_response(
-                            UserNotFound, "User not found";
+                            UserNotFound,
+                            "User not found";
                             status=HTTP.StatusCodes.UNAUTHORIZED,
                         )
                     end
                     request.context[:user] = user
                 else
                     return error_response(
-                        TokenInvalid, "Invalid token";
-                        status=HTTP.StatusCodes.UNAUTHORIZED,
+                        TokenInvalid, "Invalid token"; status=HTTP.StatusCodes.UNAUTHORIZED
                     )
                 end
             end
@@ -238,15 +246,14 @@ end
 """
     run(; env_file::String=".env")
 
-Starts the server.
-
-By default, the server will run on `127.0.0.1:9000`. You can change both the host and port by modifying the `.env` file specific entries. The environment variables are loaded from the `.env` file by default. You can change the file path by passing the `env_file` argument.
+Start the server. Reads configuration from `env_file` (defaults to `.env`). The server
+binds to `127.0.0.1:9000` unless overridden by `DEARDIARY_HOST` and `DEARDIARY_PORT`.
 """
 function run(; env_file::String=".env")
-    global _DEARDIARY_APICONFIG = env_file |> load_config
+    global _DEARDIARY_APICONFIG = load_config(env_file)
 
     if _DEARDIARY_APICONFIG.enable_auth &&
-       _DEARDIARY_APICONFIG.jwt_secret == "deardiary_secret"
+        _DEARDIARY_APICONFIG.jwt_secret == "deardiary_secret"
         throw(
             ArgumentError(
                 "Authentication is enabled but DEARDIARY_JWT_SECRET is set to the " *
@@ -260,8 +267,8 @@ function run(; env_file::String=".env")
 
     @get "/health" function (::HTTP.Request)
         data = Dict(
-            "app_name" => DearDiary |> nameof |> String,
-            "package_version" => DearDiary |> pkgversion,
+            "app_name" => String(nameof(DearDiary)),
+            "package_version" => pkgversion(DearDiary),
             "server_time" => Dates.now(),
         )
         return json(data; status=HTTP.StatusCodes.OK)
@@ -284,7 +291,7 @@ function run(; env_file::String=".env")
         allowed_origins=_DEARDIARY_APICONFIG.cors_origins,
         allowed_headers=["Authorization", "Content-Type"],
         allowed_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
-        allow_credentials=!("*" in _DEARDIARY_APICONFIG.cors_origins),
+        allow_credentials=(!("*" in _DEARDIARY_APICONFIG.cors_origins)),
         max_age=600,
     )
     serveparallel(;
@@ -297,7 +304,7 @@ function run(; env_file::String=".env")
 
     if _DEARDIARY_APICONFIG.enable_ui
         global _DEARDIARY_UI_SERVER = start_ui_server(
-            _DEARDIARY_APICONFIG.ui_host, _DEARDIARY_APICONFIG.ui_port,
+            _DEARDIARY_APICONFIG.ui_host, _DEARDIARY_APICONFIG.ui_port
         )
     end
 end
@@ -320,9 +327,8 @@ function stop()
 end
 
 # No PrecompileTools `@compile_workload` runs here. The previous warmup rendered the Bonito
-# dashboard to exercise cold-start paths, but rendering bundles widget JS through a Deno
-# subprocess that hangs during precompilation on a CI runner, stalling the whole build. The
-# `using PrecompileTools` import above is retained so the dependency stays referenced; a
-# Deno-free, DB-only warmup can be reintroduced later if first-render latency matters.
+# dashboard, but rendering bundles widget JS through a Deno subprocess that hangs during
+# precompilation on CI, stalling the build. The `using PrecompileTools` import is kept so
+# the dependency stays referenced; a Deno-free, DB-only warmup can be reintroduced later.
 
 end

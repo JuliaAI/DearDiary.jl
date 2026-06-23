@@ -65,11 +65,11 @@ DearDiary uses a functional style (immutability and multiple dispatch) and is or
 - **`routes/`** defines the REST API: thin HTTP handlers that parse a request and delegate to a service. `routes/auth.jl` and the `AuthMiddleware` in `src/DearDiary.jl` handle JWT auth.
 - **`services/`** holds the business logic. It validates input, hashes passwords, enforces rules, and orchestrates repositories. Both the routes and the client call into here.
 - **`repositories/`** is backend-agnostic data access. Functions like `fetch`, `insert`, and `update` dispatch on the domain type, e.g. `fetch(::Type{<:User}, id)`.
-- **`repositories/sql/`** is the SQLite implementation behind them: the `SQL_*` query constants and the forward-only migration system (see [Schema migrations](#schema-migrations)).
+- **`repositories/sql/`** is the DuckDB implementation behind them: the `SQL_*` query constants and the forward-only migration system (see [Schema migrations](#schema-migrations)).
 
 A few modules sit alongside those layers:
 
-- **`artifacts/`** is pluggable artifact storage. `store.jl` dispatches to the `sqlite`, `filesystem`, or `s3` backend chosen by `DEARDIARY_ARTIFACT_BACKEND`, and `migrate.jl` moves bytes between backends on a live database.
+- **`artifacts/`** is pluggable artifact storage. `store.jl` dispatches to the `inline`, `filesystem`, or `s3` backend chosen by `DEARDIARY_ARTIFACT_BACKEND`, and `migrate.jl` moves bytes between backends on a live database.
 - **`reproducibility/`** captures and replays environments. `snapshot.jl` records the `Manifest.toml`, Julia version, and git SHA per iteration; `restore.jl` rebuilds that environment.
 - **`client/`** is the native Julia client (`connect`, `with_iteration`, and friends) that talks to the REST API, mirroring the route surface for remote logging.
 - **`ui/`** is the [Bonito](https://github.com/SimonDanisch/Bonito.jl) web frontend: `app.jl` builds it, `server.jl` serves it, and `DEARDIARY_ENABLE_UI` toggles it.
@@ -128,7 +128,7 @@ end
 
 ### Schema migrations
 
-Every change to the SQLite schema goes through the forward-only migration system rooted at `src/repositories/sql/migrations.jl`. There is no rollback path. Once a migration is released, treat it as immutable.
+Every change to the DuckDB schema goes through the forward-only migration system rooted at `src/repositories/sql/migrations.jl`. There is no rollback path. Once a migration is released, treat it as immutable.
 
 To add a new migration:
 

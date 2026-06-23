@@ -4,12 +4,12 @@
             user = DearDiary.get_user("default")
             project_id, _ = DearDiary.create_project(user.id, "Test Project")
             new_user_id, _ = DearDiary.create_user("Choclo", "Dokie", "choclo", "dokie")
-            payload = Dict(
+            payload = JSON.json(Dict(
                 "create_permission" => true,
                 "read_permission" => true,
                 "update_permission" => false,
                 "delete_permission" => false,
-            ) |> JSON.json
+            ))
 
             response = HTTP.post(
                 "http://127.0.0.1:9000/userpermission/user/$(new_user_id)/project/$(project_id)";
@@ -20,7 +20,7 @@
             userpermission = DearDiary.get_userpermission(new_user_id, project_id)
 
             @test response.status == HTTP.StatusCodes.CREATED
-            data = JSON.parse(response.body |> String, Dict{String,Any})
+            data = JSON.parse(String(response.body), Dict{String,Any})
             @test data["userpermission_id"] == userpermission.id
         end
 
@@ -29,12 +29,7 @@
             project_id, _ = DearDiary.create_project(user.id, "Test Project")
             new_user_id, _ = DearDiary.create_user("Dokie", "Choclo", "dokie", "choclo")
             userpermission_id, _ = DearDiary.create_userpermission(
-                new_user_id,
-                project_id,
-                false,
-                true,
-                false,
-                false,
+                new_user_id, project_id, false, true, false, false
             )
 
             response = HTTP.get(
@@ -44,8 +39,8 @@
 
             @test response.status == HTTP.StatusCodes.OK
 
-            data = JSON.parse(response.body |> String, Dict{String,Any})
-            userpermission = data |> DearDiary.UserPermission
+            data = JSON.parse(String(response.body), Dict{String,Any})
+            userpermission = DearDiary.UserPermission(data)
 
             @test userpermission.id == userpermission_id
             @test userpermission.user_id == new_user_id
@@ -61,20 +56,15 @@
             project_id, _ = DearDiary.create_project(user.id, "Test Project")
             new_user_id, _ = DearDiary.create_user("Ana", "Missy", "ana", "missy")
             userpermission_id, _ = DearDiary.create_userpermission(
-                new_user_id,
-                project_id,
-                false,
-                true,
-                false,
-                false,
+                new_user_id, project_id, false, true, false, false
             )
 
-            payload = Dict(
+            payload = JSON.json(Dict(
                 "create_permission" => true,
                 "read_permission" => true,
                 "update_permission" => true,
                 "delete_permission" => false,
-            ) |> JSON.json
+            ))
 
             response = HTTP.patch(
                 "http://127.0.1:9000/userpermission/$(userpermission_id)";
@@ -83,7 +73,7 @@
             )
 
             @test response.status == HTTP.StatusCodes.OK
-            data = JSON.parse(response.body |> String, Dict{String,Any})
+            data = JSON.parse(String(response.body), Dict{String,Any})
             @test data["message"] == "UPDATED"
 
             userpermission = DearDiary.get_userpermission(new_user_id, project_id)
@@ -99,12 +89,7 @@
             project_id, _ = DearDiary.create_project(user.id, "Test Project")
             new_user_id, _ = DearDiary.create_user("Galinha", "Ana", "galinha", "ana")
             userpermission_id, _ = DearDiary.create_userpermission(
-                new_user_id,
-                project_id,
-                false,
-                true,
-                false,
-                false,
+                new_user_id, project_id, false, true, false, false
             )
 
             response = HTTP.delete(
@@ -113,12 +98,12 @@
             )
 
             @test response.status == HTTP.StatusCodes.OK
-            data = JSON.parse(response.body |> String, Dict{String,Any})
+            data = JSON.parse(String(response.body), Dict{String,Any})
             @test data["message"] == "OK"
 
             userpermission = DearDiary.get_userpermission(new_user_id, project_id)
 
-            @test userpermission |> isnothing
+            @test isnothing(userpermission)
         end
     end
 end

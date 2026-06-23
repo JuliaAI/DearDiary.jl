@@ -9,7 +9,7 @@ parent-scoped [`get_tags`](@ref) listings to discover a tag by its value.
 """
 function get_tag(client::Client, id::Integer)::Optional{Tag}
     try
-        return _json(_request(client, "GET", "/tag/$id")) |> Tag
+        return Tag(_json(_request(client, "GET", "/tag/$id")))
     catch err
         err isa ClientError && err.status == 404 && return nothing
         rethrow(err)
@@ -28,11 +28,11 @@ List every [`Tag`](@ref) attached to `parent_id` of kind `T`, via
 `GET /tag/{kind}/{parent_id}`. Requires [`ReadPermission`](@ref) on the owning project.
 """
 function get_tags(
-    client::Client, ::Type{T}, parent_id::Integer,
+    client::Client, ::Type{T}, parent_id::Integer
 )::Array{Tag,1} where {T<:Union{Project,Experiment,Iteration}}
     response = _request(client, "GET", "/tag/$(_tag_segment(T))/$parent_id")
-    decoded = response.body |> String |> JSON.parse
-    return [item |> Tag for item in decoded]
+    decoded = JSON.parse(String(response.body))
+    return [Tag(item) for item in decoded]
 end
 
 """
@@ -43,15 +43,14 @@ server upserts the underlying [`Tag`](@ref) row if it does not exist already. Re
 association id. Requires [`CreatePermission`](@ref) on the owning project; for iterations
 the parent must not be terminated.
 
-The local standalone `create_tag(value)` has no REST counterpart — tags only exist
+The local standalone `create_tag(value)` has no REST counterpart; tags only exist
 attached to a parent.
 """
 function add_tag(
-    client::Client, ::Type{T}, parent_id::Integer, value::AbstractString,
+    client::Client, ::Type{T}, parent_id::Integer, value::AbstractString
 )::Int64 where {T<:Union{Project,Experiment,Iteration}}
     response = _request(
-        client, "POST", "/tag/$(_tag_segment(T))/$parent_id";
-        body=Dict("value" => value),
+        client, "POST", "/tag/$(_tag_segment(T))/$parent_id"; body=Dict("value" => value)
     )
     return _json(response)["association_id"]
 end

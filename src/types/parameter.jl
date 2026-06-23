@@ -18,7 +18,7 @@ end
 function Parameter(
     id::Integer, iteration_id::Integer, key::AbstractString, value::Real
 )::Parameter
-    return Parameter(id, iteration_id, key, value |> string)
+    return Parameter(id, iteration_id, key, string(value))
 end
 
 struct ParameterCreatePayload <: UpsertType
@@ -26,7 +26,7 @@ struct ParameterCreatePayload <: UpsertType
     value::String
 end
 function ParameterCreatePayload(key::AbstractString, value::Real)::ParameterCreatePayload
-    return ParameterCreatePayload(key, value |> string)
+    return ParameterCreatePayload(key, string(value))
 end
 
 struct ParameterUpdatePayload <: UpsertType
@@ -36,5 +36,5 @@ end
 function ParameterUpdatePayload(
     key::Optional{AbstractString}, value::Real
 )::ParameterUpdatePayload
-    return ParameterUpdatePayload(key, (value |> string))
+    return ParameterUpdatePayload(key, (string(value)))
 end

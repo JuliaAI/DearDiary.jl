@@ -4,12 +4,12 @@
 
         @testset "connect against auth-disabled server" begin
             @test client isa DearDiary.Client
-            @test client.token |> isnothing
+            @test isnothing(client.token)
             @test client.base_url == "http://127.0.0.1:9000"
         end
 
         @testset "whoami returns default user when auth is disabled" begin
-            me = client |> DearDiary.whoami
+            me = DearDiary.whoami(client)
             @test me isa DearDiary.UserResponse
             @test me.username == "default"
             @test me.is_admin == true
@@ -27,22 +27,22 @@
             refreshed = get_project(client, project_id)
             @test refreshed.description == "from the client"
 
-            projects = client |> get_projects
+            projects = get_projects(client)
             @test any(p -> p.id == project_id, projects)
 
-            @test get_project(client, 99_999) |> isnothing
+            @test isnothing(get_project(client, 99_999))
         end
 
         @testset "experiment + iteration lifecycle" begin
             project_id = create_project(client, "Lifecycle Project")
             experiment_id = create_experiment(
-                client, project_id, DearDiary.IN_PROGRESS, "Lifecycle Exp",
+                client, project_id, DearDiary.IN_PROGRESS, "Lifecycle Exp"
             )
             @test experiment_id isa Integer
 
             experiment = get_experiment(client, experiment_id)
             @test experiment.name == "Lifecycle Exp"
-            @test experiment.status_id == (DearDiary.IN_PROGRESS |> Integer)
+            @test experiment.status_id == (Integer(DearDiary.IN_PROGRESS))
 
             page = get_experiments(client, project_id, DearDiary.Pagination(10, 0))
             @test page.total >= 1
@@ -53,17 +53,17 @@
             iteration = create_iteration(client, experiment_id)
             @test iteration isa DearDiary.Iteration
             @test iteration.experiment_id == experiment_id
-            @test iteration.end_date |> isnothing
+            @test isnothing(iteration.end_date)
 
             create_parameter(client, iteration.id, "lr", 1e-3)
             params = get_parameters(client, iteration.id)
-            @test (params |> length) == 1
+            @test (length(params)) == 1
             @test params[1].key == "lr"
 
             metric_id = create_metric(client, iteration.id, "loss", 0.42)
             @test metric_id isa Integer
             metrics = get_metrics(client, iteration.id)
-            @test (metrics |> length) == 1
+            @test (length(metrics)) == 1
             @test metrics[1].value ≈ 0.42
 
             update_metric(client, metric_id; value=0.21)
@@ -76,7 +76,7 @@
         @testset "with_iteration closes on success" begin
             project_id = create_project(client, "Withiter Project")
             experiment_id = create_experiment(
-                client, project_id, DearDiary.IN_PROGRESS, "Withiter Exp",
+                client, project_id, DearDiary.IN_PROGRESS, "Withiter Exp"
             )
 
             captured_id = with_iteration(client, experiment_id) do iter
@@ -85,13 +85,13 @@
             end
 
             iteration = get_iteration(client, captured_id)
-            @test !(iteration.end_date |> isnothing)
+            @test !(isnothing(iteration.end_date))
         end
 
         @testset "with_iteration closes on failure and rethrows" begin
             project_id = create_project(client, "Withiter Crash Project")
             experiment_id = create_experiment(
-                client, project_id, DearDiary.IN_PROGRESS, "Crash Exp",
+                client, project_id, DearDiary.IN_PROGRESS, "Crash Exp"
             )
 
             captured_id = Ref{Int64}(0)
@@ -101,13 +101,13 @@
             end
 
             iteration = get_iteration(client, captured_id[])
-            @test !(iteration.end_date |> isnothing)
+            @test !(isnothing(iteration.end_date))
         end
 
         @testset "tags across hierarchies" begin
             project_id = create_project(client, "Tagged Project")
             experiment_id = create_experiment(
-                client, project_id, DearDiary.IN_PROGRESS, "Tagged Exp",
+                client, project_id, DearDiary.IN_PROGRESS, "Tagged Exp"
             )
             iteration = create_iteration(client, experiment_id)
 
@@ -128,7 +128,7 @@
         @testset "resource upload and download" begin
             project_id = create_project(client, "Resource Project")
             experiment_id = create_experiment(
-                client, project_id, DearDiary.IN_PROGRESS, "Resource Exp",
+                client, project_id, DearDiary.IN_PROGRESS, "Resource Exp"
             )
 
             payload = UInt8[0x01, 0x02, 0x03, 0x04, 0x05]
@@ -137,9 +137,9 @@
 
             stored = get_resource(client, resource_id)
             @test stored.name == "weights.bin"
-            # As of v0.7.0 metadata responses no longer carry bytes — fetch them separately.
-            @test stored.data |> isnothing
-            @test stored.size_bytes == (payload |> length)
+            # As of v0.7.0 metadata responses no longer carry bytes; fetch them separately.
+            @test isnothing(stored.data)
+            @test stored.size_bytes == (length(payload))
             @test read_resource_data(client, resource_id) == payload
 
             update_resource(client, resource_id; description="checkpoint #1")
@@ -149,7 +149,7 @@
             @test page.total == 1
 
             delete_resource(client, resource_id)
-            @test get_resource(client, resource_id) |> isnothing
+            @test isnothing(get_resource(client, resource_id))
         end
 
         @testset "ClientError surfaces server code" begin
@@ -185,7 +185,7 @@
             @test all(u -> !hasfield(typeof(u), :password), users)
 
             delete_user(client, user_id)
-            @test get_user(client, user_id) |> isnothing
+            @test isnothing(get_user(client, user_id))
         end
 
         @testset "userpermission CRUD" begin
@@ -198,7 +198,7 @@
             @test any(p -> p.read_permission, initial)
 
             permission_id = create_userpermission(
-                client, user_id, project_id, true, true, false, false,
+                client, user_id, project_id, true, true, false, false
             )
             @test permission_id isa Integer
 
@@ -210,8 +210,7 @@
             @test fetched.delete_permission == false
 
             update_userpermission(
-                client, permission_id;
-                update_permission=true, delete_permission=true,
+                client, permission_id; update_permission=true, delete_permission=true
             )
             after = get_userpermission(client, user_id, project_id)
             @test after.update_permission == true
@@ -224,7 +223,7 @@
             @test any(p -> p.user_id == user_id, by_project)
 
             delete_userpermission(client, permission_id)
-            @test get_userpermission(client, user_id, project_id) |> isnothing
+            @test isnothing(get_userpermission(client, user_id, project_id))
 
             delete_user(client, user_id)
             delete_project(client, project_id)
@@ -233,36 +232,35 @@
         @testset "experiment update + delete" begin
             project_id = create_project(client, "ExpMutation Project")
             experiment_id = create_experiment(
-                client, project_id, (DearDiary.IN_PROGRESS |> Integer), "Mutating Exp",
+                client, project_id, (Integer(DearDiary.IN_PROGRESS)), "Mutating Exp"
             )
 
-            # The server requires `status_id` on every update_experiment call, so the
-            # ExperimentStatus-typed positional overload is the cleanest way to keep it
-            # unchanged.
+            # `update_experiment` requires `status_id` on every call. The
+            # ExperimentStatus-typed positional overload passes it without changing it.
             update_experiment(
-                client, experiment_id, DearDiary.IN_PROGRESS;
-                name="Renamed", description="updated description",
+                client,
+                experiment_id,
+                DearDiary.IN_PROGRESS;
+                name="Renamed",
+                description="updated description",
             )
             renamed = get_experiment(client, experiment_id)
             @test renamed.name == "Renamed"
             @test renamed.description == "updated description"
 
             # Terminate the experiment.
-            update_experiment(
-                client, experiment_id, DearDiary.STOPPED; end_date=now(),
-            )
+            update_experiment(client, experiment_id, DearDiary.STOPPED; end_date=now())
             stopped = get_experiment(client, experiment_id)
-            @test stopped.status_id == (DearDiary.STOPPED |> Integer)
-            @test !(stopped.end_date |> isnothing)
+            @test stopped.status_id == (Integer(DearDiary.STOPPED))
+            @test !(isnothing(stopped.end_date))
 
             # Reopen via the keyword form: status_id back to IN_PROGRESS clears end_date.
             update_experiment(
-                client, experiment_id;
-                status_id=(DearDiary.IN_PROGRESS |> Integer),
+                client, experiment_id; status_id=(Integer(DearDiary.IN_PROGRESS))
             )
             reopened = get_experiment(client, experiment_id)
-            @test reopened.status_id == (DearDiary.IN_PROGRESS |> Integer)
-            @test reopened.end_date |> isnothing
+            @test reopened.status_id == (Integer(DearDiary.IN_PROGRESS))
+            @test isnothing(reopened.end_date)
 
             # Unpaged convenience listing.
             listing = get_experiments(client, project_id)
@@ -270,13 +268,13 @@
             @test any(e -> e.id == experiment_id, listing)
 
             delete_experiment(client, experiment_id)
-            @test get_experiment(client, experiment_id) |> isnothing
+            @test isnothing(get_experiment(client, experiment_id))
         end
 
         @testset "iteration listing and delete" begin
             project_id = create_project(client, "IterListing Project")
             experiment_id = create_experiment(
-                client, project_id, DearDiary.IN_PROGRESS, "Listing Exp",
+                client, project_id, DearDiary.IN_PROGRESS, "Listing Exp"
             )
 
             iter1 = create_iteration(client, experiment_id)
@@ -284,22 +282,22 @@
 
             unpaged = get_iterations(client, experiment_id)
             @test unpaged isa Array{DearDiary.Iteration,1}
-            @test (unpaged |> length) == 2
+            @test (length(unpaged)) == 2
 
             paged = get_iterations(client, experiment_id, DearDiary.Pagination(1, 0))
             @test paged.total == 2
             @test paged.limit == 1
-            @test (paged.data |> length) == 1
+            @test (length(paged.data)) == 1
 
             delete_iteration(client, iter1.id)
-            @test get_iteration(client, iter1.id) |> isnothing
+            @test isnothing(get_iteration(client, iter1.id))
             @test get_iteration(client, iter2.id) isa DearDiary.Iteration
         end
 
         @testset "parameter overloads + CRUD" begin
             project_id = create_project(client, "ParamCRUD Project")
             experiment_id = create_experiment(
-                client, project_id, DearDiary.IN_PROGRESS, "ParamCRUD Exp",
+                client, project_id, DearDiary.IN_PROGRESS, "ParamCRUD Exp"
             )
             iteration = create_iteration(client, experiment_id)
 
@@ -311,28 +309,28 @@
             single = get_parameter(client, real_id)
             @test single isa DearDiary.Parameter
             @test single.key == "lr"
-            @test single.value == (1e-3 |> string)
+            @test single.value == (string(1e-3))
 
             paged = get_parameters(client, iteration.id, DearDiary.Pagination(1, 1))
             @test paged.total == 2
             @test paged.limit == 1
             @test paged.offset == 1
-            @test (paged.data |> length) == 1
+            @test (length(paged.data)) == 1
 
             update_parameter(client, string_id; value="sgd")
             @test get_parameter(client, string_id).value == "sgd"
 
             update_parameter(client, real_id, 5e-4)
-            @test get_parameter(client, real_id).value == (5e-4 |> string)
+            @test get_parameter(client, real_id).value == (string(5e-4))
 
             delete_parameter(client, string_id)
-            @test get_parameter(client, string_id) |> isnothing
+            @test isnothing(get_parameter(client, string_id))
         end
 
         @testset "metric paged + delete" begin
             project_id = create_project(client, "MetricCRUD Project")
             experiment_id = create_experiment(
-                client, project_id, DearDiary.IN_PROGRESS, "MetricCRUD Exp",
+                client, project_id, DearDiary.IN_PROGRESS, "MetricCRUD Exp"
             )
             iteration = create_iteration(client, experiment_id)
 
@@ -344,7 +342,7 @@
             @test paged.limit == 1
 
             delete_metric(client, id_a)
-            @test get_metric(client, id_a) |> isnothing
+            @test isnothing(get_metric(client, id_a))
             @test get_metric(client, id_b) isa DearDiary.Metric
         end
 
@@ -360,10 +358,9 @@
             @test fetched isa DearDiary.Tag
             @test fetched.value == "client-tag"
 
-            # Deleting a tag with live parent associations fails on the FK constraint —
-            # the REST API does not expose a detach-tag-from-parent endpoint, so a tag
-            # created via `add_tag` is effectively undeletable from the client. Verify
-            # the failure mode is reported correctly.
+            # Deleting a tag with live parent associations fails on the FK constraint.
+            # The REST API has no detach-tag-from-parent endpoint, so a tag created via
+            # `add_tag` is undeletable from the client. Verify the failure is reported.
             err = try
                 delete_tag(client, tag.id)
                 nothing
@@ -378,7 +375,7 @@
         @testset "resource file overload + name+data update + unpaged listing" begin
             project_id = create_project(client, "FileResource Project")
             experiment_id = create_experiment(
-                client, project_id, DearDiary.IN_PROGRESS, "FileResource Exp",
+                client, project_id, DearDiary.IN_PROGRESS, "FileResource Exp"
             )
 
             file_path = tempname() * ".bin"
@@ -397,14 +394,11 @@
 
             unpaged = get_resources(client, experiment_id)
             @test unpaged isa Array{DearDiary.Resource,1}
-            @test (unpaged |> length) == 1
+            @test (length(unpaged)) == 1
 
             # Update both metadata and bytes in one call.
             new_payload = UInt8[0xAA, 0xBB, 0xCC, 0xDD]
-            update_resource(
-                client, unpaged[1].id;
-                name="renamed.bin", data=new_payload,
-            )
+            update_resource(client, unpaged[1].id; name="renamed.bin", data=new_payload)
             after = get_resource(client, unpaged[1].id)
             @test after.name == "renamed.bin"
             @test read_resource_data(client, unpaged[1].id) == new_payload
@@ -413,22 +407,22 @@
         @testset "delete_project cascades" begin
             project_id = create_project(client, "Cascade Project")
             experiment_id = create_experiment(
-                client, project_id, DearDiary.IN_PROGRESS, "Cascade Exp",
+                client, project_id, DearDiary.IN_PROGRESS, "Cascade Exp"
             )
             iteration = create_iteration(client, experiment_id)
             create_parameter(client, iteration.id, "lr", 1e-3)
             create_metric(client, iteration.id, "loss", 0.1)
 
             delete_project(client, project_id)
-            @test get_project(client, project_id) |> isnothing
-            @test get_experiment(client, experiment_id) |> isnothing
-            @test get_iteration(client, iteration.id) |> isnothing
+            @test isnothing(get_project(client, project_id))
+            @test isnothing(get_experiment(client, experiment_id))
+            @test isnothing(get_iteration(client, iteration.id))
         end
 
         @testset "metric step + recorded_at + log_metrics" begin
             project_id = create_project(client, "Step Project")
             experiment_id = create_experiment(
-                client, project_id, DearDiary.IN_PROGRESS, "Step Experiment",
+                client, project_id, DearDiary.IN_PROGRESS, "Step Experiment"
             )
             iteration = create_iteration(client, experiment_id)
 
@@ -437,9 +431,7 @@
             create_metric(client, iteration.id, "loss", 0.4)
             create_metric(client, iteration.id, "loss", 0.3)
 
-            losses = [
-                m for m in get_metrics(client, iteration.id) if m.key == "loss"
-            ]
+            losses = [m for m in get_metrics(client, iteration.id) if m.key == "loss"]
             @test [m.step for m in losses] == [0, 1, 2]
             @test [m.value for m in losses] == [0.5, 0.4, 0.3]
             @test all(m -> m.recorded_at isa DateTime, losses)
@@ -447,40 +439,33 @@
             # Explicit step + recorded_at round-trip.
             explicit_ts = DateTime(2025, 9, 1, 7, 30, 0)
             create_metric(
-                client, iteration.id, "explicit", 1.5;
-                step=100, recorded_at=explicit_ts,
+                client, iteration.id, "explicit", 1.5; step=100, recorded_at=explicit_ts
             )
-            explicit = [
-                m for m in get_metrics(client, iteration.id) if m.key == "explicit"
-            ]
-            @test (explicit |> length) == 1
+            explicit = [m for m in get_metrics(client, iteration.id) if m.key == "explicit"]
+            @test (length(explicit)) == 1
             @test explicit[1].step == 100
             @test explicit[1].recorded_at == explicit_ts
 
             # Batch endpoint.
             ids = log_metrics(
-                client, iteration.id,
-                Dict("acc" => 0.94, "val_acc" => 0.89);
-                step=7,
+                client, iteration.id, Dict("acc" => 0.94, "val_acc" => 0.89); step=7
             )
             @test ids isa Array{Int64,1}
-            @test (ids |> length) == 2
+            @test (length(ids)) == 2
             batched = [get_metric(client, id) for id in ids]
             @test all(m -> m.step == 7, batched)
 
             # Batch without step auto-assigns per key.
             log_metrics(client, iteration.id, Dict("rolling" => 0.1))
             log_metrics(client, iteration.id, Dict("rolling" => 0.2))
-            rolling = [
-                m for m in get_metrics(client, iteration.id) if m.key == "rolling"
-            ]
+            rolling = [m for m in get_metrics(client, iteration.id) if m.key == "rolling"]
             @test [m.step for m in rolling] == [0, 1]
         end
 
         @testset "ClientError on locked iteration" begin
             project_id = create_project(client, "Locked Project")
             experiment_id = create_experiment(
-                client, project_id, DearDiary.IN_PROGRESS, "Locked Exp",
+                client, project_id, DearDiary.IN_PROGRESS, "Locked Exp"
             )
             iteration = create_iteration(client, experiment_id)
             update_iteration(client, iteration.id; end_date=now())
@@ -497,10 +482,10 @@
     end
 
     @testset verbose = true "client with auth enabled" begin
-        # The first @with_deardiary_test_db block runs against the no-auth server. We piggyback on
-        # the same fixture for an auth-enabled smoke test by signing in via /auth.
+        # The first @with_deardiary_test_db block runs against the no-auth server.
+        # Reuse the same fixture for an auth-enabled smoke test by signing in via /auth.
         authed = DearDiary.connect(
-            "http://127.0.0.1:9000"; username="default", password="default",
+            "http://127.0.0.1:9000"; username="default", password="default"
         )
 
         @testset "sign-in populates token and user" begin
@@ -522,19 +507,19 @@
 
         @testset "disconnect clears state" begin
             DearDiary.disconnect(authed)
-            @test authed.token |> isnothing
-            @test authed.user |> isnothing
+            @test isnothing(authed.token)
+            @test isnothing(authed.user)
         end
 
         @testset "connect with preset token reuses existing session" begin
             envelope = DearDiary.connect(
-                "http://127.0.0.1:9000"; username="default", password="default",
+                "http://127.0.0.1:9000"; username="default", password="default"
             )
             token = envelope.token
 
             attached = DearDiary.connect("http://127.0.0.1:9000"; token=token)
             @test attached.token == token
-            @test attached.user |> isnothing  # populated lazily via whoami
+            @test isnothing(attached.user)  # populated lazily via whoami
 
             me = DearDiary.whoami(attached)
             @test me isa DearDiary.UserResponse

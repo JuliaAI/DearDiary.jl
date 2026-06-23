@@ -1,14 +1,11 @@
 _DEARDIARY_DATABASE = nothing
 
 """
-    get_database()::Union{SQLite.DB,Nothing}
+    get_database()::Union{DuckDB.DB,Nothing}
 
-Returns a SQLite database connection. If the database has not been initialized, it returns `nothing`.
-
-# Returns
-A [SQLite.DB](https://juliadatabases.org/SQLite.jl/stable/#SQLite.DB) object, or `nothing` if the database is not initialized.
+Return the active DuckDB connection, or `nothing` if the database has not been initialized.
 """
-function get_database()::Union{SQLite.DB,Nothing}
+function get_database()::Union{DuckDB.DB,Nothing}
     global _DEARDIARY_DATABASE
     return _DEARDIARY_DATABASE
 end
@@ -17,34 +14,35 @@ end
     initialize_database(; file_name::String="deardiary.db")
 
 Open `file_name` (creating it if needed), run every pending [`Migration`](@ref) via
-[`apply_migrations`](@ref), and re-seed the default user. Safe to call repeatedly: each
-migration runs at most once per database, and the default-user `INSERT OR IGNORE` is a
-no-op when the row already exists.
+[`apply_migrations`](@ref), and re-seed the default user. Calling this repeatedly is safe:
+each migration runs at most once per database, and the default-user insert uses
+`ON CONFLICT DO NOTHING`.
 """
 function initialize_database(; file_name::String="deardiary.db")
-    global _DEARDIARY_DATABASE = SQLite.DB(file_name)
-
-    # Enable foreign key constraints
-    DBInterface.execute(_DEARDIARY_DATABASE, "PRAGMA foreign_keys = ON")
+    global _DEARDIARY_DATABASE = DuckDB.DB(file_name)
 
     apply_migrations(_DEARDIARY_DATABASE)
     seed_default_user(_DEARDIARY_DATABASE)
 
-    @info "Database initialized successfully."
+    @info "Database initialized."
 end
 
 """
-    seed_default_user(db::SQLite.DB)::Nothing
+    seed_default_user(db::DuckDB.DB)::Nothing
 
-Insert the seeded `default` admin user when it is not already present. The bcrypt hash is
-derived at call time, so this lives outside the SQL migration system (which is restricted to
-static SQL strings). The underlying `INSERT OR IGNORE` makes the call idempotent.
+Insert the `default` admin user if it is not already present. The bcrypt hash and creation
+timestamp are computed at call time, so this lives outside the SQL migration system (which
+accepts only static SQL strings). The underlying `ON CONFLICT DO NOTHING` makes the call
+idempotent.
 """
-function seed_default_user(db::SQLite.DB)::Nothing
+function seed_default_user(db::DuckDB.DB)::Nothing
     DBInterface.execute(
         db,
-        SQL_INSERT_DEFAULT_ADMIN_USER,
-        (password="default" |> GenerateFromPassword |> String,),
+        duckdbify(SQL_INSERT_DEFAULT_ADMIN_USER),
+        (
+            password=String(GenerateFromPassword("default")),
+            created_date=(string(now())),
+        ),
     )
     return nothing
 end
@@ -52,13 +50,13 @@ end
 """
     close_database()
 
-Closes the database connection if it is open.
+Close the database connection if one is open.
 """
 function close_database()
     global _DEARDIARY_DATABASE
 
-    if !(_DEARDIARY_DATABASE |> isnothing)
-        _DEARDIARY_DATABASE |> SQLite.close
+    if !(isnothing(_DEARDIARY_DATABASE))
+        DBInterface.close!(_DEARDIARY_DATABASE)
         _DEARDIARY_DATABASE = nothing
         @info "Database connection closed."
     end

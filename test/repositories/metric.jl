@@ -5,19 +5,12 @@
                 user = DearDiary.get_user("default")
                 project_id, _ = DearDiary.create_project(user.id, "Test Project")
                 experiment_id, _ = DearDiary.create_experiment(
-                    project_id,
-                    DearDiary.IN_PROGRESS,
-                    "Metric Test Experiment",
+                    project_id, DearDiary.IN_PROGRESS, "Metric Test Experiment"
                 )
                 iteration_id, _ = DearDiary.create_iteration(experiment_id)
 
                 id, status = DearDiary.insert(
-                    DearDiary.Metric,
-                    iteration_id,
-                    "accuracy",
-                    0.95,
-                    0,
-                    now(),
+                    DearDiary.Metric, iteration_id, "accuracy", 0.95, 0, now()
                 )
                 @test id isa Integer
                 @test status === DearDiary.Created
@@ -25,14 +18,9 @@
 
             @testset "with non-existing iteration" begin
                 id, status = DearDiary.insert(
-                    DearDiary.Metric,
-                    9999,
-                    "accuracy",
-                    0.95,
-                    0,
-                    now(),
+                    DearDiary.Metric, 9999, "accuracy", 0.95, 0, now()
                 )
-                @test id |> isnothing
+                @test isnothing(id)
                 @test status === DearDiary.Unprocessable
             end
         end
@@ -42,18 +30,11 @@
                 user = DearDiary.get_user("default")
                 project_id, _ = DearDiary.create_project(user.id, "Test Project")
                 experiment_id, _ = DearDiary.create_experiment(
-                    project_id,
-                    DearDiary.IN_PROGRESS,
-                    "Metric Test Experiment",
+                    project_id, DearDiary.IN_PROGRESS, "Metric Test Experiment"
                 )
                 iteration_id, _ = DearDiary.create_iteration(experiment_id)
                 metric_id, _ = DearDiary.insert(
-                    DearDiary.Metric,
-                    iteration_id,
-                    "precision",
-                    0.92,
-                    0,
-                    now(),
+                    DearDiary.Metric, iteration_id, "precision", 0.92, 0, now()
                 )
 
                 metric = DearDiary.fetch(DearDiary.Metric, metric_id)
@@ -70,7 +51,7 @@
             @testset "non-existing metric" begin
                 metric = DearDiary.fetch(DearDiary.Metric, 9999)
 
-                @test metric |> isnothing
+                @test isnothing(metric)
             end
         end
 
@@ -78,9 +59,7 @@
             user = DearDiary.get_user("default")
             project_id, _ = DearDiary.create_project(user.id, "Test Project")
             experiment_id, _ = DearDiary.create_experiment(
-                project_id,
-                DearDiary.IN_PROGRESS,
-                "Metric Test Experiment",
+                project_id, DearDiary.IN_PROGRESS, "Metric Test Experiment"
             )
             iteration_id, _ = DearDiary.create_iteration(experiment_id)
             # Insert out-of-order to make sure the repository, not the caller, sorts.
@@ -90,7 +69,7 @@
 
             metrics = DearDiary.fetch_all(DearDiary.Metric, iteration_id)
             @test metrics isa Array{DearDiary.Metric,1}
-            @test (metrics |> length) == 3
+            @test (length(metrics)) == 3
             @test [m.step for m in metrics] == [0, 1, 2]
         end
 
@@ -98,9 +77,7 @@
             user = DearDiary.get_user("default")
             project_id, _ = DearDiary.create_project(user.id, "Test Project")
             experiment_id, _ = DearDiary.create_experiment(
-                project_id,
-                DearDiary.IN_PROGRESS,
-                "NextStep Experiment",
+                project_id, DearDiary.IN_PROGRESS, "NextStep Experiment"
             )
             iteration_id, _ = DearDiary.create_iteration(experiment_id)
 
@@ -118,25 +95,15 @@
             user = DearDiary.get_user("default")
             project_id, _ = DearDiary.create_project(user.id, "Test Project")
             experiment_id, _ = DearDiary.create_experiment(
-                project_id,
-                DearDiary.IN_PROGRESS,
-                "Metric Test Experiment",
+                project_id, DearDiary.IN_PROGRESS, "Metric Test Experiment"
             )
             iteration_id, _ = DearDiary.create_iteration(experiment_id)
             metric_id, _ = DearDiary.insert(
-                DearDiary.Metric,
-                iteration_id,
-                "log_loss",
-                0.001,
-                0,
-                now(),
+                DearDiary.Metric, iteration_id, "log_loss", 0.001, 0, now()
             )
 
             update_result = DearDiary.update(
-                DearDiary.Metric,
-                metric_id;
-                value=0.0005,
-                step=42,
+                DearDiary.Metric, metric_id; value=0.0005, step=42
             )
 
             @test update_result === DearDiary.Updated
@@ -151,55 +118,34 @@
                 user = DearDiary.get_user("default")
                 project_id, _ = DearDiary.create_project(user.id, "Test Project")
                 experiment_id, _ = DearDiary.create_experiment(
-                    project_id,
-                    DearDiary.IN_PROGRESS,
-                    "Metric Test Experiment",
+                    project_id, DearDiary.IN_PROGRESS, "Metric Test Experiment"
                 )
                 iteration_id, _ = DearDiary.create_iteration(experiment_id)
                 metric_id, _ = DearDiary.insert(
-                    DearDiary.Metric,
-                    iteration_id,
-                    "auc",
-                    0.97,
-                    0,
-                    now(),
+                    DearDiary.Metric, iteration_id, "auc", 0.97, 0, now()
                 )
 
                 @test DearDiary.delete(DearDiary.Metric, metric_id)
-                @test DearDiary.fetch(DearDiary.Metric, metric_id) |> isnothing
+                @test isnothing(DearDiary.fetch(DearDiary.Metric, metric_id))
             end
 
             @testset "all metrics by iteration" begin
                 user = DearDiary.get_user("default")
                 project_id, _ = DearDiary.create_project(user.id, "Test Project")
                 experiment_id, _ = DearDiary.create_experiment(
-                    project_id,
-                    DearDiary.IN_PROGRESS,
-                    "Metric Test Experiment",
+                    project_id, DearDiary.IN_PROGRESS, "Metric Test Experiment"
                 )
                 iteration_id, _ = DearDiary.create_iteration(experiment_id)
-                iteration = iteration_id |> DearDiary.get_iteration
+                iteration = DearDiary.get_iteration(iteration_id)
+                DearDiary.insert(DearDiary.Metric, iteration_id, "accuracy", 0.93, 0, now())
                 DearDiary.insert(
-                    DearDiary.Metric,
-                    iteration_id,
-                    "accuracy",
-                    0.93,
-                    0,
-                    now(),
-                )
-                DearDiary.insert(
-                    DearDiary.Metric,
-                    iteration_id,
-                    "precision",
-                    0.91,
-                    0,
-                    now(),
+                    DearDiary.Metric, iteration_id, "precision", 0.91, 0, now()
                 )
 
                 @test DearDiary.delete(DearDiary.Metric, iteration)
 
                 metrics = DearDiary.fetch_all(DearDiary.Metric, iteration_id)
-                @test metrics |> isempty
+                @test isempty(metrics)
             end
         end
     end

@@ -5,31 +5,35 @@
             write(dummy_file, rand(UInt8, 1024))
 
             @testset verbose = true "create resource" begin
-                project_payload = Dict("name" => "Resource Project") |> JSON.json
+                project_payload = JSON.json(Dict("name" => "Resource Project"))
                 project_response = HTTP.post(
                     "http://127.0.0.1:9000/project";
                     body=project_payload,
                     status_exception=false,
                 )
-                project_data = JSON.parse(project_response.body |> String, Dict{String,Any})
+                project_data = JSON.parse(String(project_response.body), Dict{String,Any})
                 project_id = project_data["project_id"]
 
-                experiment_payload = Dict(
-                    "status_id" => (DearDiary.IN_PROGRESS |> Integer),
+                experiment_payload = JSON.json(Dict(
+                    "status_id" => (Integer(DearDiary.IN_PROGRESS)),
                     "name" => "Experiment for Resources",
-                ) |> JSON.json
+                ))
                 experiment_response = HTTP.post(
                     "http://127.0.0.1:9000/experiment/project/$(project_id)";
                     body=experiment_payload,
                     status_exception=false,
                 )
-                experiment_data = JSON.parse(experiment_response.body |> String, Dict{String,Any})
+                experiment_data = JSON.parse(
+                    String(experiment_response.body), Dict{String,Any}
+                )
                 experiment_id = experiment_data["experiment_id"]
 
-                form = HTTP.Form(Dict(
-                    "name" => "model_weights",
-                    "data" => HTTP.Multipart("dummy.bin", open(dummy_file))
-                ))
+                form = HTTP.Form(
+                    Dict(
+                        "name" => "model_weights",
+                        "data" => HTTP.Multipart("dummy.bin", open(dummy_file)),
+                    ),
+                )
 
                 response = HTTP.post(
                     "http://127.0.0.1:9000/resource/experiment/$(experiment_id)";
@@ -38,44 +42,44 @@
                 )
 
                 @test response.status == HTTP.StatusCodes.CREATED
-                data = JSON.parse(response.body |> String, Dict{String,Any})
+                data = JSON.parse(String(response.body), Dict{String,Any})
                 @test data["resource_id"] == 1
             end
 
             @testset verbose = true "get resource by id" begin
                 response = HTTP.get(
-                    "http://127.0.0.1:9000/resource/1";
-                    status_exception=false,
+                    "http://127.0.0.1:9000/resource/1"; status_exception=false
                 )
                 @test response.status == HTTP.StatusCodes.OK
-                data = JSON.parse(response.body |> String, Dict{String,Any})
-                resource = data |> DearDiary.Resource
+                data = JSON.parse(String(response.body), Dict{String,Any})
+                resource = DearDiary.Resource(data)
                 @test resource.id isa Int
                 @test resource.experiment_id == 1
                 @test resource.name == "model_weights"
                 # `data` is omitted from the metadata response as of v0.7.0; the bytes are
                 # only reachable via /resource/{id}/data.
-                @test resource.data |> isnothing
+                @test isnothing(resource.data)
                 @test resource.size_bytes == 1024
-                @test resource.content_hash |> !isempty
+                @test !isempty(resource.content_hash)
             end
 
             @testset verbose = true "get resource data streams bytes" begin
                 response = HTTP.get(
-                    "http://127.0.0.1:9000/resource/1/data";
-                    status_exception=false,
+                    "http://127.0.0.1:9000/resource/1/data"; status_exception=false
                 )
                 @test response.status == HTTP.StatusCodes.OK
-                @test (response.body |> length) == 1024
+                @test (length(response.body)) == 1024
                 content_type = Dict(response.headers)["Content-Type"]
                 @test content_type == "application/octet-stream"
             end
 
             @testset verbose = true "get resources" begin
-                form = HTTP.Form(Dict(
-                    "name" => "config_file",
-                    "data" => HTTP.Multipart("dummy.bin", open(dummy_file))
-                ))
+                form = HTTP.Form(
+                    Dict(
+                        "name" => "config_file",
+                        "data" => HTTP.Multipart("dummy.bin", open(dummy_file)),
+                    ),
+                )
 
                 HTTP.post(
                     "http://127.0.0.1:9000/resource/experiment/1";
@@ -84,61 +88,57 @@
                 )
 
                 response = HTTP.get(
-                    "http://127.0.0.1:9000/resource/experiment/1";
-                    status_exception=false,
+                    "http://127.0.0.1:9000/resource/experiment/1"; status_exception=false
                 )
                 @test response.status == HTTP.StatusCodes.OK
-                data = JSON.parse(response.body |> String, Dict{String,Any})
+                data = JSON.parse(String(response.body), Dict{String,Any})
                 @test data["total"] == 2
                 @test data["limit"] == 50
                 @test data["offset"] == 0
-                resources = data["data"] .|> DearDiary.Resource
+                resources = DearDiary.Resource.(data["data"])
                 @test resources isa Array{DearDiary.Resource,1}
                 @test length(resources) == 2
             end
 
             @testset verbose = true "update resource" begin
-                form = HTTP.Form(Dict(
-                    "name" => "model_weights_v2",
-                    "description" => "Updated model weights",
-                    "data" => HTTP.Multipart("dummy.bin", open(dummy_file))
-                ))
+                form = HTTP.Form(
+                    Dict(
+                        "name" => "model_weights_v2",
+                        "description" => "Updated model weights",
+                        "data" => HTTP.Multipart("dummy.bin", open(dummy_file)),
+                    ),
+                )
 
                 response = HTTP.patch(
-                    "http://127.0.0.1:9000/resource/2";
-                    body=form,
-                    status_exception=false,
+                    "http://127.0.0.1:9000/resource/2"; body=form, status_exception=false
                 )
 
                 @test response.status == HTTP.StatusCodes.OK
-                data = JSON.parse(response.body |> String, Dict{String,Any})
+                data = JSON.parse(String(response.body), Dict{String,Any})
                 @test data["message"] == "UPDATED"
 
                 response = HTTP.get(
-                    "http://127.0.0.1:9000/resource/2";
-                    status_exception=false,
+                    "http://127.0.0.1:9000/resource/2"; status_exception=false
                 )
-                data = JSON.parse(response.body |> String, Dict{String,Any})
-                resource = data |> DearDiary.Resource
+                data = JSON.parse(String(response.body), Dict{String,Any})
+                resource = DearDiary.Resource(data)
                 @test resource.name == "model_weights_v2"
                 @test resource.description == "Updated model weights"
                 @test resource.size_bytes == 1024
 
                 # Confirm the bytes round-trip through the streaming endpoint.
                 bytes_response = HTTP.get(
-                    "http://127.0.0.1:9000/resource/2/data";
-                    status_exception=false,
+                    "http://127.0.0.1:9000/resource/2/data"; status_exception=false
                 )
-                @test (bytes_response.body |> length) == 1024
+                @test (length(bytes_response.body)) == 1024
             end
 
             @testset verbose = true "delete resource" begin
                 response = HTTP.delete(
-                    "http://127.0.0.1:9000/resource/2";
-                    status_exception=false,
+                    "http://127.0.0.1:9000/resource/2"; status_exception=false
                 )
                 @test response.status == HTTP.StatusCodes.OK
-                data = JSON.parse(response.body |> String, Dict{String,Any})
+                data = JSON.parse(String(response.body), Dict{String,Any})
                 @test data["message"] == "OK"
             end
         finally

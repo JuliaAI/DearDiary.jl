@@ -2,10 +2,7 @@
     @testset verbose = true "user service" begin
         @testset verbose = true "create user" begin
             user_id, user_upsert_result = DearDiary.create_user(
-                "Missy",
-                "Gala",
-                "missy",
-                "gala",
+                "Missy", "Gala", "missy", "gala"
             )
 
             @test user_upsert_result === DearDiary.Created
@@ -27,7 +24,7 @@
         end
 
         @testset "get user by non-existing username" begin
-            @test DearDiary.get_user("gala") |> isnothing
+            @test isnothing(DearDiary.get_user("gala"))
         end
 
         @testset verbose = true "get_users" begin
@@ -35,28 +32,18 @@
             users = DearDiary.get_users()
 
             @test users isa Array{DearDiary.User,1}
-            @test (users |> length) == 3
+            @test (length(users)) == 3
         end
 
         @testset verbose = true "update user" begin
             @testset "with non-existing user id" begin
-                @test DearDiary.update_user(
-                    9999,
-                    "Ana",
-                    "Gala",
-                    "Choclo",
-                    true,
-                ) === DearDiary.Unprocessable
+                @test DearDiary.update_user(9999, "Ana", "Gala", "Choclo", true) ===
+                    DearDiary.Unprocessable
             end
 
             @testset "with existing user id" begin
-                @test DearDiary.update_user(
-                    2,
-                    "Ana",
-                    nothing,
-                    "Choclo",
-                    nothing,
-                ) === DearDiary.Updated
+                @test DearDiary.update_user(2, "Ana", nothing, "Choclo", nothing) ===
+                    DearDiary.Updated
 
                 user = DearDiary.get_user("missy")
 
@@ -68,7 +55,7 @@
         @testset verbose = true "delete user" begin
             @test DearDiary.delete_user(2)
 
-            @test DearDiary.get_user("missy") |> isnothing
+            @test isnothing(DearDiary.get_user("missy"))
         end
     end
 end

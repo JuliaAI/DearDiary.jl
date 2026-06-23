@@ -5,8 +5,7 @@
                 user_id, _ = DearDiary.create_user("Missy", "Gala", "missy", "gala")
                 DearDiary.update_user(user_id, nothing, nothing, nothing, true)
                 project_id, project_upsert_result = DearDiary.create_project(
-                    user_id,
-                    "Test Project",
+                    user_id, "Test Project"
                 )
 
                 @test project_upsert_result === DearDiary.Created
@@ -15,40 +14,33 @@
 
             @testset "with non-existing user_id as argument" begin
                 project_id, project_upsert_result = DearDiary.create_project(
-                    9999,
-                    "Test Project",
+                    9999, "Test Project"
                 )
 
-                @test project_id |> isnothing
+                @test isnothing(project_id)
                 @test project_upsert_result === DearDiary.Unprocessable
             end
 
             @testset "with non-admin user_id as argument" begin
                 user_id, _ = DearDiary.create_user("Regular", "User", "regular", "user")
                 project_id, project_upsert_result = DearDiary.create_project(
-                    user_id,
-                    "Test Project",
+                    user_id, "Test Project"
                 )
 
-                @test project_id |> isnothing
+                @test isnothing(project_id)
                 @test project_upsert_result === DearDiary.Unprocessable
             end
 
             @testset verbose = true "with no user_id as argument" begin
-                project_id, project_upsert_result = DearDiary.create_project(
-                    "Test Project",
-                )
+                project_id, project_upsert_result = DearDiary.create_project("Test Project")
 
                 @test project_upsert_result === DearDiary.Created
                 @test project_id isa Integer
 
                 default_user = DearDiary.get_user("default")
 
-                userpermission = DearDiary.get_userpermission(
-                    default_user.id,
-                    project_id,
-                )
-                @test !(userpermission |> isnothing)
+                userpermission = DearDiary.get_userpermission(default_user.id, project_id)
+                @test !(isnothing(userpermission))
             end
         end
 
@@ -62,7 +54,7 @@
 
             @testset verbose = true "get project by non-existing id" begin
                 project = DearDiary.get_project(9999)
-                @test project |> isnothing
+                @test isnothing(project)
             end
         end
 
@@ -70,7 +62,7 @@
             projects = DearDiary.get_projects()
 
             @test projects isa Array{DearDiary.Project,1}
-            @test (projects |> length) == 2
+            @test (length(projects)) == 2
             @test projects[1].id == 1
             @test projects[1].name == "Test Project"
         end
@@ -78,9 +70,7 @@
         @testset verbose = true "update project" begin
             @testset "with non-existing id" begin
                 result = DearDiary.update_project(
-                    9999,
-                    "Updated Test Project",
-                    "Updated Description"
+                    9999, "Updated Test Project", "Updated Description"
                 )
 
                 @test result === DearDiary.Unprocessable
@@ -88,9 +78,7 @@
 
             @testset "with existing id" begin
                 @test DearDiary.update_project(
-                    1,
-                    "Updated Test Project",
-                    "Updated Description"
+                    1, "Updated Test Project", "Updated Description"
                 ) === DearDiary.Updated
 
                 project = DearDiary.get_project(1)
@@ -106,7 +94,7 @@
             DearDiary.create_experiment(project_id, DearDiary.IN_PROGRESS, "Test")
 
             @test DearDiary.delete_project(project_id)
-            @test DearDiary.get_project(project_id) |> isnothing
+            @test isnothing(DearDiary.get_project(project_id))
         end
     end
 end

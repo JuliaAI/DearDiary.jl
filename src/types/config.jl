@@ -6,13 +6,13 @@ A struct to hold the configuration for the API server.
 Fields
 - `host::String`: The host of the API server.
 - `port::UInt16`: The port of the API server.
-- `db_file::String`: The path to the SQLite database file.
+- `db_file::String`: The path to the DuckDB database file.
 - `jwt_secret::String`: The JWT secret for authentication.
 - `enable_auth::Bool`: Whether to enable authentication or not.
 - `cors_origins::Vector{String}`: Browser origins allowed to call the API. Use `["*"]`
   to allow any origin (default in development).
 - `artifact_backend::String`: Which [`AbstractArtifactStore`](@ref) backend handles
-  [`Resource`](@ref) bytes. One of `"sqlite"` (default, legacy inline storage),
+  [`Resource`](@ref) bytes. One of `"inline"` (default, bytes stored inline in the DB),
   `"filesystem"`, or `"s3"`. Selected at server startup by the `DEARDIARY_ARTIFACT_BACKEND`
   env var.
 - `artifact_fs_root::String`: Root directory for the [`FilesystemStore`](@ref) backend.

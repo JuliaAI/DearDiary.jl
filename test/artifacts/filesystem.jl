@@ -6,12 +6,12 @@
 
             result = DearDiary.write_artifact(store, payload)
 
-            @test result.uri |> startswith("file://")
+            @test startswith("file://")(result.uri)
             @test result.size_bytes == 7
-            @test result.content_hash == (payload |> SHA.sha256 |> bytes2hex)
+            @test result.content_hash == (bytes2hex(SHA.sha256(payload)))
             @test DearDiary.backend_id(store) == "filesystem"
 
-            path = result.uri[length("file://") + 1:end]
+            path = result.uri[(length("file://") + 1):end]
             @test isfile(path)
             @test read(path) == payload
 
@@ -24,7 +24,7 @@
         mktempdir() do root
             store = DearDiary.FilesystemStore(root)
             result = DearDiary.write_artifact(store, UInt8[0x00])
-            path = result.uri[length("file://") + 1:end]
+            path = result.uri[(length("file://") + 1):end]
             shard = basename(dirname(path))
             @test length(shard) == 2
             @test joinpath(root, shard) == dirname(path)
@@ -35,7 +35,7 @@
         mktempdir() do root
             store = DearDiary.FilesystemStore(root)
             result = DearDiary.write_artifact(store, UInt8[0xAB, 0xCD])
-            path = result.uri[length("file://") + 1:end]
+            path = result.uri[(length("file://") + 1):end]
 
             @test isfile(path)
             @test DearDiary.delete_artifact(store, result.uri)
@@ -52,17 +52,29 @@
 end
 
 @testset verbose = true "FilesystemStore via service layer" begin
-    # The offline tests run with `current_artifact_store()` defaulting to SQLite (no
+    # The offline tests run with `current_artifact_store()` defaulting to inline (no
     # _DEARDIARY_APICONFIG). We swap in a fake config pointing at a tempdir, exercise the
     # full create/read/delete path, then restore the prior state.
     mktempdir() do root
         prior_config = DearDiary._DEARDIARY_APICONFIG
         try
             DearDiary._DEARDIARY_APICONFIG = DearDiary.APIConfig(
-                "127.0.0.1", UInt16(0), "fs_test.db", "secret", false, ["*"],
-                "filesystem", root,
-                "", "", "us-east-1", "", "",
-                false, "127.0.0.1", UInt16(0),
+                "127.0.0.1",
+                UInt16(0),
+                "fs_test.db",
+                "secret",
+                false,
+                ["*"],
+                "filesystem",
+                root,
+                "",
+                "",
+                "us-east-1",
+                "",
+                "",
+                false,
+                "127.0.0.1",
+                UInt16(0),
             )
 
             DearDiary.initialize_database(; file_name="fs_test.db")
@@ -70,25 +82,25 @@ end
                 user = DearDiary.get_user("default")
                 project_id, _ = DearDiary.create_project(user.id, "FS Project")
                 experiment_id, _ = DearDiary.create_experiment(
-                    project_id, DearDiary.IN_PROGRESS, "FS Experiment",
+                    project_id, DearDiary.IN_PROGRESS, "FS Experiment"
                 )
 
                 payload = UInt8[0x10, 0x20, 0x30, 0x40, 0x50]
                 resource_id, status = DearDiary.create_resource(
-                    experiment_id, "model.bin", payload,
+                    experiment_id, "model.bin", payload
                 )
                 @test status === DearDiary.Created
 
-                row = resource_id |> DearDiary.get_resource
+                row = DearDiary.get_resource(resource_id)
                 @test row.backend == "filesystem"
-                @test row.uri |> startswith("file://")
+                @test startswith("file://")(row.uri)
                 @test row.size_bytes == 5
-                @test row.content_hash == (payload |> SHA.sha256 |> bytes2hex)
-                # Inline `data` is intentionally empty for non-SQLite backends.
-                @test (row.data |> isnothing) || (row.data |> isempty)
+                @test row.content_hash == (bytes2hex(SHA.sha256(payload)))
+                # Inline `data` is intentionally empty for non-inline backends.
+                @test (isnothing(row.data)) || (isempty(row.data))
 
                 # The on-disk file exists and matches the payload.
-                path = row.uri[length("file://") + 1:end]
+                path = row.uri[(length("file://") + 1):end]
                 @test isfile(path)
                 @test read(path) == payload
 

@@ -8,12 +8,12 @@ with the captured exception text in `error_message`, and the exception is rethro
 caller still sees it.
 
 By default the helper attaches an [`EnvironmentSnapshot`](@ref) to the new iteration
-immediately after creation, but only when it has no parent — driver runs capture the env,
+immediately after creation, but only when it has no parent: driver runs capture the env,
 child runs inherit it. Pass `snapshot=true` to force a per-child capture or
 `snapshot=false` to skip entirely.
 
 When `parent_iteration_id` is supplied, the new iteration is registered as a child of the
-given parent — useful for HPO sweeps and distributed-worker fan-outs.
+given parent, useful for HPO sweeps and distributed-worker fan-outs.
 
 # Example
 ```julia
@@ -28,18 +28,20 @@ end
 ```
 """
 function with_iteration(
-    f::Function, client::Client, experiment_id::Integer;
+    f::Function,
+    client::Client,
+    experiment_id::Integer;
     parent_iteration_id::Optional{<:Integer}=nothing,
-    snapshot::Bool=(parent_iteration_id |> isnothing),
+    snapshot::Bool=(isnothing(parent_iteration_id)),
 )
     iteration = create_iteration(
-        client, experiment_id; parent_iteration_id=parent_iteration_id,
+        client, experiment_id; parent_iteration_id=parent_iteration_id
     )
     if snapshot
         try
             snapshot_environment!(client, iteration.id)
         catch _
-            # Snapshot is best-effort — never block the body on a capture failure.
+            # Snapshot is best-effort; never block the body on a capture failure.
         end
     end
     try
@@ -49,8 +51,10 @@ function with_iteration(
     catch err
         try
             update_iteration(
-                client, iteration.id;
-                status=FAILED, end_date=now(),
+                client,
+                iteration.id;
+                status=FAILED,
+                end_date=now(),
                 error_message=sprint(showerror, err),
             )
         catch _

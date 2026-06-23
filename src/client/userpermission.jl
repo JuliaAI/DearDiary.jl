@@ -6,13 +6,13 @@ Fetch the [`UserPermission`](@ref) row tying `user_id` to `project_id` via
 server replies 404 and raises [`ClientError`](@ref) for other failures. Admin-only route.
 """
 function get_userpermission(
-    client::Client, user_id::Integer, project_id::Integer,
+    client::Client, user_id::Integer, project_id::Integer
 )::Optional{UserPermission}
     try
-        decoded = _json(_request(
-            client, "GET", "/userpermission/user/$user_id/project/$project_id",
-        ))
-        return decoded |> UserPermission
+        decoded = _json(
+            _request(client, "GET", "/userpermission/user/$user_id/project/$project_id")
+        )
+        return UserPermission(decoded)
     catch err
         err isa ClientError && err.status == 404 && return nothing
         rethrow(err)
@@ -26,11 +26,11 @@ List every [`UserPermission`](@ref) that grants `user_id` access to some project
 `GET /user/{user_id}/permissions`. The viewer must be `user_id` or an admin.
 """
 function get_userpermissions(
-    client::Client, ::Type{User}, user_id::Integer,
+    client::Client, ::Type{User}, user_id::Integer
 )::Array{UserPermission,1}
     response = _request(client, "GET", "/user/$user_id/permissions")
-    decoded = response.body |> String |> JSON.parse
-    return [item |> UserPermission for item in decoded]
+    decoded = JSON.parse(String(response.body))
+    return [UserPermission(item) for item in decoded]
 end
 
 """
@@ -40,11 +40,11 @@ List every [`UserPermission`](@ref) row granting access to `project_id`, via
 `GET /project/{project_id}/members`. Requires [`ReadPermission`](@ref) on the project.
 """
 function get_userpermissions(
-    client::Client, ::Type{Project}, project_id::Integer,
+    client::Client, ::Type{Project}, project_id::Integer
 )::Array{UserPermission,1}
     response = _request(client, "GET", "/project/$project_id/members")
-    decoded = response.body |> String |> JSON.parse
-    return [item |> UserPermission for item in decoded]
+    decoded = JSON.parse(String(response.body))
+    return [UserPermission(item) for item in decoded]
 end
 
 """
@@ -64,7 +64,9 @@ function create_userpermission(
     delete_permission::Bool,
 )::Int64
     response = _request(
-        client, "POST", "/userpermission/user/$user_id/project/$project_id";
+        client,
+        "POST",
+        "/userpermission/user/$user_id/project/$project_id";
         body=Dict(
             "create_permission" => create_permission,
             "read_permission" => read_permission,
@@ -82,14 +84,17 @@ Patch a [`UserPermission`](@ref) row via `PATCH /userpermission/{id}`. Any keywo
 `nothing` is left untouched server-side. Admin-only.
 """
 function update_userpermission(
-    client::Client, id::Integer;
+    client::Client,
+    id::Integer;
     create_permission::Optional{Bool}=nothing,
     read_permission::Optional{Bool}=nothing,
     update_permission::Optional{Bool}=nothing,
     delete_permission::Optional{Bool}=nothing,
 )::Nothing
     _request(
-        client, "PATCH", "/userpermission/$id";
+        client,
+        "PATCH",
+        "/userpermission/$id";
         body=Dict(
             "create_permission" => create_permission,
             "read_permission" => read_permission,

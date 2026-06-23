@@ -1,15 +1,9 @@
 @testset verbose = true "service utilities" begin
     @testset verbose = true "transform object to Dict" begin
         user = DearDiary.User(
-            1,
-            "Missy",
-            "Gala",
-            "missy",
-            "gala",
-            DateTime("2021-01-01T00:00:00"),
-            false,
+            1, "Missy", "Gala", "missy", "gala", DateTime("2021-01-01T00:00:00"), false
         )
-        user_dict = user |> DearDiary.Dict
+        user_dict = DearDiary.Dict(user)
 
         @test user_dict isa Dict
         @test user_dict[:id] == 1
@@ -23,13 +17,7 @@
 
     @testset verbose = true "compare result type object fields" begin
         user = DearDiary.User(
-            1,
-            "Missy",
-            "Gala",
-            "missy",
-            "gala",
-            DateTime("2021-01-01T00:00:00"),
-            false,
+            1, "Missy", "Gala", "missy", "gala", DateTime("2021-01-01T00:00:00"), false
         )
         @test !(DearDiary.compare_object_fields(user; id=1))
         @test DearDiary.compare_object_fields(user; id=100)

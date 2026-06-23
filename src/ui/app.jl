@@ -9,9 +9,8 @@ detail view for whichever iteration the user clicked last.
 The dashboard calls DearDiary's service-layer functions in-process. The HTTP REST API runs
 unchanged on the sibling port.
 """
-# The package logo doubles as the browser favicon. Registering it once at module-load time
-# means Bonito serves it as a cached static asset rather than re-encoding the SVG bytes on
-# every page render.
+# Register the package logo as the browser favicon once at module-load time so Bonito
+# serves it as a cached static asset rather than re-encoding the SVG bytes on each render.
 const _LOGO_PATH = joinpath(@__DIR__, "..", "..", "assets", "logo.svg")
 const _FAVICON_ASSET = Bonito.Asset(_LOGO_PATH)
 
@@ -33,26 +32,28 @@ end
 
 function build_ui_app()::Bonito.App
     return Bonito.App(; title="DearDiary") do session::Bonito.Session
-        user = "default" |> get_user
+        user = get_user("default")
         selected = Observables.Observable{Optional{Int64}}(nothing)
 
         sidebar = _render_sidebar(user, selected)
         main_content = Observables.map(_render_iteration_detail, selected)
 
-        # Update the browser tab title client-side whenever `selected` changes. The
-        # static `<title>DearDiary</title>` below covers the landing page; subsequent
-        # selections push a new title through the WebSocket without a re-render.
+        # Update the browser tab title client-side whenever `selected` changes. The static
+        # `<title>DearDiary</title>` below covers the landing page; subsequent selections
+        # push a new title through the WebSocket without a re-render.
         title_text = Observables.map(_iteration_title, selected)
         Bonito.onjs(session, title_text, js"t => document.title = t")
 
         # Return explicit `<html>`/`<head>`/`<body>` so Bonito's `find_head_body` walker
-        # locates this head and threads its session styles into it. With no explicit head,
-        # Bonito auto-generates one and our favicon `<link>` ends up inside `<body>`,
-        # where Firefox treats body-placed favicon links as a no-op.
+        # locates the head and threads session styles into it. Without an explicit head,
+        # Bonito auto-generates one and the favicon `<link>` ends up inside `<body>`,
+        # where Firefox ignores it.
         return Bonito.DOM.html(
             Bonito.DOM.head(
                 Bonito.DOM.meta(; charset="UTF-8"),
-                Bonito.DOM.meta(; name="viewport", content="width=device-width, initial-scale=1.0"),
+                Bonito.DOM.meta(;
+                    name="viewport", content="width=device-width, initial-scale=1.0"
+                ),
                 Bonito.DOM.title("DearDiary"),
                 Bonito.DOM.link(; rel="icon", type="image/svg+xml", href=_FAVICON_ASSET),
                 Bonito.DOM.style(_UI_STYLES),
@@ -61,7 +62,8 @@ function build_ui_app()::Bonito.App
                 Bonito.DOM.div(
                     sidebar,
                     Bonito.DOM.main(main_content; class="dd-main"),
-                    ; class="dd-layout",
+                    ;
+                    class="dd-layout",
                 ),
             ),
         )
@@ -106,13 +108,14 @@ const _UI_STYLES = """
 
 function _render_sidebar(user, selected::Observables.Observable)
     project_blocks = Vector{Any}()
-    for project in user |> get_projects
+    for project in get_projects(user)
         push!(project_blocks, _render_project_block(project, selected))
     end
     brand = Bonito.DOM.div(
         Bonito.DOM.img(; src=_FAVICON_ASSET, alt="", class="dd-brand-logo"),
         Bonito.DOM.span("DearDiary"; class="dd-brand-text"),
-        ; class="dd-brand",
+        ;
+        class="dd-brand",
     )
     footer = Bonito.DOM.div(
         Bonito.DOM.a(
@@ -122,22 +125,26 @@ function _render_sidebar(user, selected::Observables.Observable)
             rel="noopener noreferrer",
             class="dd-docs-link",
         ),
-        ; class="dd-sidebar-footer",
+        ;
+        class="dd-sidebar-footer",
     )
     return Bonito.DOM.aside(
         brand,
-        (project_blocks |> isempty) ?
-            Bonito.DOM.p("No projects yet."; class="dd-empty") :
-            Bonito.DOM.div(project_blocks...),
+        if (isempty(project_blocks))
+            Bonito.DOM.p("No projects yet."; class="dd-empty")
+        else
+            Bonito.DOM.div(project_blocks...)
+        end,
         footer,
-        ; class="dd-sidebar",
+        ;
+        class="dd-sidebar",
     )
 end
 
 function _render_project_block(project, selected::Observables.Observable)
     experiment_blocks = [
-        _render_experiment_block(experiment, selected)
-        for experiment in project.id |> get_experiments
+        _render_experiment_block(experiment, selected) for
+        experiment in get_experiments(project.id)
     ]
     return Bonito.DOM.div(
         Bonito.DOM.div(project.name; class="dd-project"),
@@ -146,20 +153,19 @@ function _render_project_block(project, selected::Observables.Observable)
 end
 
 function _render_experiment_block(experiment, selected::Observables.Observable)
-    iterations = experiment.id |> get_iterations
-    # Sort by id (creation order) and assign per-experiment ordinals. The sidebar
-    # labels iterations as "Iteration 1, 2, 3..." within each experiment instead of
-    # leaking the global database id. The canonical id stays visible in the detail
-    # pane header for anyone who needs it.
+    iterations = get_iterations(experiment.id)
+    # Sort by id (creation order) and assign per-experiment ordinals. The sidebar labels
+    # iterations as "Iteration 1, 2, 3..." within each experiment rather than exposing the
+    # global database id. The canonical id stays visible in the detail pane header.
     sorted_iters = sort(iterations; by=it -> it.id)
     ordinals = Dict{Int64,Int}(it.id => i for (i, it) in enumerate(sorted_iters))
 
-    # Bucket children under their parent so the tree render can recurse one level at a
-    # time. Top-level iterations (no `parent_iteration_id`) become the roots of the tree.
+    # Group children by parent so the tree renderer can recurse one level at a time.
+    # Top-level iterations (no `parent_iteration_id`) become the roots of the tree.
     children_by_parent = Dict{Int64,Vector{Iteration}}()
     top_level = Iteration[]
     for iteration in sorted_iters
-        if iteration.parent_iteration_id |> isnothing
+        if isnothing(iteration.parent_iteration_id)
             push!(top_level, iteration)
         else
             push!(
@@ -170,8 +176,8 @@ function _render_experiment_block(experiment, selected::Observables.Observable)
     end
 
     iteration_items = [
-        _render_iteration_node(iteration, children_by_parent, ordinals, selected)
-        for iteration in top_level
+        _render_iteration_node(iteration, children_by_parent, ordinals, selected) for
+        iteration in top_level
     ]
     return Bonito.DOM.li(
         Bonito.DOM.div(experiment.name; class="dd-experiment"),
@@ -187,10 +193,10 @@ function _render_iteration_node(
 )
     children = get(children_by_parent, iteration.id, Iteration[])
     node_children = Any[_render_iteration_anchor(iteration, ordinals, selected)]
-    if !(children |> isempty)
+    if !(isempty(children))
         child_nodes = [
-            _render_iteration_node(child, children_by_parent, ordinals, selected)
-            for child in children
+            _render_iteration_node(child, children_by_parent, ordinals, selected) for
+            child in children
         ]
         push!(node_children, Bonito.DOM.ul(child_nodes...))
     end
@@ -198,47 +204,42 @@ function _render_iteration_node(
 end
 
 function _render_iteration_anchor(
-    iteration::Iteration,
-    ordinals::Dict{Int64,Int},
-    selected::Observables.Observable,
+    iteration::Iteration, ordinals::Dict{Int64,Int}, selected::Observables.Observable
 )
     status = iteration.status_id
     class = "dd-iter-link"
-    if status == (RUNNING |> Integer)
+    if status == (Integer(RUNNING))
         class *= " dd-iter-running"
-    elseif status == (FAILED |> Integer)
+    elseif status == (Integer(FAILED))
         class *= " dd-iter-failed"
-    elseif status == (KILLED |> Integer)
+    elseif status == (Integer(KILLED))
         class *= " dd-iter-killed"
     end
     ordinal = get(ordinals, iteration.id, 0)
     label = "$(_status_glyph(status)) Iteration $(ordinal) · $(_relative_time(iteration.created_date))"
     return Bonito.DOM.a(
-        label;
-        href="#",
-        class=class,
-        onclick=Bonito.js"event => {
-            event.preventDefault();
-            $(selected).notify($(iteration.id));
-        }",
+        label; href="#", class=class, onclick=Bonito.js"event => {
+                                          event.preventDefault();
+                                          $(selected).notify($(iteration.id));
+                                      }"
     )
 end
 
 function _iteration_title(iteration_id::Optional{<:Integer})::String
-    if iteration_id |> isnothing
+    if isnothing(iteration_id)
         return "DearDiary"
     end
-    iteration = iteration_id |> get_iteration
-    if iteration |> isnothing
+    iteration = get_iteration(iteration_id)
+    if isnothing(iteration)
         return "Iteration #$(iteration_id) not found · DearDiary"
     end
-    experiment = iteration.experiment_id |> get_experiment
-    experiment_name = (experiment |> isnothing) ? "?" : experiment.name
+    experiment = get_experiment(iteration.experiment_id)
+    experiment_name = (isnothing(experiment)) ? "?" : experiment.name
     return "#$(iteration.id) · $(experiment_name) · DearDiary"
 end
 
 function _render_iteration_detail(iteration_id::Optional{<:Integer})
-    if iteration_id |> isnothing
+    if isnothing(iteration_id)
         return Bonito.DOM.div(
             Bonito.DOM.p(
                 "Pick an iteration from the sidebar to see its parameters, metrics, " *
@@ -248,8 +249,8 @@ function _render_iteration_detail(iteration_id::Optional{<:Integer})
         )
     end
 
-    iteration = iteration_id |> get_iteration
-    if iteration |> isnothing
+    iteration = get_iteration(iteration_id)
+    if isnothing(iteration)
         return Bonito.DOM.div(Bonito.DOM.p("Iteration $(iteration_id) not found."))
     end
 
@@ -262,54 +263,59 @@ end
 
 function _render_iteration_header(iteration)
     badge_class, badge_text = _status_chrome(iteration.status_id)
-    experiment = iteration.experiment_id |> get_experiment
-    experiment_name = (experiment |> isnothing) ? "?" : experiment.name
+    experiment = get_experiment(iteration.experiment_id)
+    experiment_name = (isnothing(experiment)) ? "?" : experiment.name
 
     rows = Any[
         Bonito.DOM.h2("Iteration #$(iteration.id)"),
         Bonito.DOM.span(badge_text; class="dd-badge $badge_class"),
         Bonito.DOM.p(Bonito.DOM.b("Experiment: "), experiment_name; class="dd-meta"),
         Bonito.DOM.p(
-            Bonito.DOM.b("Created: "), iteration.created_date |> string;
-            class="dd-meta",
+            Bonito.DOM.b("Created: "), string(iteration.created_date); class="dd-meta"
         ),
     ]
-    if !(iteration.end_date |> isnothing)
-        push!(rows, Bonito.DOM.p(
-            Bonito.DOM.b("Ended: "), iteration.end_date |> string;
-            class="dd-meta",
-        ))
+    if !(isnothing(iteration.end_date))
+        push!(
+            rows,
+            Bonito.DOM.p(
+                Bonito.DOM.b("Ended: "), string(iteration.end_date); class="dd-meta"
+            ),
+        )
     end
-    if !(iteration.parent_iteration_id |> isnothing)
-        push!(rows, Bonito.DOM.p(
-            Bonito.DOM.b("Parent iteration: "), "#$(iteration.parent_iteration_id)";
-            class="dd-meta",
-        ))
+    if !(isnothing(iteration.parent_iteration_id))
+        push!(
+            rows,
+            Bonito.DOM.p(
+                Bonito.DOM.b("Parent iteration: "),
+                "#$(iteration.parent_iteration_id)";
+                class="dd-meta",
+            ),
+        )
     end
-    if !(iteration.error_message |> isempty)
+    if !(isempty(iteration.error_message))
         push!(rows, Bonito.DOM.div(iteration.error_message; class="dd-error"))
     end
     return Bonito.DOM.section(rows...; class="dd-card")
 end
 
 function _status_chrome(status_id::Integer)::Tuple{String,String}
-    if status_id == (RUNNING |> Integer)
+    if status_id == (Integer(RUNNING))
         return ("dd-badge-running", "running")
-    elseif status_id == (SUCCEEDED |> Integer)
+    elseif status_id == (Integer(SUCCEEDED))
         return ("dd-badge-succeeded", "succeeded")
-    elseif status_id == (FAILED |> Integer)
+    elseif status_id == (Integer(FAILED))
         return ("dd-badge-failed", "failed")
-    elseif status_id == (KILLED |> Integer)
+    elseif status_id == (Integer(KILLED))
         return ("dd-badge-killed", "killed")
     end
     return ("dd-badge-running", "unknown")
 end
 
 function _status_glyph(status_id::Integer)::String
-    status_id == (RUNNING |> Integer) && return "▶"
-    status_id == (SUCCEEDED |> Integer) && return "✓"
-    status_id == (FAILED |> Integer) && return "✗"
-    status_id == (KILLED |> Integer) && return "⊘"
+    status_id == (Integer(RUNNING)) && return "▶"
+    status_id == (Integer(SUCCEEDED)) && return "✓"
+    status_id == (Integer(FAILED)) && return "✗"
+    status_id == (Integer(KILLED)) && return "⊘"
     return "?"
 end
 
@@ -324,35 +330,34 @@ function _relative_time(dt::DateTime, ref::DateTime=now())::String
 end
 
 function _render_parameters_card(iteration)
-    params = iteration.id |> get_parameters
-    body = (params |> isempty) ?
-        Bonito.DOM.p("No parameters recorded."; class="dd-empty") :
+    params = get_parameters(iteration.id)
+    body = if (isempty(params))
+        Bonito.DOM.p("No parameters recorded."; class="dd-empty")
+    else
         Bonito.DOM.table(
-            Bonito.DOM.thead(Bonito.DOM.tr(
-                Bonito.DOM.th("Key"), Bonito.DOM.th("Value"),
-            )),
-            Bonito.DOM.tbody([
-                Bonito.DOM.tr(
-                    Bonito.DOM.td(p.key), Bonito.DOM.td(p.value),
-                ) for p in params
-            ]...),
-        )
+        Bonito.DOM.thead(Bonito.DOM.tr(Bonito.DOM.th("Key"), Bonito.DOM.th("Value"))),
+        Bonito.DOM.tbody(
+            [
+                Bonito.DOM.tr(Bonito.DOM.td(p.key), Bonito.DOM.td(p.value)) for p in params
+            ]...,
+        ),
+    )
+    end
     return Bonito.DOM.section(Bonito.DOM.h3("Parameters"), body; class="dd-card")
 end
 
 function _render_metrics_card(iteration)
-    metrics = iteration.id |> get_metrics
-    if metrics |> isempty
+    metrics = get_metrics(iteration.id)
+    if isempty(metrics)
         return Bonito.DOM.section(
             Bonito.DOM.h3("Metrics"),
             Bonito.DOM.p("No metrics recorded."; class="dd-empty"),
-            ; class="dd-card",
+            ;
+            class="dd-card",
         )
     end
     return Bonito.DOM.section(
-        Bonito.DOM.h3("Metrics"),
-        _build_metrics_figure(metrics),
-        ; class="dd-card",
+        Bonito.DOM.h3("Metrics"), _build_metrics_figure(metrics), ; class="dd-card"
     )
 end
 
@@ -366,17 +371,27 @@ const _MARGIN_B = 50
 # Tableau 10 ordered for readability against the off-white card background. Series
 # beyond the tenth wrap around the palette.
 const _CHART_COLORS = [
-    "#4e79a7", "#f28e2c", "#e15759", "#76b7b2", "#59a14f",
-    "#edc949", "#af7aa1", "#ff9da7", "#9c755f", "#bab0ab",
+    "#4e79a7",
+    "#f28e2c",
+    "#e15759",
+    "#76b7b2",
+    "#59a14f",
+    "#edc949",
+    "#af7aa1",
+    "#ff9da7",
+    "#9c755f",
+    "#bab0ab",
 ]
 
 _chart_color(idx::Integer) = _CHART_COLORS[((idx - 1) % length(_CHART_COLORS)) + 1]
 
-_scale_x(x::Real, x_min::Real, x_max::Real, plot_w::Real) =
+function _scale_x(x::Real, x_min::Real, x_max::Real, plot_w::Real)
     x_max == x_min ? plot_w / 2 : (x - x_min) / (x_max - x_min) * plot_w
+end
 
-_scale_y(y::Real, y_min::Real, y_max::Real, plot_h::Real) =
+function _scale_y(y::Real, y_min::Real, y_max::Real, plot_h::Real)
     y_max == y_min ? plot_h / 2 : plot_h - (y - y_min) / (y_max - y_min) * plot_h
+end
 
 function _format_tick(v::Real)
     v == round(v) && return string(Int(round(v)))
@@ -398,10 +413,9 @@ function _tick_values_x(x_min::Integer, x_max::Integer, n::Integer=5)
 end
 
 function _build_metrics_figure(metrics)
-    # Render the chart as inline SVG. No external JS bundle, no client-side render
-    # pipeline: the response bytes are ready to paint as soon as they reach the
-    # browser. Hover tooltips ride on each `<circle>`'s `<title>` child, which
-    # browsers surface as a native tooltip without any script support.
+    # Render the chart as inline SVG with no external JS bundle. The response bytes are
+    # ready to paint as soon as they reach the browser. Hover tooltips live in each
+    # `<circle>`'s `<title>` child, which browsers surface as a native tooltip.
     grouped = Dict{String,Vector{Tuple{Int64,Float64}}}()
     for m in metrics
         push!(get!(grouped, m.key, Tuple{Int64,Float64}[]), (m.step, m.value))
@@ -427,32 +441,71 @@ function _build_metrics_figure(metrics)
     axis_elements = Any[]
     for y in _tick_values_y(y_min, y_max)
         py = _scale_y(y, y_min, y_max, plot_h)
-        push!(axis_elements, Bonito.SVG.line(;
-            x1=0, x2=plot_w, y1=py, y2=py, stroke="#e4e7eb", strokeWidth=1,
-        ))
-        push!(axis_elements, Bonito.SVG.text(_format_tick(y);
-            x=-8, y=py + 4, fill="#52606d", fontSize=11, textAnchor="end",
-        ))
+        push!(
+            axis_elements,
+            Bonito.SVG.line(;
+                x1=0, x2=plot_w, y1=py, y2=py, stroke="#e4e7eb", strokeWidth=1
+            ),
+        )
+        push!(
+            axis_elements,
+            Bonito.SVG.text(
+                _format_tick(y);
+                x=-8,
+                y=py + 4,
+                fill="#52606d",
+                fontSize=11,
+                textAnchor="end",
+            ),
+        )
     end
     for x in _tick_values_x(x_min, x_max)
         px = _scale_x(x, x_min, x_max, plot_w)
-        push!(axis_elements, Bonito.SVG.text(string(x);
-            x=px, y=plot_h + 18, fill="#52606d", fontSize=11, textAnchor="middle",
-        ))
+        push!(
+            axis_elements,
+            Bonito.SVG.text(
+                string(x);
+                x=px,
+                y=plot_h + 18,
+                fill="#52606d",
+                fontSize=11,
+                textAnchor="middle",
+            ),
+        )
     end
-    push!(axis_elements, Bonito.SVG.line(;
-        x1=0, x2=plot_w, y1=plot_h, y2=plot_h, stroke="#cbd2d9", strokeWidth=1,
-    ))
-    push!(axis_elements, Bonito.SVG.line(;
-        x1=0, x2=0, y1=0, y2=plot_h, stroke="#cbd2d9", strokeWidth=1,
-    ))
-    push!(axis_elements, Bonito.SVG.text("step";
-        x=plot_w / 2, y=plot_h + 38, fill="#52606d", fontSize=12, textAnchor="middle",
-    ))
-    push!(axis_elements, Bonito.SVG.text("value";
-        x=-44, y=plot_h / 2, fill="#52606d", fontSize=12, textAnchor="middle",
-        transform="rotate(-90 -44 $(plot_h / 2))",
-    ))
+    push!(
+        axis_elements,
+        Bonito.SVG.line(;
+            x1=0, x2=plot_w, y1=plot_h, y2=plot_h, stroke="#cbd2d9", strokeWidth=1
+        ),
+    )
+    push!(
+        axis_elements,
+        Bonito.SVG.line(; x1=0, x2=0, y1=0, y2=plot_h, stroke="#cbd2d9", strokeWidth=1),
+    )
+    push!(
+        axis_elements,
+        Bonito.SVG.text(
+            "step";
+            x=plot_w / 2,
+            y=plot_h + 38,
+            fill="#52606d",
+            fontSize=12,
+            textAnchor="middle",
+        ),
+    )
+    push!(
+        axis_elements,
+        Bonito.SVG.text(
+            "value";
+            x=-44,
+            y=plot_h / 2,
+            fill="#52606d",
+            fontSize=12,
+            textAnchor="middle",
+            transform="rotate(-90 -44 $(plot_h / 2))",
+        ),
+    )
 
     series_keys = sort(collect(keys(grouped)))
     series_elements = Any[]
@@ -460,23 +513,28 @@ function _build_metrics_figure(metrics)
         color = _chart_color(i)
         points = grouped[key]
         points_str = join(
-            ("$(_scale_x(x, x_min, x_max, plot_w)),$(_scale_y(y, y_min, y_max, plot_h))"
-             for (x, y) in points),
+            (
+                "$(_scale_x(x, x_min, x_max, plot_w)),$(_scale_y(y, y_min, y_max, plot_h))"
+                for (x, y) in points
+            ),
             " ",
         )
-        push!(series_elements, Bonito.SVG.polyline(;
-            points=points_str, stroke=color, fill="none", strokeWidth=2,
-        ))
-        # Hyperscript treats `<circle>` as void, so the tooltip lives on a sibling
-        # `<title>` inside a per-point `<g>`. Browsers surface the group's title on
-        # hover anywhere within its bounding box.
+        push!(
+            series_elements,
+            Bonito.SVG.polyline(;
+                points=points_str, stroke=color, fill="none", strokeWidth=2
+            ),
+        )
+        # Hyperscript treats `<circle>` as void, so the tooltip lives in a sibling
+        # `<title>` inside a per-point `<g>`. Browsers show the group title on hover.
         point_groups = Any[
             Bonito.SVG.g(
                 Bonito.SVG.title("$(key): step $(x), value $(_format_tick(y))"),
                 Bonito.SVG.circle(;
                     cx=_scale_x(x, x_min, x_max, plot_w),
                     cy=_scale_y(y, y_min, y_max, plot_h),
-                    r=3, fill=color,
+                    r=3,
+                    fill=color,
                 ),
             ) for (x, y) in points
         ]
@@ -487,18 +545,21 @@ function _build_metrics_figure(metrics)
     legend_x = 0.0
     for (i, key) in enumerate(series_keys)
         color = _chart_color(i)
-        push!(legend_elements, Bonito.SVG.circle(;
-            cx=legend_x + 6, cy=-14, r=4, fill=color,
-        ))
-        push!(legend_elements, Bonito.SVG.text(key;
-            x=legend_x + 16, y=-10, fill="#1f2933", fontSize=11,
-        ))
+        push!(
+            legend_elements, Bonito.SVG.circle(; cx=legend_x + 6, cy=-14, r=4, fill=color)
+        )
+        push!(
+            legend_elements,
+            Bonito.SVG.text(key; x=legend_x + 16, y=-10, fill="#1f2933", fontSize=11),
+        )
         legend_x += 22 + length(key) * 7
     end
 
     return Bonito.SVG.svg(
         Bonito.SVG.g(
-            axis_elements..., series_elements..., legend_elements...;
+            axis_elements...,
+            series_elements...,
+            legend_elements...;
             transform="translate($(_MARGIN_L),$(_MARGIN_T))",
         );
         viewBox="0 0 $(_CHART_W) $(_CHART_H)",

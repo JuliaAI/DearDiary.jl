@@ -37,9 +37,7 @@ Get a page of [`Metric`](@ref) records for an iteration, with `total` count popu
 # Returns
 A [`PaginatedResponse`](@ref) of `Metric`.
 """
-function get_metrics(
-    iteration_id::Integer, page::Pagination,
-)::PaginatedResponse{Metric}
+function get_metrics(iteration_id::Integer, page::Pagination)::PaginatedResponse{Metric}
     return fetch_page(Metric, iteration_id, page)
 end
 
@@ -62,25 +60,27 @@ Create a [`Metric`](@ref).
 - An [`UpsertResult`](@ref). [`Created`](@ref) if the record was successfully created, [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
 """
 function create_metric(
-    iteration_id::Integer, key::AbstractString, value::AbstractFloat;
+    iteration_id::Integer,
+    key::AbstractString,
+    value::AbstractFloat;
     step::Optional{Integer}=nothing,
     recorded_at::Optional{DateTime}=nothing,
 )::@NamedTuple{id::Optional{<:Int64}, status::DataType}
-    iteration = iteration_id |> get_iteration
-    if iteration |> isnothing
+    iteration = get_iteration(iteration_id)
+    if isnothing(iteration)
         return (id=nothing, status=Unprocessable)
     end
 
     # Ended iterations are immutable.
-    if !(iteration.end_date |> isnothing)
+    if !(isnothing(iteration.end_date))
         return (id=nothing, status=Unprocessable)
     end
 
-    resolved_step = (step |> isnothing) ? next_metric_step(iteration_id, key) : step
-    resolved_recorded_at = (recorded_at |> isnothing) ? now() : recorded_at
+    resolved_step = (isnothing(step)) ? next_metric_step(iteration_id, key) : step
+    resolved_recorded_at = (isnothing(recorded_at)) ? now() : recorded_at
 
     metric_id, metric_upsert_result = insert(
-        Metric, iteration_id, key, value, resolved_step, resolved_recorded_at,
+        Metric, iteration_id, key, value, resolved_step, resolved_recorded_at
     )
     if !(metric_upsert_result === Created)
         return (id=nothing, status=metric_upsert_result)
@@ -95,8 +95,8 @@ Record many metric values against `iteration_id` in one shot. Every entry shares
 `recorded_at` (server clock when `nothing`). When `step` is omitted, each `key` independently
 gets its own `max(step) + 1`, so per-key counters do not interfere.
 
-Stops at the first failure and returns the ids that were committed before the failure plus
-the failing status — callers can then decide whether to retry or surface the error.
+Stops at the first failure and returns the ids committed before the failure plus
+the failing status; callers can then decide whether to retry or surface the error.
 
 # Arguments
 - `iteration_id::Integer`: The id of the iteration to record against.
@@ -116,23 +116,21 @@ function log_metrics(
     step::Optional{Integer}=nothing,
     recorded_at::Optional{DateTime}=nothing,
 )::@NamedTuple{ids::Array{Int64,1}, status::DataType}
-    iteration = iteration_id |> get_iteration
-    if iteration |> isnothing
+    iteration = get_iteration(iteration_id)
+    if isnothing(iteration)
         return (ids=Int64[], status=Unprocessable)
     end
-    if !(iteration.end_date |> isnothing)
+    if !(isnothing(iteration.end_date))
         return (ids=Int64[], status=Unprocessable)
     end
 
-    resolved_recorded_at = (recorded_at |> isnothing) ? now() : recorded_at
+    resolved_recorded_at = (isnothing(recorded_at)) ? now() : recorded_at
 
     ids = Int64[]
     for (key, value) in metrics
-        resolved_step = (step |> isnothing) ?
-            next_metric_step(iteration_id, key) : step
+        resolved_step = (isnothing(step)) ? next_metric_step(iteration_id, key) : step
         id, result = insert(
-            Metric, iteration_id, key, value |> Float64,
-            resolved_step, resolved_recorded_at,
+            Metric, iteration_id, key, Float64(value), resolved_step, resolved_recorded_at
         )
         if !(result === Created)
             return (ids=ids, status=result)
@@ -164,27 +162,25 @@ function update_metric(
     step::Optional{Integer}=nothing,
     recorded_at::Optional{DateTime}=nothing,
 )::Type{<:UpsertResult}
-    metric = id |> get_metric
-    if metric |> isnothing
+    metric = get_metric(id)
+    if isnothing(metric)
         return Unprocessable
     end
 
     # Ended iterations are immutable.
-    iteration = metric.iteration_id |> get_iteration
-    if !(iteration |> isnothing) && !(iteration.end_date |> isnothing)
+    iteration = get_iteration(metric.iteration_id)
+    if !(isnothing(iteration)) && !(isnothing(iteration.end_date))
         return Unprocessable
     end
 
     should_be_updated = compare_object_fields(
-        metric; key=key, value=value, step=step, recorded_at=recorded_at,
+        metric; key=key, value=value, step=step, recorded_at=recorded_at
     )
     if !should_be_updated
         return Updated
     end
 
-    return update(
-        Metric, id; key=key, value=value, step=step, recorded_at=recorded_at,
-    )
+    return update(Metric, id; key=key, value=value, step=step, recorded_at=recorded_at)
 end
 
 """
@@ -199,12 +195,12 @@ Delete a [`Metric`](@ref) record.
 `true` if the record was successfully deleted, `false` otherwise.
 """
 function delete_metric(id::Integer)::Bool
-    metric = id |> get_metric
-    if metric |> isnothing
+    metric = get_metric(id)
+    if isnothing(metric)
         return false
     end
-    iteration = metric.iteration_id |> get_iteration
-    if !(iteration |> isnothing) && !(iteration.end_date |> isnothing)
+    iteration = get_iteration(metric.iteration_id)
+    if !(isnothing(iteration)) && !(isnothing(iteration.end_date))
         return false
     end
     return delete(Metric, id)
@@ -236,6 +232,6 @@ Return the [`Project`](@ref) id that owns the given [`Metric`](@ref) by walking 
 The owning project id, or `nothing` if any ancestor is missing.
 """
 function get_project_id(metric::Metric)::Optional{Int64}
-    iteration = metric.iteration_id |> get_iteration
-    return iteration |> isnothing ? nothing : (iteration |> get_project_id)
+    iteration = get_iteration(metric.iteration_id)
+    return isnothing(iteration) ? nothing : (get_project_id(iteration))
 end

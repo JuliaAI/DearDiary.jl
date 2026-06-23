@@ -7,24 +7,18 @@
                 experiment_id, _ = DearDiary.insert(
                     DearDiary.Experiment,
                     project_id,
-                    DearDiary.IN_PROGRESS |> Integer,
+                    Integer(DearDiary.IN_PROGRESS),
                     "Iteration Test Experiment",
                 )
 
-                id, status = DearDiary.insert(
-                    DearDiary.Iteration,
-                    experiment_id,
-                )
+                id, status = DearDiary.insert(DearDiary.Iteration, experiment_id)
                 @test id isa Integer
                 @test status === DearDiary.Created
             end
 
             @testset "with non-existing experiment" begin
-                id, status = DearDiary.insert(
-                    DearDiary.Iteration,
-                    9999,
-                )
-                @test id |> isnothing
+                id, status = DearDiary.insert(DearDiary.Iteration, 9999)
+                @test isnothing(id)
                 @test status === DearDiary.Unprocessable
             end
         end
@@ -36,7 +30,7 @@
                 experiment_id, _ = DearDiary.insert(
                     DearDiary.Experiment,
                     project_id,
-                    DearDiary.IN_PROGRESS |> Integer,
+                    Integer(DearDiary.IN_PROGRESS),
                     "Iteration Test Experiment",
                 )
                 iteration_id, _ = DearDiary.insert(DearDiary.Iteration, experiment_id)
@@ -52,7 +46,7 @@
             @testset "non-existing iteration" begin
                 iteration = DearDiary.fetch(DearDiary.Iteration, 9999)
 
-                @test iteration |> isnothing
+                @test isnothing(iteration)
             end
         end
 
@@ -62,7 +56,7 @@
             experiment_id, _ = DearDiary.insert(
                 DearDiary.Experiment,
                 project_id,
-                DearDiary.IN_PROGRESS |> Integer,
+                Integer(DearDiary.IN_PROGRESS),
                 "Iteration Test Experiment",
             )
             DearDiary.insert(DearDiary.Iteration, experiment_id)
@@ -71,7 +65,7 @@
             iterations = DearDiary.fetch_all(DearDiary.Iteration, experiment_id)
 
             @test iterations isa Array{DearDiary.Iteration,1}
-            @test (iterations |> length) == 2
+            @test (length(iterations)) == 2
         end
 
         @testset verbose = true "update" begin
@@ -80,13 +74,14 @@
             experiment_id, _ = DearDiary.insert(
                 DearDiary.Experiment,
                 project_id,
-                DearDiary.IN_PROGRESS |> Integer,
+                Integer(DearDiary.IN_PROGRESS),
                 "Iteration Test Experiment",
             )
             iteration_id, _ = DearDiary.insert(DearDiary.Iteration, experiment_id)
 
             update_result = DearDiary.update(
-                DearDiary.Iteration, iteration_id;
+                DearDiary.Iteration,
+                iteration_id;
                 notes="Updated notes",
                 end_date=Dates.now(),
             )
@@ -104,7 +99,7 @@
             experiment_id, _ = DearDiary.insert(
                 DearDiary.Experiment,
                 project_id,
-                DearDiary.IN_PROGRESS |> Integer,
+                Integer(DearDiary.IN_PROGRESS),
                 "Iteration Test Experiment",
             )
             iteration_id, _ = DearDiary.insert(DearDiary.Iteration, experiment_id)
@@ -112,7 +107,7 @@
             @test DearDiary.delete(DearDiary.Iteration, iteration_id)
 
             iteration = DearDiary.fetch(DearDiary.Iteration, iteration_id)
-            @test iteration |> isnothing
+            @test isnothing(iteration)
         end
     end
 end

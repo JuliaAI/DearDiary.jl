@@ -2,7 +2,7 @@
     file = create_test_env_file(; host="0.0.0.0", port=9000)
 
     @testset "file exists" begin
-        config = file |> DearDiary.load_config
+        config = DearDiary.load_config(file)
 
         @test config.host == "0.0.0.0"
         @test config.port == 9000
@@ -12,11 +12,11 @@
     end
 
     @testset "file does not exist" begin
-        if (file |> isfile)
-            file |> rm
+        if (isfile(file))
+            rm(file)
         end
 
-        config = (file |> DearDiary.load_config)
+        config = (DearDiary.load_config(file))
         @test config.host == "127.0.0.1"
     end
 end
@@ -26,6 +26,6 @@ end
     try
         @test_throws ArgumentError DearDiary.run(; env_file=file)
     finally
-        file |> isfile && (file |> rm)
+        isfile(file) && (rm(file))
     end
 end

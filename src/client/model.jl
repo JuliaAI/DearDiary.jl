@@ -7,7 +7,7 @@ Fetch a [`Model`](@ref) via `GET /model/{id}`. Returns `nothing` when the server
 """
 function get_model(client::Client, id::Integer)::Optional{Model}
     try
-        return _json(_request(client, "GET", "/model/$id")) |> Model
+        return Model(_json(_request(client, "GET", "/model/$id")))
     catch err
         err isa ClientError && err.status == 404 && return nothing
         rethrow(err)
@@ -17,8 +17,8 @@ end
 """
     get_models(client::Client, project_id::Integer)::Array{Model,1}
 
-Convenience wrapper around the paged form: returns the first page (default limit) of
-[`Model`](@ref) records under `project_id` and discards the pagination envelope.
+Returns the first page (default limit) of [`Model`](@ref) records under `project_id`,
+discarding the pagination envelope.
 """
 function get_models(client::Client, project_id::Integer)::Array{Model,1}
     return get_models(client, project_id, Pagination(50, 0)).data
@@ -32,10 +32,12 @@ Fetch a page of [`Model`](@ref) records under `project_id` via
 project.
 """
 function get_models(
-    client::Client, project_id::Integer, page::Pagination,
+    client::Client, project_id::Integer, page::Pagination
 )::PaginatedResponse{Model}
     response = _request(
-        client, "GET", "/model/project/$project_id";
+        client,
+        "GET",
+        "/model/project/$project_id";
         query=Dict("limit" => page.limit, "offset" => page.offset),
     )
     return _paginated(Model, _json(response))
@@ -54,7 +56,9 @@ function create_model(
     description::Optional{AbstractString}=nothing,
 )::Int64
     response = _request(
-        client, "POST", "/model/project/$project_id";
+        client,
+        "POST",
+        "/model/project/$project_id";
         body=Dict("name" => name, "description" => description),
     )
     return _json(response)["model_id"]
@@ -67,12 +71,15 @@ Patch a [`Model`](@ref) via `PATCH /model/{id}`. Any keyword left as `nothing` i
 untouched server-side. Requires [`UpdatePermission`](@ref) on the owning project.
 """
 function update_model(
-    client::Client, id::Integer;
+    client::Client,
+    id::Integer;
     name::Optional{AbstractString}=nothing,
     description::Optional{AbstractString}=nothing,
 )::Nothing
     _request(
-        client, "PATCH", "/model/$id";
+        client,
+        "PATCH",
+        "/model/$id";
         body=Dict("name" => name, "description" => description),
     )
     return nothing

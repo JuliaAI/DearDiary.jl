@@ -5,15 +5,11 @@
                 user = DearDiary.get_user("default")
                 project_id, _ = DearDiary.create_project(user.id, "Test Project")
                 experiment_id, _ = DearDiary.create_experiment(
-                    project_id,
-                    DearDiary.IN_PROGRESS,
-                    "Test Experiment",
+                    project_id, DearDiary.IN_PROGRESS, "Test Experiment"
                 )
 
                 resource_id, result = DearDiary.create_resource(
-                    experiment_id,
-                    "Test Resource",
-                    UInt8[0x01, 0x02, 0x03, 0x04],
+                    experiment_id, "Test Resource", UInt8[0x01, 0x02, 0x03, 0x04]
                 )
 
                 @test resource_id isa Integer
@@ -22,12 +18,10 @@
 
             @testset "with non-existing experiment" begin
                 resource_id, result = DearDiary.create_resource(
-                    9999,
-                    "Test Resource",
-                    UInt8[0x01, 0x02, 0x03, 0x04],
+                    9999, "Test Resource", UInt8[0x01, 0x02, 0x03, 0x04]
                 )
 
-                @test resource_id |> isnothing
+                @test isnothing(resource_id)
                 @test result === DearDiary.Unprocessable
             end
         end
@@ -37,18 +31,14 @@
                 user = DearDiary.get_user("default")
                 project_id, _ = DearDiary.create_project(user.id, "Test Project")
                 experiment_id, _ = DearDiary.create_experiment(
-                    project_id,
-                    DearDiary.IN_PROGRESS,
-                    "Test Experiment",
+                    project_id, DearDiary.IN_PROGRESS, "Test Experiment"
                 )
                 resource_data = UInt8[0x0A, 0x0B, 0x0C]
                 resource_id, _ = DearDiary.create_resource(
-                    experiment_id,
-                    "Test Resource",
-                    resource_data,
+                    experiment_id, "Test Resource", resource_data
                 )
 
-                resource = resource_id |> DearDiary.get_resource
+                resource = DearDiary.get_resource(resource_id)
 
                 @test resource isa DearDiary.Resource
                 @test resource.id == resource_id
@@ -60,7 +50,7 @@
             @testset "non-existing resource" begin
                 resource = DearDiary.get_resource(9999)
 
-                @test resource |> isnothing
+                @test isnothing(resource)
             end
         end
 
@@ -68,25 +58,19 @@
             user = DearDiary.get_user("default")
             project_id, _ = DearDiary.create_project(user.id, "Test Project")
             experiment_id, _ = DearDiary.create_experiment(
-                project_id,
-                DearDiary.IN_PROGRESS,
-                "Test Experiment",
+                project_id, DearDiary.IN_PROGRESS, "Test Experiment"
             )
             DearDiary.create_resource(
-                experiment_id,
-                "Test Resource 1",
-                UInt8[0x01, 0x02, 0x03, 0x04],
+                experiment_id, "Test Resource 1", UInt8[0x01, 0x02, 0x03, 0x04]
             )
             DearDiary.create_resource(
-                experiment_id,
-                "Test Resource 2",
-                UInt8[0x05, 0x06, 0x07, 0x08],
+                experiment_id, "Test Resource 2", UInt8[0x05, 0x06, 0x07, 0x08]
             )
 
             resources = DearDiary.get_resources(experiment_id)
 
             @test resources isa Array{DearDiary.Resource,1}
-            @test (resources |> length) == 2
+            @test (length(resources)) == 2
         end
 
         @testset verbose = true "update resource" begin
@@ -105,17 +89,13 @@
                 user = DearDiary.get_user("default")
                 project_id, _ = DearDiary.create_project(user.id, "Test Project")
                 experiment_id, _ = DearDiary.create_experiment(
-                    project_id,
-                    DearDiary.IN_PROGRESS,
-                    "Test Experiment",
+                    project_id, DearDiary.IN_PROGRESS, "Test Experiment"
                 )
                 resource_id, _ = DearDiary.create_resource(
-                    experiment_id,
-                    "Test Resource",
-                    UInt8[0x0A, 0x0B, 0x0C],
+                    experiment_id, "Test Resource", UInt8[0x0A, 0x0B, 0x0C]
                 )
 
-                resource = resource_id |> DearDiary.get_resource
+                resource = DearDiary.get_resource(resource_id)
 
                 update_result = DearDiary.update_resource(
                     resource_id,
@@ -125,7 +105,7 @@
                 )
                 @test update_result === DearDiary.Updated
 
-                updated_resource = resource_id |> DearDiary.get_resource
+                updated_resource = DearDiary.get_resource(resource_id)
 
                 @test updated_resource.id == resource_id
                 @test updated_resource.name == "Updated Resource"
@@ -138,43 +118,35 @@
             user = DearDiary.get_user("default")
             project_id, _ = DearDiary.create_project(user.id, "Test Project")
             experiment_id, _ = DearDiary.create_experiment(
-                project_id,
-                DearDiary.IN_PROGRESS,
-                "Test Experiment",
+                project_id, DearDiary.IN_PROGRESS, "Test Experiment"
             )
             resource_id, _ = DearDiary.create_resource(
-                experiment_id,
-                "Test Resource",
-                UInt8[0x0A, 0x0B, 0x0C],
+                experiment_id, "Test Resource", UInt8[0x0A, 0x0B, 0x0C]
             )
 
-            @test resource_id |> DearDiary.delete_resource
-            @test (resource_id |> DearDiary.get_resource) |> isnothing
+            @test DearDiary.delete_resource(resource_id)
+            @test isnothing((DearDiary.get_resource(resource_id)))
         end
 
         @testset verbose = true "get project id" begin
             user = DearDiary.get_user("default")
             project_id, _ = DearDiary.create_project(user.id, "Test Project")
             experiment_id, _ = DearDiary.create_experiment(
-                project_id,
-                DearDiary.IN_PROGRESS,
-                "Test Experiment",
+                project_id, DearDiary.IN_PROGRESS, "Test Experiment"
             )
             resource_id, _ = DearDiary.create_resource(
-                experiment_id,
-                "Test Resource",
-                UInt8[0x01, 0x02, 0x03, 0x04],
+                experiment_id, "Test Resource", UInt8[0x01, 0x02, 0x03, 0x04]
             )
 
             @testset "with existing parent experiment" begin
-                resource = resource_id |> DearDiary.get_resource
-                @test (resource |> DearDiary.get_project_id) == project_id
+                resource = DearDiary.get_resource(resource_id)
+                @test (DearDiary.get_project_id(resource)) == project_id
             end
 
             @testset "with deleted parent experiment" begin
-                resource = resource_id |> DearDiary.get_resource
+                resource = DearDiary.get_resource(resource_id)
                 DearDiary.delete_experiment(experiment_id)
-                @test (resource |> DearDiary.get_project_id) |> isnothing
+                @test isnothing((DearDiary.get_project_id(resource)))
             end
         end
     end

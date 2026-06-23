@@ -1,16 +1,16 @@
 # Tutorial
-This tutorial will guide you through the core features of this library. By the end of this
-tutorial, you will have a solid understanding of how to use the library effectively.
-Let's get started!
+This tutorial covers the core features of DearDiary: initializing a database, creating
+projects and experiments, logging metrics and parameters, saving artifacts, and querying
+logged data.
 
 ## Requirements
-To run this tutorial, you need to have the following packages installed:
+Install the following packages before running the tutorial:
 - [MLJ.jl](https://github.com/JuliaAI/MLJ.jl) - A machine learning framework for Julia
 - [MLJDecisionTreeInterface.jl](https://github.com/JuliaAI/MLJDecisionTreeInterface.jl) - Decision tree models for MLJ
 - [JLSO.jl](https://github.com/invenia/JLSO.jl) - Julia Serialized Object file format
 - [DataFrames.jl](https://github.com/JuliaData/DataFrames.jl) - For handling tabular data
 
-You can install these packages using Julia's package manager. Open the Julia REPL and run:
+From the Julia REPL:
 
 ```@setup tutorial
 using Pkg
@@ -29,7 +29,7 @@ Pkg.add("DataFrames")
 ```
 
 ## Loading the Data
-First, we need to load the dataset that we will be using for this tutorial.
+Load the Iris dataset and split it into training and test sets.
 
 ```@example tutorial
 using MLJ
@@ -46,8 +46,7 @@ nothing # hide
 ```
 
 ## Initializing the database
-Before we start tracking our experiments, we need to initialize the database where the
-experiment data will be stored.
+Initialize the database before tracking any experiments.
 
 ```julia
 DearDiary.initialize_database()
@@ -55,7 +54,7 @@ DearDiary.initialize_database()
 
 ```@setup tutorial
 # Documenter cd-resets between blocks, so `cd(mktempdir())` in a setup block does not
-# persist to the @repl/@example blocks below. Override `file_name` instead — that pins
+# persist to the @repl/@example blocks below. Override `file_name` instead; that pins
 # the DB to a throwaway location regardless of what cwd Documenter restores. Subsequent
 # blocks reuse the connection via the global _DEARDIARY_DATABASE, so nothing else creates
 # a file in docs/build/.
@@ -63,18 +62,16 @@ using DearDiary
 DearDiary.initialize_database(; file_name=joinpath(mktempdir(), "deardiary.db"))
 ```
 
-This will create a local SQLite database file named `deardiary.db` in the current
-directory.
+This creates a local database file named `deardiary.db` in the current directory.
 
 ## Creating a new project and experiment
-Projects help you organize your experiments. Let's create a new project for our iris
-classification experiment.
+Projects organize experiments. Create one for the Iris classification run.
 
 ```@repl tutorial
 project_id, _ = create_project("Tutorial project")
 ```
 
-Once we have a project, we can create an experiment within that project.
+With a project in hand, create an experiment inside it.
 
 ```@repl tutorial
 experiment_id, _ = create_experiment(project_id, DearDiary.IN_PROGRESS, "Iris classification experiment")
@@ -87,8 +84,7 @@ experiment_id, _ = create_experiment(project_id, DearDiary.IN_PROGRESS, "Iris cl
     documentation.
 
 ## Training the model and tracking the experiment
-Now we are ready to train a machine learning model and track the experiment using the
-library. We will use a decision tree classifier for this example.
+Train a decision tree classifier with MLJ's grid-search tuner and track the results.
 
 ```@example tutorial
 DecisionTreeClassifier = @load DecisionTreeClassifier pkg=DecisionTree
@@ -112,7 +108,7 @@ mach = machine(model, train_X, train_y)
 fit!(mach)
 ```
 
-After training the model, we can log the results of the experiment to the database.
+After training, log each trial's results to the database.
 
 ```@example tutorial
 model_values = report(mach).history .|> (x -> (x.measure, x.measurement, x.model.max_depth))
@@ -132,7 +128,7 @@ nothing # hide
 
 Each `create_metric` or `log_metrics` call appends to a per-`(iteration, key)` series. The
 server auto-assigns `step` (`max(step) + 1`) and `recorded_at` (`now()`) when you don't pass
-them, so logging the same key repeatedly forms a chronological time series — exactly what a
+them, so logging the same key repeatedly forms a chronological time series, exactly what a
 training loop produces over epochs:
 
 ```julia
@@ -142,8 +138,7 @@ end
 ```
 
 ## Viewing the logged data
-You can retrieve and check the logged data from the database to ensure everything was
-logged correctly.
+Retrieve the logged data from the database to verify the results.
 
 ```@repl tutorial
 iteration = last(get_iterations(experiment_id)) # Checking only the last iteration
@@ -158,7 +153,7 @@ get_metrics(iteration.id)
 ```
 
 ## Save and load the trained model
-You can save serialized objects, files, or any other resources related to your experiments.
+Attach a serialized model to the experiment as a resource.
 
 ```@example tutorial
 smach = serializable(mach)
@@ -173,13 +168,13 @@ nothing # hide
 resource_id, _ = create_resource(experiment_id, "Iris DTC MLJ Machine", bytes)
 ```
 
-Then you can load the model back when needed.
+Load it back when needed.
 
 ```@repl tutorial
 resource = get_resource(resource_id)
 ```
 
-The metadata response carries the artifact's metadata only — fetch the raw bytes via
+The metadata response carries only the artifact's metadata. Fetch the raw bytes via
 [`read_resource_data`](@ref).
 
 ```@example tutorial
@@ -192,21 +187,16 @@ restore!(loaded_mach)
 ```
 
 ## Built-in REST API
-The library also provides a built-in REST API to allow the outside world to interact with
-your projects. You can start the API server using the following command:
+DearDiary includes a REST API for remote access. Start the server with:
 
 ```julia
 DearDiary.run(;)
 ```
 
-This will start the API server on `http://localhost:9000`. You can customize the settings
-by setting an `.env` file containing the configuration options. For more details, refer to
-the [REST API](@ref) section of the documentation.
+The server binds to `http://localhost:9000` by default. Customize it with an `.env` file. See the [REST API](@ref) section for details.
 
 ## Logging from a remote training script
-When the training script runs on a different machine from the server, use the bundled Julia
-client. Every CRUD verb shown above gains a [`Client`](@ref)-aware method, and the
-[`with_iteration`](@ref) helper auto-finalises an iteration on both success and exception.
+When the training script runs on a different machine, use the bundled Julia client. Every CRUD verb shown above has a [`Client`](@ref)-aware overload, and [`with_iteration`](@ref) auto-finalises an iteration on success or exception.
 
 ```julia
 using DearDiary
@@ -229,7 +219,4 @@ end
 See the [Client](@ref) reference for the full list of helpers.
 
 ## Conclusion
-And that's it! You have successfully completed the tutorial and learned how to use the
-core features of this library. You can now track your machine learning experiments
-effectively. For more advanced features and options, refer to the rest of the
-documentation.
+That covers the core workflow. For advanced features, see the dedicated guides linked from the [Tutorial](@ref) overview and the rest of the reference documentation.

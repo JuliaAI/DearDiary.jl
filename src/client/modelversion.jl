@@ -6,7 +6,7 @@ replies 404 and raises [`ClientError`](@ref) for other failures.
 """
 function get_modelversion(client::Client, id::Integer)::Optional{ModelVersion}
     try
-        return _json(_request(client, "GET", "/modelversion/$id")) |> ModelVersion
+        return ModelVersion(_json(_request(client, "GET", "/modelversion/$id")))
     catch err
         err isa ClientError && err.status == 404 && return nothing
         rethrow(err)
@@ -16,8 +16,7 @@ end
 """
     get_modelversions(client::Client, model_id::Integer)::Array{ModelVersion,1}
 
-Convenience wrapper around the paged form: returns the first page (default limit) of
-[`ModelVersion`](@ref) records under `model_id`.
+Returns the first page (default limit) of [`ModelVersion`](@ref) records under `model_id`.
 """
 function get_modelversions(client::Client, model_id::Integer)::Array{ModelVersion,1}
     return get_modelversions(client, model_id, Pagination(50, 0)).data
@@ -30,10 +29,12 @@ Fetch a page of [`ModelVersion`](@ref) records under `model_id` via
 `GET /modelversion/model/{model_id}?limit=…&offset=…`.
 """
 function get_modelversions(
-    client::Client, model_id::Integer, page::Pagination,
+    client::Client, model_id::Integer, page::Pagination
 )::PaginatedResponse{ModelVersion}
     response = _request(
-        client, "GET", "/modelversion/model/$model_id";
+        client,
+        "GET",
+        "/modelversion/model/$model_id";
         query=Dict("limit" => page.limit, "offset" => page.offset),
     )
     return _paginated(ModelVersion, _json(response))
@@ -54,7 +55,9 @@ function create_modelversion(
     description::Optional{AbstractString}=nothing,
 )::Int64
     response = _request(
-        client, "POST", "/modelversion/model/$model_id";
+        client,
+        "POST",
+        "/modelversion/model/$model_id";
         body=Dict(
             "iteration_id" => iteration_id,
             "resource_id" => resource_id,
@@ -72,13 +75,16 @@ Patch a [`ModelVersion`](@ref) via `PATCH /modelversion/{id}`. Promoting to
 `PRODUCTION`. Requires [`UpdatePermission`](@ref) on the owning project.
 """
 function update_modelversion(
-    client::Client, id::Integer;
+    client::Client,
+    id::Integer;
     stage_id::Optional{Integer}=nothing,
     description::Optional{AbstractString}=nothing,
     resource_id::Optional{<:Integer}=nothing,
 )::Nothing
     _request(
-        client, "PATCH", "/modelversion/$id";
+        client,
+        "PATCH",
+        "/modelversion/$id";
         body=Dict(
             "stage_id" => stage_id,
             "description" => description,
@@ -94,13 +100,16 @@ end
 [`Stage`](@ref)-typed overload of [`update_modelversion`](@ref).
 """
 function update_modelversion(
-    client::Client, id::Integer, stage::Stage;
+    client::Client,
+    id::Integer,
+    stage::Stage;
     description::Optional{AbstractString}=nothing,
     resource_id::Optional{<:Integer}=nothing,
 )::Nothing
     return update_modelversion(
-        client, id;
-        stage_id=(stage |> Integer),
+        client,
+        id;
+        stage_id=(Integer(stage)),
         description=description,
         resource_id=resource_id,
     )

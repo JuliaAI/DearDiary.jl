@@ -30,7 +30,7 @@ const SQL_COUNT_MODELVERSIONS_BY_MODEL_ID = """
     SELECT COUNT(*) AS count FROM model_version WHERE model_id = :id
     """
 
-# `version` is assigned inside the INSERT via a subquery — the service layer never supplies it
+# `version` is assigned inside the INSERT via a subquery; the service layer never supplies it
 # directly. `UNIQUE(model_id, version)` on the table makes a concurrent insert from a racing
 # writer fail with a Duplicate, which is then retried at the service layer.
 const SQL_INSERT_MODELVERSION = """
@@ -63,8 +63,8 @@ const SQL_DELETE_MODELVERSIONS_BY_MODEL_ID = """
     WHERE model_id = :id
     """
 
-# Used when promoting a sibling to `PRODUCTION` — every other version of the same model that
-# currently holds `PRODUCTION` is moved to `ARCHIVED`, preserving the "at most one production
+# Used when promoting a sibling to `PRODUCTION`: moves every other version of the same model
+# that currently holds `PRODUCTION` to `ARCHIVED`, preserving the "at most one production
 # version per model" invariant.
 const SQL_ARCHIVE_PRODUCTION_SIBLINGS = """
     UPDATE model_version

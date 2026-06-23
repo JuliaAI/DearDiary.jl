@@ -1,9 +1,9 @@
 """
     error_code(::Type{<:ErrorCode})::String
 
-Return the stable, SCREAMING_SNAKE identifier for an [`ErrorCode`](@ref) type that is exposed
-in error response bodies (`{"code": ..., "message": ...}`). The mapping is intentionally fixed
-so that frontend code can switch on the value without parsing English messages.
+Return the stable SCREAMING_SNAKE identifier for an [`ErrorCode`](@ref) type, as used
+in error response bodies (`{"code": ..., "message": ...}`). The mapping is fixed so
+frontend code can switch on the value without parsing English messages.
 """
 error_code(::Type{NotFound})::String = "NOT_FOUND"
 error_code(::Type{InvalidCredentials})::String = "INVALID_CREDENTIALS"
@@ -32,23 +32,20 @@ Build an error response with the standard `{"code": ..., "message": ...}` envelo
 # Returns
 An HTTP response with JSON body and the given status.
 """
-function error_response(
-    ::Type{C}, message::AbstractString; status,
-) where {C<:ErrorCode}
+function error_response(::Type{C}, message::AbstractString; status) where {C<:ErrorCode}
     return json(
-        Dict("code" => error_code(C), "message" => (message |> string));
-        status=status,
+        Dict("code" => error_code(C), "message" => (string(message))); status=status
     )
 end
 
 """
     upsert_to_error_code(result::UpsertResult)::Type{<:ErrorCode}
 
-Translate a non-success [`UpsertResult`](@ref) into the matching [`ErrorCode`](@ref) type so
-that write-outcome failures surface a stable code in the response body.
+Map a non-success [`UpsertResult`](@ref) to the matching [`ErrorCode`](@ref) type so
+write-outcome failures surface a stable code in the response body.
 
-Calling this with a successful result ([`Created`](@ref) or [`Updated`](@ref)) is a programmer
-error and falls through to a generic [`ServerError`](@ref).
+Passing a successful result ([`Created`](@ref) or [`Updated`](@ref)) is a programmer
+error; the function falls through to [`ServerError`](@ref).
 """
 upsert_to_error_code(::Type{Duplicate})::Type{<:ErrorCode} = Conflict
 upsert_to_error_code(::Type{Unprocessable})::Type{<:ErrorCode} = InvalidPayload
@@ -58,14 +55,13 @@ upsert_to_error_code(::Type{<:UpsertResult})::Type{<:ErrorCode} = ServerError
 """
     get_status_by_upsert_result(UpsertResult)::HTTP.StatusCodes
 
-Return the appropriate HTTP status code based on the upsert result.
+Return the HTTP status code for a given [`UpsertResult`](@ref).
 
-# Table of conversions
-- **Created** -> `HTTP.StatusCodes.CREATED`
-- **Updated** -> `HTTP.StatusCodes.OK`
-- **Duplicate** -> `HTTP.StatusCodes.CONFLICT`
-- **Unprocessable** -> `HTTP.StatusCodes.UNPROCESSABLE_ENTITY`
-- **Error** -> `HTTP.StatusCodes.INTERNAL_SERVER_ERROR`
+- `Created` → `HTTP.StatusCodes.CREATED`
+- `Updated` → `HTTP.StatusCodes.OK`
+- `Duplicate` → `HTTP.StatusCodes.CONFLICT`
+- `Unprocessable` → `HTTP.StatusCodes.UNPROCESSABLE_ENTITY`
+- `Error` → `HTTP.StatusCodes.INTERNAL_SERVER_ERROR`
 """
 get_status_by_upsert_result(::Type{Created}) = HTTP.StatusCodes.CREATED
 get_status_by_upsert_result(::Type{Updated}) = HTTP.StatusCodes.OK
@@ -76,22 +72,16 @@ get_status_by_upsert_result(::Type{Error}) = HTTP.StatusCodes.INTERNAL_SERVER_ER
 """
     Base.String(::Type{<:UpsertResult})::String
 
-Convert an [`UpsertResult`](@ref) type to its string representation in uppercase.
-
-# Arguments
-- `::Type{<:UpsertResult}`: The upsert result type to convert
-
-# Returns
-A string representation of the upsert result type in uppercase.
+Return the uppercase string name of an [`UpsertResult`](@ref) type.
 """
 function Base.String(::Type{T})::String where {T<:UpsertResult}
-    return T |> nameof |> String |> uppercase
+    return uppercase(String(nameof(T)))
 end
 
 """
     AdminRequiredMiddleware(handle::Function)::Function
 
-A middleware function to enforce that the user making the request has administrative privileges.
+Middleware that rejects requests from non-admin users with `403 ADMIN_REQUIRED`.
 """
 function AdminRequiredMiddleware(handle::Function)::Function
     function (request::HTTP.Request)
@@ -99,7 +89,8 @@ function AdminRequiredMiddleware(handle::Function)::Function
         if _DEARDIARY_APICONFIG.enable_auth
             if !(request.context[:user].is_admin)
                 return error_response(
-                    AdminRequired, "Admin privileges required";
+                    AdminRequired,
+                    "Admin privileges required";
                     status=HTTP.StatusCodes.FORBIDDEN,
                 )
             end
@@ -107,17 +98,17 @@ function AdminRequiredMiddleware(handle::Function)::Function
             @warn "Authentication is disabled. Handlers will be injected with the default admin user."
             request.context[:user] = get(request.context, :user, get_user("default"))
         end
-        return request |> handle
+        return handle(request)
     end
 end
 
 """
     SameUserOrAdminRequiredMiddleware(handle::Function)::Function
 
-A middleware function to enforce that the indicated user is the same user making the request, or that the user has administrative privileges.
+Middleware that passes only when the authenticated user matches the target id or is an admin.
 
 Reads the target user id from the URL path (`/user/{id}`) using [`path_segments`](@ref),
-because Oxygen binds `request.context[:params]` only when the registered handler runs —
+because Oxygen binds `request.context[:params]` only when the registered handler runs,
 after route-level middleware.
 """
 function SameUserOrAdminRequiredMiddleware(handle::Function)::Function
@@ -126,17 +117,20 @@ function SameUserOrAdminRequiredMiddleware(handle::Function)::Function
         if _DEARDIARY_APICONFIG.enable_auth
             user = request.context[:user]
             if !user.is_admin
-                segments = request |> path_segments
-                target_id = (segments |> length) >= 2 ? tryparse(Int64, segments[2]) : nothing
-                if target_id |> isnothing
+                segments = path_segments(request)
+                target_id =
+                    (length(segments)) >= 2 ? tryparse(Int64, segments[2]) : nothing
+                if isnothing(target_id)
                     return error_response(
-                        NotFound, (HTTP.StatusCodes.NOT_FOUND |> HTTP.statustext);
+                        NotFound,
+                        (HTTP.statustext(HTTP.StatusCodes.NOT_FOUND));
                         status=HTTP.StatusCodes.NOT_FOUND,
                     )
                 end
                 if user.id != target_id
                     return error_response(
-                        SameUserRequired, "Same user required";
+                        SameUserRequired,
+                        "Same user required";
                         status=HTTP.StatusCodes.FORBIDDEN,
                     )
                 end
@@ -145,7 +139,7 @@ function SameUserOrAdminRequiredMiddleware(handle::Function)::Function
             @warn "Authentication is disabled. Handlers will be injected with the default admin user."
             request.context[:user] = get(request.context, :user, get_user("default"))
         end
-        return request |> handle
+        return handle(request)
     end
 end
 
@@ -166,18 +160,18 @@ nearest valid bound. `limit` is capped at `max_limit` so a client can't request 
 A [`Pagination`](@ref) bounded to non-negative offset and `[0, max_limit]` limit.
 """
 function parse_pagination(
-    request::HTTP.Request; default_limit::Integer=50, max_limit::Integer=200,
+    request::HTTP.Request; default_limit::Integer=50, max_limit::Integer=200
 )::Pagination
-    qp = request |> queryparams
+    qp = queryparams(request)
     limit = if haskey(qp, "limit")
         parsed = tryparse(Int64, qp["limit"])
-        parsed |> isnothing ? default_limit : min(max(0, parsed), max_limit)
+        isnothing(parsed) ? default_limit : min(max(0, parsed), max_limit)
     else
         default_limit
     end
     offset = if haskey(qp, "offset")
         parsed = tryparse(Int64, qp["offset"])
-        parsed |> isnothing ? 0 : max(0, parsed)
+        isnothing(parsed) ? 0 : max(0, parsed)
     else
         0
     end
@@ -202,8 +196,8 @@ The non-empty `/`-separated segments of the request path.
 function path_segments(request::HTTP.Request)::Vector{String}
     target = request.target
     query_index = findfirst('?', target)
-    path_only = (query_index |> isnothing) ? target : target[1:(query_index - 1)]
-    return split(path_only, '/'; keepempty=false) .|> string
+    path_only = (isnothing(query_index)) ? target : target[1:(query_index - 1)]
+    return string.(split(path_only, '/'; keepempty=false))
 end
 
 """
@@ -223,143 +217,143 @@ The owning project id, or `nothing` if it cannot be resolved (URL does not match
 pattern, malformed id, or an ancestor record that no longer exists).
 """
 function get_project_id(::Type{Project}, request::HTTP.Request)::Optional{Int64}
-    segments = request |> path_segments
-    (segments |> length) >= 2 || return nothing
+    segments = path_segments(request)
+    (length(segments)) >= 2 || return nothing
     return tryparse(Int64, segments[2])
 end
 
 function get_project_id(::Type{Experiment}, request::HTTP.Request)::Optional{Int64}
-    segments = request |> path_segments
-    n = segments |> length
+    segments = path_segments(request)
+    n = length(segments)
     n >= 3 && segments[2] == "project" && return tryparse(Int64, segments[3])
     n >= 2 || return nothing
 
     experiment_id = tryparse(Int64, segments[2])
-    experiment_id |> isnothing && return nothing
-    experiment = experiment_id |> get_experiment
-    return experiment |> isnothing ? nothing : (experiment |> get_project_id)
+    isnothing(experiment_id) && return nothing
+    experiment = get_experiment(experiment_id)
+    return isnothing(experiment) ? nothing : (get_project_id(experiment))
 end
 
 function get_project_id(::Type{Iteration}, request::HTTP.Request)::Optional{Int64}
-    segments = request |> path_segments
-    n = segments |> length
+    segments = path_segments(request)
+    n = length(segments)
     if n >= 3 && segments[2] == "experiment"
         experiment_id = tryparse(Int64, segments[3])
-        experiment_id |> isnothing && return nothing
-        experiment = experiment_id |> get_experiment
-        return experiment |> isnothing ? nothing : (experiment |> get_project_id)
+        isnothing(experiment_id) && return nothing
+        experiment = get_experiment(experiment_id)
+        return isnothing(experiment) ? nothing : (get_project_id(experiment))
     end
     n >= 2 || return nothing
 
     iteration_id = tryparse(Int64, segments[2])
-    iteration_id |> isnothing && return nothing
-    iteration = iteration_id |> get_iteration
-    return iteration |> isnothing ? nothing : (iteration |> get_project_id)
+    isnothing(iteration_id) && return nothing
+    iteration = get_iteration(iteration_id)
+    return isnothing(iteration) ? nothing : (get_project_id(iteration))
 end
 
 function get_project_id(::Type{Metric}, request::HTTP.Request)::Optional{Int64}
-    segments = request |> path_segments
-    n = segments |> length
+    segments = path_segments(request)
+    n = length(segments)
     if n >= 3 && segments[2] == "iteration"
         iteration_id = tryparse(Int64, segments[3])
-        iteration_id |> isnothing && return nothing
-        iteration = iteration_id |> get_iteration
-        return iteration |> isnothing ? nothing : (iteration |> get_project_id)
+        isnothing(iteration_id) && return nothing
+        iteration = get_iteration(iteration_id)
+        return isnothing(iteration) ? nothing : (get_project_id(iteration))
     end
     n >= 2 || return nothing
 
     metric_id = tryparse(Int64, segments[2])
-    metric_id |> isnothing && return nothing
-    metric = metric_id |> get_metric
-    return metric |> isnothing ? nothing : (metric |> get_project_id)
+    isnothing(metric_id) && return nothing
+    metric = get_metric(metric_id)
+    return isnothing(metric) ? nothing : (get_project_id(metric))
 end
 
 function get_project_id(::Type{Parameter}, request::HTTP.Request)::Optional{Int64}
-    segments = request |> path_segments
-    n = segments |> length
+    segments = path_segments(request)
+    n = length(segments)
     if n >= 3 && segments[2] == "iteration"
         iteration_id = tryparse(Int64, segments[3])
-        iteration_id |> isnothing && return nothing
-        iteration = iteration_id |> get_iteration
-        return iteration |> isnothing ? nothing : (iteration |> get_project_id)
+        isnothing(iteration_id) && return nothing
+        iteration = get_iteration(iteration_id)
+        return isnothing(iteration) ? nothing : (get_project_id(iteration))
     end
     n >= 2 || return nothing
 
     parameter_id = tryparse(Int64, segments[2])
-    parameter_id |> isnothing && return nothing
-    parameter = parameter_id |> get_parameter
-    return parameter |> isnothing ? nothing : (parameter |> get_project_id)
+    isnothing(parameter_id) && return nothing
+    parameter = get_parameter(parameter_id)
+    return isnothing(parameter) ? nothing : (get_project_id(parameter))
 end
 
 function get_project_id(::Type{Resource}, request::HTTP.Request)::Optional{Int64}
-    segments = request |> path_segments
-    n = segments |> length
+    segments = path_segments(request)
+    n = length(segments)
     if n >= 3 && segments[2] == "experiment"
         experiment_id = tryparse(Int64, segments[3])
-        experiment_id |> isnothing && return nothing
-        experiment = experiment_id |> get_experiment
-        return experiment |> isnothing ? nothing : (experiment |> get_project_id)
+        isnothing(experiment_id) && return nothing
+        experiment = get_experiment(experiment_id)
+        return isnothing(experiment) ? nothing : (get_project_id(experiment))
     end
     n >= 2 || return nothing
 
     resource_id = tryparse(Int64, segments[2])
-    resource_id |> isnothing && return nothing
-    resource = resource_id |> get_resource
-    return resource |> isnothing ? nothing : (resource |> get_project_id)
+    isnothing(resource_id) && return nothing
+    resource = get_resource(resource_id)
+    return isnothing(resource) ? nothing : (get_project_id(resource))
 end
 
 function get_project_id(::Type{Model}, request::HTTP.Request)::Optional{Int64}
-    segments = request |> path_segments
-    n = segments |> length
+    segments = path_segments(request)
+    n = length(segments)
     n >= 3 && segments[2] == "project" && return tryparse(Int64, segments[3])
     n >= 2 || return nothing
 
     model_id = tryparse(Int64, segments[2])
-    model_id |> isnothing && return nothing
-    model = model_id |> get_model
-    return model |> isnothing ? nothing : (model |> get_project_id)
+    isnothing(model_id) && return nothing
+    model = get_model(model_id)
+    return isnothing(model) ? nothing : (get_project_id(model))
 end
 
 function get_project_id(::Type{ModelVersion}, request::HTTP.Request)::Optional{Int64}
-    segments = request |> path_segments
-    n = segments |> length
+    segments = path_segments(request)
+    n = length(segments)
     if n >= 3 && segments[2] == "model"
         model_id = tryparse(Int64, segments[3])
-        model_id |> isnothing && return nothing
-        model = model_id |> get_model
-        return model |> isnothing ? nothing : (model |> get_project_id)
+        isnothing(model_id) && return nothing
+        model = get_model(model_id)
+        return isnothing(model) ? nothing : (get_project_id(model))
     end
     n >= 2 || return nothing
 
     version_id = tryparse(Int64, segments[2])
-    version_id |> isnothing && return nothing
-    version = version_id |> get_modelversion
-    return version |> isnothing ? nothing : (version |> get_project_id)
+    isnothing(version_id) && return nothing
+    version = get_modelversion(version_id)
+    return isnothing(version) ? nothing : (get_project_id(version))
 end
 
 function get_project_id(::Type{Tag}, request::HTTP.Request)::Optional{Int64}
-    segments = request |> path_segments
-    (segments |> length) >= 3 || return nothing
+    segments = path_segments(request)
+    (length(segments)) >= 3 || return nothing
 
     parent_kind = segments[2]
     parent_id = tryparse(Int64, segments[3])
-    parent_id |> isnothing && return nothing
+    isnothing(parent_id) && return nothing
 
     parent_kind == "project" && return parent_id
     if parent_kind == "experiment"
-        experiment = parent_id |> get_experiment
-        return experiment |> isnothing ? nothing : (experiment |> get_project_id)
+        experiment = get_experiment(parent_id)
+        return isnothing(experiment) ? nothing : (get_project_id(experiment))
     end
     if parent_kind == "iteration"
-        iteration = parent_id |> get_iteration
-        return iteration |> isnothing ? nothing : (iteration |> get_project_id)
+        iteration = get_iteration(parent_id)
+        return isnothing(iteration) ? nothing : (get_project_id(iteration))
     end
     return nothing
 end
 
 function get_project_id(::Type{UserPermission}, request::HTTP.Request)::Optional{Int64}
-    segments = request |> path_segments
-    (segments |> length) >= 2 || return nothing
+    segments = path_segments(request)
+    (length(segments)) >= 2 || return nothing
     segments[1] == "project" || return nothing
     return tryparse(Int64, segments[2])
 end
@@ -367,28 +361,27 @@ end
 """
     ProjectPermissionRequiredMiddleware(::Type{T}, ::Type{A})::Function where {T, A<:PermissionAction}
 
-Build a middleware that enforces a [`PermissionAction`](@ref) against the [`UserPermission`](@ref)
-record tying the current user to the [`Project`](@ref) that owns the entity of type `T`.
+Return a middleware that enforces a [`PermissionAction`](@ref) against the [`UserPermission`](@ref)
+row tying the current user to the [`Project`](@ref) owning an entity of type `T`.
 
-The entity type drives [`get_project_id`](@ref) via multiple dispatch to walk the path params
-and entity hierarchy. The action type drives [`has_permission`](@ref) via multiple dispatch to
-read the matching boolean field on `UserPermission`.
+`T` drives [`get_project_id`](@ref) via multiple dispatch to walk path params and the entity
+hierarchy. `A` drives [`has_permission`](@ref) via multiple dispatch to check the matching
+boolean field on `UserPermission`.
 
-Admins bypass the check. When auth is disabled, the default admin user is injected — the same
-fallback used by [`AdminRequiredMiddleware`](@ref).
+Admins bypass the check. When auth is disabled, the default admin user is injected, matching
+the fallback used by [`AdminRequiredMiddleware`](@ref).
 
 # Arguments
 - `::Type{T}`: The entity type the route operates on.
-- `::Type{A}`: The CRUD action the route requires, passed as a type tag
+- `::Type{A}`: The required CRUD action, passed as a type tag
   (`CreatePermission`, `ReadPermission`, `UpdatePermission`, `DeletePermission`).
 
 # Returns
-A middleware function with the signature `(handle::Function) -> (HTTP.Request) -> response`,
-shaped like [`AdminRequiredMiddleware`](@ref).
+A middleware with signature `(handle::Function) -> (HTTP.Request) -> response`.
 """
 function ProjectPermissionRequiredMiddleware(
-    ::Type{T}, ::Type{A},
-)::Function where {T, A<:PermissionAction}
+    ::Type{T}, ::Type{A}
+)::Function where {T,A<:PermissionAction}
     function (handle::Function)
         function (request::HTTP.Request)
             global _DEARDIARY_APICONFIG
@@ -396,17 +389,19 @@ function ProjectPermissionRequiredMiddleware(
                 user = request.context[:user]
                 if !user.is_admin
                     project_id = get_project_id(T, request)
-                    if project_id |> isnothing
+                    if isnothing(project_id)
                         return error_response(
-                            NotFound, (HTTP.StatusCodes.NOT_FOUND |> HTTP.statustext);
+                            NotFound,
+                            (HTTP.statustext(HTTP.StatusCodes.NOT_FOUND));
                             status=HTTP.StatusCodes.NOT_FOUND,
                         )
                     end
 
                     permission = get_userpermission(user.id, project_id)
-                    if (permission |> isnothing) || !has_permission(permission, A)
+                    if (isnothing(permission)) || !has_permission(permission, A)
                         return error_response(
-                            ProjectPermissionRequired, "Project permission required";
+                            ProjectPermissionRequired,
+                            "Project permission required";
                             status=HTTP.StatusCodes.FORBIDDEN,
                         )
                     end
@@ -415,7 +410,7 @@ function ProjectPermissionRequiredMiddleware(
                 @warn "Authentication is disabled. Handlers will be injected with the default admin user."
                 request.context[:user] = get(request.context, :user, get_user("default"))
             end
-            return request |> handle
+            return handle(request)
         end
     end
 end
@@ -423,18 +418,11 @@ end
 """
     find(form_data::AbstractArray{HTTP.Multipart,1}, field_name::AbstractString)::Union{HTTP.Multipart,Nothing}
 
-Find a part in the multipart form data by its field name.
-
-# Arguments
-- `form_data::AbstractArray{HTTP.Multipart,1}`: The multipart form data to search.
-- `field_name::AbstractString`: The name of the field to find.
-
-# Returns
-An `HTTP.Multipart` part if found, otherwise `nothing`.
+Return the first part in `form_data` whose name equals `field_name`, or `nothing` if absent.
 """
 function find(
-    form_data::AbstractArray{HTTP.Multipart,1}, field_name::AbstractString,
+    form_data::AbstractArray{HTTP.Multipart,1}, field_name::AbstractString
 )::Union{HTTP.Multipart,Nothing}
     index = findfirst(part -> part.name == field_name, form_data)
-    return index |> isnothing ? nothing : form_data[index]
+    return isnothing(index) ? nothing : form_data[index]
 end

@@ -7,7 +7,9 @@ using Bcrypt
 using Compat
 using SHA
 using Sockets
-using SQLite
+using DuckDB
+using DBInterface
+using Tables
 
 using DearDiary
 
@@ -34,7 +36,7 @@ function create_test_env_file(;
         write(io, "DEARDIARY_PORT=$port\n")
         write(io, "DEARDIARY_DB_FILE=$db_file\n")
         write(io, "# DEARDIARY_DB_FILE=comment\n")
-        if !(jwt_secret |> isnothing)
+        if !(isnothing(jwt_secret))
             write(io, "DEARDIARY_JWT_SECRET=$jwt_secret\n")
         end
         write(io, "DEARDIARY_ENABLE_AUTH=$enable_auth\n")
@@ -47,33 +49,30 @@ end
 
 macro with_deardiary_test_db(expr)
     quote
-        is_api = !(DearDiary._DEARDIARY_APICONFIG |> isnothing)
+        is_api = !(isnothing(DearDiary._DEARDIARY_APICONFIG))
         if is_api
-            DearDiary.initialize_database(
-                ; file_name=DearDiary._DEARDIARY_APICONFIG.db_file,
+            DearDiary.initialize_database(;
+                file_name=DearDiary._DEARDIARY_APICONFIG.db_file
             )
         else
-            DearDiary.initialize_database(
-                ; file_name="deardiary_offline_test.db",
-            )
+            DearDiary.initialize_database(; file_name="deardiary_offline_test.db")
         end
 
         try
-            $(expr |> esc)
+            $(esc(expr))
         finally
             if is_api
                 DearDiary.close_database()
-                DearDiary._DEARDIARY_APICONFIG.db_file |> rm
+                rm(DearDiary._DEARDIARY_APICONFIG.db_file)
             else
                 DearDiary.close_database()
-                "deardiary_offline_test.db" |> rm
+                rm("deardiary_offline_test.db")
             end
         end
     end
 end
 
 include("Aqua.jl")
-
 
 include("utils.jl")
 
@@ -128,7 +127,7 @@ include("routes/auth.jl")
 include("routes/utils.jl")
 
 DearDiary.stop()
-file |> rm
+rm(file)
 
 # Route tests
 file = create_test_env_file()
@@ -150,4 +149,4 @@ include("routes/modelversion.jl")
 include("client/client.jl")
 
 DearDiary.stop()
-file |> rm
+rm(file)

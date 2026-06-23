@@ -19,7 +19,7 @@ Get all [`Project`](@ref).
 # Returns
 An array of [`Project`](@ref) objects.
 """
-get_projects()::Array{Project,1} = Project |> fetch_all
+get_projects()::Array{Project,1} = fetch_all(Project)
 
 """
     get_projects(user::User)::Array{Project,1}
@@ -59,8 +59,8 @@ Create a [`Project`](@ref).
 function create_project(
     user_id::Integer, name::AbstractString
 )::@NamedTuple{id::Optional{<:Int64}, status::DataType}
-    user = user_id |> get_user
-    if user |> isnothing || user.is_admin == 0
+    user = get_user(user_id)
+    if isnothing(user) || user.is_admin == 0
         return (id=nothing, status=Unprocessable)
     end
 
@@ -89,7 +89,9 @@ Create a [`Project`](@ref). Uses the "default" user to create the project.
 - The created project ID. If an error occurs, `nothing` is returned.
 - An [`UpsertResult`](@ref). [`Created`](@ref) if the record was successfully created, [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
 """
-function create_project(name::AbstractString)::@NamedTuple{id::Optional{<:Int64}, status::DataType}
+function create_project(
+    name::AbstractString
+)::@NamedTuple{id::Optional{<:Int64}, status::DataType}
     default_user = get_user("default")
     return create_project(default_user.id, name)
 end
@@ -111,7 +113,7 @@ function update_project(
     id::Integer, name::Optional{AbstractString}, description::Optional{AbstractString}
 )::Type{<:UpsertResult}
     project = fetch(Project, id)
-    if project |> isnothing
+    if isnothing(project)
         return Unprocessable
     end
 

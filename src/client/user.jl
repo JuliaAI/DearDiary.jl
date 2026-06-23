@@ -10,7 +10,7 @@ The username-based local overload (`get_user(name)`) has no REST counterpart; it
 """
 function get_user(client::Client, id::Integer)::Optional{UserResponse}
     try
-        return _json(_request(client, "GET", "/user/$id")) |> UserResponse
+        return UserResponse(_json(_request(client, "GET", "/user/$id")))
     catch err
         err isa ClientError && err.status == 404 && return nothing
         rethrow(err)
@@ -25,8 +25,8 @@ values never include password hashes.
 """
 function get_users(client::Client)::Array{UserResponse,1}
     response = _request(client, "GET", "/user/")
-    decoded = response.body |> String |> JSON.parse
-    return [item |> UserResponse for item in decoded]
+    decoded = JSON.parse(String(response.body))
+    return [UserResponse(item) for item in decoded]
 end
 
 """
@@ -43,7 +43,9 @@ function create_user(
     password::AbstractString,
 )::Int64
     response = _request(
-        client, "POST", "/user/";
+        client,
+        "POST",
+        "/user/";
         body=Dict(
             "first_name" => first_name,
             "last_name" => last_name,
@@ -61,14 +63,17 @@ Patch a [`User`](@ref) via `PATCH /user/{id}`. Any keyword left as `nothing` is 
 untouched server-side. The viewer must be `id` or an admin.
 """
 function update_user(
-    client::Client, id::Integer;
+    client::Client,
+    id::Integer;
     first_name::Optional{AbstractString}=nothing,
     last_name::Optional{AbstractString}=nothing,
     password::Optional{AbstractString}=nothing,
     is_admin::Optional{Bool}=nothing,
 )::Nothing
     _request(
-        client, "PATCH", "/user/$id";
+        client,
+        "PATCH",
+        "/user/$id";
         body=Dict(
             "first_name" => first_name,
             "last_name" => last_name,
@@ -83,7 +88,7 @@ end
     delete_user(client::Client, id::Integer)::Nothing
 
 Delete a [`User`](@ref) via `DELETE /user/{id}`. The viewer must be `id` or an admin; the
-seeded `default` user cannot be removed (the server raises a SQLite trigger).
+seeded `default` user cannot be removed (the server rejects the request).
 """
 function delete_user(client::Client, id::Integer)::Nothing
     _request(client, "DELETE", "/user/$id")

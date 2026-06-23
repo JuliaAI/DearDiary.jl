@@ -76,9 +76,7 @@
     @testset verbose = true "show method for ResultType" begin
         @testset "with UInt8 < 6" begin
             obj = ShowMethodTestType(
-                1,
-                DateTime(2025, 11, 02, 0, 0, 0),
-                UInt8[1, 2, 3, 4, 5],
+                1, DateTime(2025, 11, 02, 0, 0, 0), UInt8[1, 2, 3, 4, 5]
             )
             io = IOBuffer()
             DearDiary.show(io, MIME"text/plain"(), obj)
@@ -92,9 +90,7 @@
 
         @testset "with UInt8 > 6" begin
             obj = ShowMethodTestType(
-                1,
-                DateTime(2025, 11, 02, 0, 0, 0),
-                UInt8[1, 2, 3, 4, 5, 6, 7, 8, 9],
+                1, DateTime(2025, 11, 02, 0, 0, 0), UInt8[1, 2, 3, 4, 5, 6, 7, 8, 9]
             )
             io = IOBuffer()
             DearDiary.show(io, MIME"text/plain"(), obj)
@@ -110,11 +106,8 @@
     @testset verbose = true "show method for array of ResultType" begin
         @testset "with n < 6" begin
             objs = [
-                ShowMethodTestType(
-                    i,
-                    DateTime(2025, 11, 02, 0, 0, 0),
-                    UInt8[1, 2, 3],
-                ) for i in 1:4
+                ShowMethodTestType(i, DateTime(2025, 11, 02, 0, 0, 0), UInt8[1, 2, 3]) for
+                i in 1:4
             ]
             io = IOBuffer()
             DearDiary.show(io, MIME"text/plain"(), objs)
@@ -126,11 +119,8 @@
 
         @testset "with n > 6" begin
             objs = [
-                ShowMethodTestType(
-                    i,
-                    DateTime(2025, 11, 02, 0, 0, 0),
-                    UInt8[1, 2, 3],
-                ) for i in 1:10
+                ShowMethodTestType(i, DateTime(2025, 11, 02, 0, 0, 0), UInt8[1, 2, 3]) for
+                i in 1:10
             ]
             io = IOBuffer()
             DearDiary.show(io, MIME"text/plain"(), objs)

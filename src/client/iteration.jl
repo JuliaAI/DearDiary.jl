@@ -7,7 +7,7 @@ replies 404 and raises [`ClientError`](@ref) for other failures. Requires
 """
 function get_iteration(client::Client, id::Integer)::Optional{Iteration}
     try
-        return _json(_request(client, "GET", "/iteration/$id")) |> Iteration
+        return Iteration(_json(_request(client, "GET", "/iteration/$id")))
     catch err
         err isa ClientError && err.status == 404 && return nothing
         rethrow(err)
@@ -17,12 +17,10 @@ end
 """
     get_iterations(client::Client, experiment_id::Integer)::Array{Iteration,1}
 
-Convenience wrapper around the paged form: returns the first page (default limit) of
-[`Iteration`](@ref) records under `experiment_id` and discards the pagination envelope.
+Returns the first page (default limit) of [`Iteration`](@ref) records under `experiment_id`,
+discarding the pagination envelope.
 """
-function get_iterations(
-    client::Client, experiment_id::Integer,
-)::Array{Iteration,1}
+function get_iterations(client::Client, experiment_id::Integer)::Array{Iteration,1}
     return get_iterations(client, experiment_id, Pagination(50, 0)).data
 end
 
@@ -33,10 +31,12 @@ Fetch a page of [`Iteration`](@ref) records under `experiment_id` via
 `GET /iteration/experiment/{experiment_id}?limit=…&offset=…`.
 """
 function get_iterations(
-    client::Client, experiment_id::Integer, page::Pagination,
+    client::Client, experiment_id::Integer, page::Pagination
 )::PaginatedResponse{Iteration}
     response = _request(
-        client, "GET", "/iteration/experiment/$experiment_id";
+        client,
+        "GET",
+        "/iteration/experiment/$experiment_id";
         query=Dict("limit" => page.limit, "offset" => page.offset),
     )
     return _paginated(Iteration, _json(response))
@@ -49,11 +49,9 @@ Fetch the direct children of `parent_id` via `GET /iteration/{parent_id}/childre
 an empty array when no children exist. Requires [`ReadPermission`](@ref) on the iteration's
 project.
 """
-function get_child_iterations(
-    client::Client, parent_id::Integer,
-)::Array{Iteration,1}
+function get_child_iterations(client::Client, parent_id::Integer)::Array{Iteration,1}
     response = _request(client, "GET", "/iteration/$parent_id/children")
-    return [item |> Iteration for item in _json(response)]
+    return [Iteration(item) for item in _json(response)]
 end
 
 """
@@ -69,16 +67,14 @@ iteration (HPO trial, distributed worker, nested CV fold). The parent must belon
 same `experiment_id`.
 """
 function create_iteration(
-    client::Client, experiment_id::Integer;
-    parent_iteration_id::Optional{<:Integer}=nothing,
+    client::Client, experiment_id::Integer; parent_iteration_id::Optional{<:Integer}=nothing
 )::Iteration
-    query = (parent_iteration_id |> isnothing) ?
-        nothing :
+    query = if (isnothing(parent_iteration_id))
+        nothing
+    else
         Dict("parent_iteration_id" => parent_iteration_id)
-    response = _request(
-        client, "POST", "/iteration/experiment/$experiment_id";
-        query=query,
-    )
+    end
+    response = _request(client, "POST", "/iteration/experiment/$experiment_id"; query=query)
     iteration_id = _json(response)["iteration_id"]
     return get_iteration(client, iteration_id)
 end
@@ -94,18 +90,21 @@ further updates fail with [`ClientError`](@ref) `"INVALID_PAYLOAD"`. Requires
 `status` accepts an [`IterationStatus`](@ref) enum value; the integer is sent on the wire.
 """
 function update_iteration(
-    client::Client, id::Integer;
+    client::Client,
+    id::Integer;
     notes::Optional{AbstractString}=nothing,
     end_date::Optional{DateTime}=nothing,
     status::Optional{IterationStatus}=nothing,
     error_message::Optional{AbstractString}=nothing,
 )::Nothing
     _request(
-        client, "PATCH", "/iteration/$id";
+        client,
+        "PATCH",
+        "/iteration/$id";
         body=Dict(
             "notes" => notes,
-            "end_date" => (end_date |> isnothing) ? nothing : (end_date |> string),
-            "status_id" => (status |> isnothing) ? nothing : (status |> Integer),
+            "end_date" => (isnothing(end_date)) ? nothing : (string(end_date)),
+            "status_id" => (isnothing(status)) ? nothing : (Integer(status)),
             "error_message" => error_message,
         ),
     )
@@ -119,15 +118,17 @@ Capture the calling process's reproducibility state via [`capture_environment`](
 POST it to `POST /iteration/{id}/snapshot`. Requires [`UpdatePermission`](@ref) on the
 iteration's project.
 
-Capture happens **locally** — `LibGit2` and `Pkg` operate on the client process's working
-tree, not the server's — and the resulting metadata is wired through to the iteration row.
+Capture runs **locally**: `LibGit2` and `Pkg` operate on the client process's working
+tree, not the server's. The resulting metadata is wired through to the iteration row.
 """
 function snapshot_environment!(
-    client::Client, id::Integer; entrypoint::AbstractString=PROGRAM_FILE,
+    client::Client, id::Integer; entrypoint::AbstractString=PROGRAM_FILE
 )::Nothing
     snapshot = capture_environment(; entrypoint=entrypoint)
     _request(
-        client, "POST", "/iteration/$id/snapshot";
+        client,
+        "POST",
+        "/iteration/$id/snapshot";
         body=Dict(
             "julia_version" => snapshot.julia_version,
             "git_sha" => snapshot.git_sha,

@@ -1,62 +1,59 @@
 """
     setup_iteration_routes()
 
-This function sets up the iteration-related routes for the API.
-
-!!! warning
-    This function is intended for internal use. Users should not call this function directly.
+Register iteration routes (`/iteration`). Internal use only.
 """
 function setup_iteration_routes()
-    root = router("/iteration", tags=["iteration"])
+    root = router("/iteration"; tags=["iteration"])
 
-    @get root("/{id}", middleware=[
-        ProjectPermissionRequiredMiddleware(Iteration, ReadPermission),
-    ]) function (::HTTP.Request, id::Integer)
-        response_iteration = id |> get_iteration
+    @get root(
+        "/{id}", middleware=[ProjectPermissionRequiredMiddleware(Iteration, ReadPermission)]
+    ) function (::HTTP.Request, id::Integer)
+        response_iteration = get_iteration(id)
 
-        if (response_iteration |> isnothing)
+        if (isnothing(response_iteration))
             return error_response(
-                NotFound, "Iteration not found";
-                status=HTTP.StatusCodes.NOT_FOUND,
+                NotFound, "Iteration not found"; status=HTTP.StatusCodes.NOT_FOUND
             )
         end
         return json(response_iteration; status=HTTP.StatusCodes.OK)
     end
 
-    @get root("/experiment/{experiment_id}", middleware=[
-        ProjectPermissionRequiredMiddleware(Iteration, ReadPermission),
-    ]) function (request::HTTP.Request, experiment_id::Integer)
-        page = request |> parse_pagination
+    @get root(
+        "/experiment/{experiment_id}",
+        middleware=[ProjectPermissionRequiredMiddleware(Iteration, ReadPermission)],
+    ) function (request::HTTP.Request, experiment_id::Integer)
+        page = parse_pagination(request)
         return json(get_iterations(experiment_id, page); status=HTTP.StatusCodes.OK)
     end
 
-    @get root("/{id}/children", middleware=[
-        ProjectPermissionRequiredMiddleware(Iteration, ReadPermission),
-    ]) function (::HTTP.Request, id::Integer)
+    @get root(
+        "/{id}/children",
+        middleware=[ProjectPermissionRequiredMiddleware(Iteration, ReadPermission)],
+    ) function (::HTTP.Request, id::Integer)
         return json(get_child_iterations(id); status=HTTP.StatusCodes.OK)
     end
 
     # Snapshot endpoint: the client captures local git + Pkg state in its own process and
-    # POSTs the bundle; the server persists it on the iteration row. Modelled as POST (not
-    # PATCH) because semantically it's a single "attach a snapshot to this run" action,
-    # never a partial field update.
-    @post root("/{id}/snapshot", middleware=[
-        ProjectPermissionRequiredMiddleware(Iteration, UpdatePermission),
-    ]) function (
-        ::HTTP.Request, id::Integer, parameters::Json{IterationSnapshotPayload},
-    )
-        iteration = id |> get_iteration
-        if iteration |> isnothing
+    # POSTs the bundle; the server persists it on the iteration row. Modelled as POST rather
+    # than PATCH because it's a single "attach a snapshot to this run" action, not a partial
+    # field update.
+    @post root(
+        "/{id}/snapshot",
+        middleware=[ProjectPermissionRequiredMiddleware(Iteration, UpdatePermission)],
+    ) function (::HTTP.Request, id::Integer, parameters::Json{IterationSnapshotPayload})
+        iteration = get_iteration(id)
+        if isnothing(iteration)
             return error_response(
-                NotFound, "Iteration not found";
-                status=HTTP.StatusCodes.NOT_FOUND,
+                NotFound, "Iteration not found"; status=HTTP.StatusCodes.NOT_FOUND
             )
         end
         upsert_result = update(
-            Iteration, id;
+            Iteration,
+            id;
             julia_version=parameters.payload.julia_version,
             git_sha=parameters.payload.git_sha,
-            git_dirty=(parameters.payload.git_dirty |> Int),
+            git_dirty=(Int(parameters.payload.git_dirty)),
             entrypoint=parameters.payload.entrypoint,
             project_toml=parameters.payload.project_toml,
             manifest_toml=parameters.payload.manifest_toml,
@@ -65,47 +62,48 @@ function setup_iteration_routes()
             return error_response(
                 upsert_to_error_code(upsert_result),
                 "Failed to attach snapshot";
-                status=upsert_result |> get_status_by_upsert_result,
+                status=get_status_by_upsert_result(upsert_result),
             )
         end
-        return json(("message" => (upsert_result |> String)); status=HTTP.StatusCodes.OK)
+        return json(("message" => (String(upsert_result))); status=HTTP.StatusCodes.OK)
     end
 
-    @post root("/experiment/{experiment_id}", middleware=[
-        ProjectPermissionRequiredMiddleware(Iteration, CreatePermission),
-    ]) function (request::HTTP.Request, experiment_id::Integer)
+    @post root(
+        "/experiment/{experiment_id}",
+        middleware=[ProjectPermissionRequiredMiddleware(Iteration, CreatePermission)],
+    ) function (request::HTTP.Request, experiment_id::Integer)
         # Optional `?parent_iteration_id=N` query param makes the new row a child of `N`.
         # Absent → top-level iteration (the legacy default).
-        qp = request |> queryparams
+        qp = queryparams(request)
         parent_iteration_id = nothing
         if haskey(qp, "parent_iteration_id")
             parent_iteration_id = tryparse(Int64, qp["parent_iteration_id"])
-            if parent_iteration_id |> isnothing
+            if isnothing(parent_iteration_id)
                 return error_response(
-                    InvalidPayload, "parent_iteration_id must be an integer";
+                    InvalidPayload,
+                    "parent_iteration_id must be an integer";
                     status=HTTP.StatusCodes.UNPROCESSABLE_ENTITY,
                 )
             end
         end
 
         iteration_id, upsert_result = create_iteration(
-            experiment_id; parent_iteration_id=parent_iteration_id,
+            experiment_id; parent_iteration_id=parent_iteration_id
         )
         if !(upsert_result === Created)
             return error_response(
                 upsert_to_error_code(upsert_result),
                 "Failed to create iteration";
-                status=upsert_result |> get_status_by_upsert_result,
+                status=get_status_by_upsert_result(upsert_result),
             )
         end
         return json(("iteration_id" => iteration_id); status=HTTP.StatusCodes.CREATED)
     end
 
-    @patch root("/{id}", middleware=[
-        ProjectPermissionRequiredMiddleware(Iteration, UpdatePermission),
-    ]) function (
-        ::HTTP.Request, id::Integer, parameters::Json{IterationUpdatePayload}
-    )
+    @patch root(
+        "/{id}",
+        middleware=[ProjectPermissionRequiredMiddleware(Iteration, UpdatePermission)],
+    ) function (::HTTP.Request, id::Integer, parameters::Json{IterationUpdatePayload})
         upsert_result = update_iteration(
             id,
             parameters.payload.notes,
@@ -117,25 +115,27 @@ function setup_iteration_routes()
             return error_response(
                 upsert_to_error_code(upsert_result),
                 "Failed to update iteration";
-                status=upsert_result |> get_status_by_upsert_result,
+                status=get_status_by_upsert_result(upsert_result),
             )
         end
-        return json(("message" => (upsert_result |> String)); status=HTTP.StatusCodes.OK)
+        return json(("message" => (String(upsert_result))); status=HTTP.StatusCodes.OK)
     end
 
-    @delete root("/{id}", middleware=[
-        ProjectPermissionRequiredMiddleware(Iteration, DeletePermission),
-    ]) function (::HTTP.Request, id::Integer)
-        success = id |> delete_iteration
+    @delete root(
+        "/{id}",
+        middleware=[ProjectPermissionRequiredMiddleware(Iteration, DeletePermission)],
+    ) function (::HTTP.Request, id::Integer)
+        success = delete_iteration(id)
 
         if !success
             return error_response(
-                ServerError, "Failed to delete iteration";
+                ServerError,
+                "Failed to delete iteration";
                 status=HTTP.StatusCodes.INTERNAL_SERVER_ERROR,
             )
         end
         return json(
-            ("message" => (HTTP.StatusCodes.OK |> HTTP.statustext));
+            ("message" => (HTTP.statustext(HTTP.StatusCodes.OK)));
             status=HTTP.StatusCodes.OK,
         )
     end

@@ -1,12 +1,12 @@
 # Reproducibility
 
 Every [`Iteration`](@ref) can carry a bit-exact snapshot of the Julia environment that
-produced it — `julia_version`, the HEAD commit SHA of the working tree, the verbatim
-`Project.toml` and `Manifest.toml` that were active at run start, and the entrypoint
-script. Months later [`restore`](@ref) materialises that snapshot back to disk, so the
-exact dependency tree can be `Pkg.instantiate`-d in a fresh depot. Other ML trackers
-capture environments as a `pip freeze` string; Julia's `Manifest.toml` is byte-exact, so
-the captured tree round-trips with no resolution drift.
+produced it: `julia_version`, the HEAD commit SHA, the verbatim `Project.toml` and
+`Manifest.toml` active at run start, and the entrypoint script. Months later,
+[`restore`](@ref) writes that snapshot back to disk so the exact dependency tree can be
+`Pkg.instantiate`-d in a fresh depot. Other ML trackers capture environments as `pip freeze`
+strings that re-resolve transitive dependencies on install. Julia's `Manifest.toml` is
+byte-exact, so the captured tree round-trips with no resolution drift.
 
 ```@setup repro
 using DearDiary
@@ -17,8 +17,8 @@ DearDiary.initialize_database(; file_name=joinpath(mktempdir(), "deardiary.db"))
 
 [`DearDiary.with_iteration`](@ref) calls [`snapshot_environment!`](@ref) right after
 creating the iteration, but only when the new run has no parent. Driver runs capture; child
-runs (HPO trials, distributed workers) inherit. Override via the `snapshot` keyword if
-you need different behaviour.
+runs (HPO trials, distributed workers) inherit. Override with the `snapshot` keyword for
+different behavior.
 
 ```@repl repro
 user = DearDiary.get_user("default");
@@ -46,8 +46,8 @@ iteration.entrypoint, iteration.git_dirty
 
 ## Capture an iteration manually
 
-When you need to attach a snapshot outside the `with_iteration` flow — say, in a long-lived
-service that opens iterations imperatively — call [`snapshot_environment!`](@ref) directly:
+To attach a snapshot outside the `with_iteration` flow (for example, in a long-lived
+service that opens iterations imperatively), call [`snapshot_environment!`](@ref) directly:
 
 ```@repl repro
 manual_id, _ = create_iteration(experiment_id);
@@ -55,8 +55,8 @@ DearDiary.snapshot_environment!(manual_id; entrypoint="train.jl");
 get_iteration(manual_id).entrypoint
 ```
 
-[`DearDiary.capture_environment`](@ref) returns the snapshot without persisting it, which
-is useful for inspection or for shipping the capture across a process boundary:
+[`DearDiary.capture_environment`](@ref) returns the snapshot without persisting it, useful
+for inspection or shipping the capture across a process boundary:
 
 ```@repl repro
 snapshot = DearDiary.capture_environment();
@@ -66,8 +66,8 @@ snapshot.julia_version
 ## Replay an environment
 
 [`restore`](@ref) writes the captured `Project.toml` and `Manifest.toml` into a fresh
-directory under `depot`. It does **not** activate the project or run `Pkg.instantiate` —
-that's left to the caller so the function is side-effect-free outside the temp tree.
+directory under `depot`. It does **not** activate the project or run `Pkg.instantiate`.
+That is left to the caller so the function stays side-effect-free outside the temp tree.
 
 ```@repl repro
 depot = mktempdir();
@@ -78,9 +78,9 @@ result = DearDiary.restore(iteration_id; depot=depot)
 isfile(joinpath(result.project_path, "Project.toml")), isfile(joinpath(result.project_path, "Manifest.toml"))
 ```
 
-The on-disk files are byte-identical to what was captured, so loading them with `using
-Pkg; Pkg.activate(result.project_path); Pkg.instantiate()` reconstructs the exact
-dependency tree the iteration ran against:
+The on-disk files are byte-identical to what was captured. Loading them with `using Pkg;
+Pkg.activate(result.project_path); Pkg.instantiate()` reconstructs the exact dependency
+tree the iteration ran against:
 
 ```julia
 using Pkg
@@ -100,10 +100,10 @@ Pkg.instantiate()
 | Active `Manifest.toml` (verbatim) | Datasets used by the run (separate concern) |
 | Entrypoint script path | Runtime config files outside the project |
 
-If `git_dirty` is `true`, the captured Manifest alone is no longer sufficient for true
-reproducibility — there are uncommitted source changes that must be reapplied manually.
-Always run reproducible jobs from a clean working tree; the snapshot lets you verify after
-the fact whether a job's tree was clean.
+If `git_dirty` is `true`, the captured Manifest alone is not sufficient for full
+reproducibility. Uncommitted source changes must be reapplied manually. Run reproducible
+jobs from a clean working tree; the snapshot lets you verify after the fact whether the
+tree was clean.
 
 ```@setup repro
 DearDiary.close_database()

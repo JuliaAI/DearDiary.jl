@@ -1,11 +1,11 @@
 # Filesystem artifact storage
 
-By default DearDiary stores every [`Resource`](@ref) artifact inline in the SQLite database.
-That works for kilobyte-sized configs and tiny pickled models, but a 500 MB serialised
-checkpoint will balloon the database file and slow every metadata query. The
+By default, DearDiary stores every [`Resource`](@ref) artifact inline in the database.
+That works for kilobyte-sized configs and small pickled models, but a 500 MB checkpoint
+will balloon the database file and slow every metadata query. The
 [`DearDiary.FilesystemStore`](@ref) backend writes artifact bytes to a directory on local
-disk instead, so the database stays lean and the bytes can be backed up with the rest of
-your storage volume.
+disk, keeping the database lean and letting you back up the bytes with the rest of your
+storage volume.
 
 ## Configuration
 
@@ -16,14 +16,14 @@ DEARDIARY_ARTIFACT_BACKEND=filesystem
 DEARDIARY_ARTIFACT_FS_ROOT=/var/lib/deardiary/artifacts
 ```
 
-The root directory is created on the first write — no separate provisioning step is needed.
+The root directory is created on the first write. No separate provisioning step is needed.
 
 ## Layout on disk
 
 Each artifact is written to `<root>/<aa>/<uuid>`, where `<aa>` is a two-character shard of
-the UUID so a single directory never grows unbounded. Two uploads of identical bytes still
-produce distinct files: there is no content-addressed deduplication, so deleting one
-[`Resource`](@ref) can never break a sibling that happened to upload the same payload.
+the UUID so no single directory grows unbounded. Two uploads of identical bytes produce
+distinct files: there is no content-addressed deduplication, so deleting one
+[`Resource`](@ref) cannot break a sibling that uploaded the same payload.
 
 ```@setup fs
 using DearDiary
@@ -40,8 +40,7 @@ DearDiary.initialize_database(; file_name=DearDiary._DEARDIARY_APICONFIG.db_file
 
 ## End-to-end example
 
-Create a project, experiment, iteration, and upload an artifact through the configured
-store:
+Create a project, experiment, and iteration, then upload an artifact through the configured store:
 
 ```@repl fs
 user = DearDiary.get_user("default");
@@ -66,8 +65,7 @@ resource.backend
 resource.uri |> startswith("file://")
 ```
 
-The on-disk path is reachable directly when you want to inspect or stream the bytes from
-another process — DearDiary itself reaches them through [`read_resource_data`](@ref):
+The on-disk path is reachable directly for inspection or streaming from another process. DearDiary itself reads through [`read_resource_data`](@ref):
 
 ```@repl fs
 read_resource_data(resource_id) == payload
@@ -76,8 +74,8 @@ read_resource_data(resource_id) == payload
 ## Migrating from the SQLite backend
 
 If a project was started on the SQLite backend and you later switch
-`DEARDIARY_ARTIFACT_BACKEND` to `filesystem`, run [`migrate_artifacts!`](@ref) once to move
-the legacy inline bytes to disk:
+`DEARDIARY_ARTIFACT_BACKEND` to `filesystem`, run [`migrate_artifacts!`](@ref) once to
+move the legacy inline bytes to disk:
 
 ```julia
 using DearDiary
@@ -85,10 +83,9 @@ DearDiary.run(; env_file=".env")
 DearDiary.migrate_artifacts!()
 ```
 
-The call is **idempotent and restartable**: rows that have already been moved have a
-different `backend` value and are skipped on subsequent passes. If the disk fills up
-mid-migration, the failing row is left untouched and the next invocation picks up from
-there.
+The call is **idempotent and restartable**: rows already moved carry a different `backend`
+value and are skipped. If the disk fills up mid-migration, the failing row is left
+untouched and the next invocation picks up from there.
 
 ```@setup fs
 DearDiary.close_database()

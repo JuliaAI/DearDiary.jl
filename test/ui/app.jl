@@ -1,10 +1,10 @@
 @testset verbose = true "ui/app helpers" begin
     @testset "_iteration_title" begin
         @with_deardiary_test_db begin
-            user = "default" |> DearDiary.get_user
+            user = DearDiary.get_user("default")
             project_id, _ = DearDiary.create_project(user.id, "MyProject")
             experiment_id, _ = DearDiary.create_experiment(
-                project_id, DearDiary.IN_PROGRESS, "IrisClassifier",
+                project_id, DearDiary.IN_PROGRESS, "IrisClassifier"
             )
             iteration_id, _ = DearDiary.create_iteration(experiment_id)
 
@@ -29,26 +29,26 @@
     end
 
     @testset "_LOGO_PATH resolves to assets/logo.svg on disk" begin
-        @test DearDiary._LOGO_PATH |> isfile
-        @test DearDiary._LOGO_PATH |> basename == "logo.svg"
+        @test isfile(DearDiary._LOGO_PATH)
+        @test basename(DearDiary._LOGO_PATH) == "logo.svg"
     end
 
     @testset "_build_metrics_figure renders inline SVG without external JS" begin
         @with_deardiary_test_db begin
-            user = "default" |> DearDiary.get_user
+            user = DearDiary.get_user("default")
             project_id, _ = DearDiary.create_project(user.id, "ChartProject")
             experiment_id, _ = DearDiary.create_experiment(
-                project_id, DearDiary.IN_PROGRESS, "Experiment",
+                project_id, DearDiary.IN_PROGRESS, "Experiment"
             )
             iteration_id, _ = DearDiary.create_iteration(experiment_id)
             for step in 1:5
                 DearDiary.create_metric(iteration_id, "loss", 1.0 / step; step=step)
                 DearDiary.create_metric(
-                    iteration_id, "accuracy", 0.5 + 0.1 * step; step=step,
+                    iteration_id, "accuracy", 0.5 + 0.1 * step; step=step
                 )
             end
 
-            metrics = iteration_id |> DearDiary.get_metrics
+            metrics = DearDiary.get_metrics(iteration_id)
             svg = DearDiary._build_metrics_figure(metrics)
             html = sprint(show, MIME("text/html"), svg)
 
@@ -56,9 +56,9 @@
             @test occursin("viewBox=\"0 0 800 380\"", html)
 
             # No Plotly: no third-party bundle, no JSON trace blocks, no <script> tags.
-            @test !occursin("plotly", html |> lowercase)
-            @test !occursin("application/json", html |> lowercase)
-            @test !occursin("<script", html |> lowercase)
+            @test !occursin("plotly", lowercase(html))
+            @test !occursin("application/json", lowercase(html))
+            @test !occursin("<script", lowercase(html))
 
             # One polyline per series.
             @test length(collect(eachmatch(r"<polyline", html))) == 2
@@ -78,15 +78,15 @@
 
     @testset "_build_metrics_figure handles a single-point series without div-by-zero" begin
         @with_deardiary_test_db begin
-            user = "default" |> DearDiary.get_user
+            user = DearDiary.get_user("default")
             project_id, _ = DearDiary.create_project(user.id, "P")
             experiment_id, _ = DearDiary.create_experiment(
-                project_id, DearDiary.IN_PROGRESS, "E",
+                project_id, DearDiary.IN_PROGRESS, "E"
             )
             iteration_id, _ = DearDiary.create_iteration(experiment_id)
             DearDiary.create_metric(iteration_id, "loss", 0.5; step=1)
 
-            metrics = iteration_id |> DearDiary.get_metrics
+            metrics = DearDiary.get_metrics(iteration_id)
             svg = DearDiary._build_metrics_figure(metrics)
             html = sprint(show, MIME("text/html"), svg)
 
@@ -120,10 +120,10 @@
     end
 
     @testset "_status_glyph maps every status to a distinct character" begin
-        @test DearDiary._status_glyph(DearDiary.SUCCEEDED |> Integer) == "✓"
-        @test DearDiary._status_glyph(DearDiary.FAILED |> Integer) == "✗"
-        @test DearDiary._status_glyph(DearDiary.RUNNING |> Integer) == "▶"
-        @test DearDiary._status_glyph(DearDiary.KILLED |> Integer) == "⊘"
+        @test DearDiary._status_glyph(Integer(DearDiary.SUCCEEDED)) == "✓"
+        @test DearDiary._status_glyph(Integer(DearDiary.FAILED)) == "✗"
+        @test DearDiary._status_glyph(Integer(DearDiary.RUNNING)) == "▶"
+        @test DearDiary._status_glyph(Integer(DearDiary.KILLED)) == "⊘"
         @test DearDiary._status_glyph(999) == "?"
     end
 
@@ -146,10 +146,10 @@
 
     @testset "sidebar labels iterations as 'Iteration N · time' with glyph" begin
         @with_deardiary_test_db begin
-            user = "default" |> DearDiary.get_user
+            user = DearDiary.get_user("default")
             project_id, _ = DearDiary.create_project(user.id, "Project")
             experiment_id, _ = DearDiary.create_experiment(
-                project_id, DearDiary.IN_PROGRESS, "Experiment",
+                project_id, DearDiary.IN_PROGRESS, "Experiment"
             )
             DearDiary.create_iteration(experiment_id)
             DearDiary.create_iteration(experiment_id)

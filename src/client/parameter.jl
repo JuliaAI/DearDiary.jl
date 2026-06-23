@@ -6,7 +6,7 @@ replies 404 and raises [`ClientError`](@ref) for other failures.
 """
 function get_parameter(client::Client, id::Integer)::Optional{Parameter}
     try
-        return _json(_request(client, "GET", "/parameter/$id")) |> Parameter
+        return Parameter(_json(_request(client, "GET", "/parameter/$id")))
     catch err
         err isa ClientError && err.status == 404 && return nothing
         rethrow(err)
@@ -16,12 +16,10 @@ end
 """
     get_parameters(client::Client, iteration_id::Integer)::Array{Parameter,1}
 
-Convenience wrapper around the paged form: returns the first page (default limit) of
-[`Parameter`](@ref) records under `iteration_id` and discards the pagination envelope.
+Returns the first page (default limit) of [`Parameter`](@ref) records under `iteration_id`,
+discarding the pagination envelope.
 """
-function get_parameters(
-    client::Client, iteration_id::Integer,
-)::Array{Parameter,1}
+function get_parameters(client::Client, iteration_id::Integer)::Array{Parameter,1}
     return get_parameters(client, iteration_id, Pagination(50, 0)).data
 end
 
@@ -32,10 +30,12 @@ Fetch a page of [`Parameter`](@ref) records under `iteration_id` via
 `GET /parameter/iteration/{iteration_id}?limit=…&offset=…`.
 """
 function get_parameters(
-    client::Client, iteration_id::Integer, page::Pagination,
+    client::Client, iteration_id::Integer, page::Pagination
 )::PaginatedResponse{Parameter}
     response = _request(
-        client, "GET", "/parameter/iteration/$iteration_id";
+        client,
+        "GET",
+        "/parameter/iteration/$iteration_id";
         query=Dict("limit" => page.limit, "offset" => page.offset),
     )
     return _paginated(Parameter, _json(response))
@@ -49,13 +49,12 @@ Append a [`Parameter`](@ref) (string-valued) to `iteration_id` via
 the server rejects writes to ended iterations. Returns the new parameter id.
 """
 function create_parameter(
-    client::Client,
-    iteration_id::Integer,
-    key::AbstractString,
-    value::AbstractString,
+    client::Client, iteration_id::Integer, key::AbstractString, value::AbstractString
 )::Int64
     response = _request(
-        client, "POST", "/parameter/iteration/$iteration_id";
+        client,
+        "POST",
+        "/parameter/iteration/$iteration_id";
         body=Dict("key" => key, "value" => value),
     )
     return _json(response)["parameter_id"]
@@ -68,9 +67,9 @@ end
 numeric hyperparameters round-trip through the underlying `TEXT` column unchanged.
 """
 function create_parameter(
-    client::Client, iteration_id::Integer, key::AbstractString, value::Real,
+    client::Client, iteration_id::Integer, key::AbstractString, value::Real
 )::Int64
-    return create_parameter(client, iteration_id, key, value |> string)
+    return create_parameter(client, iteration_id, key, string(value))
 end
 
 """
@@ -80,14 +79,12 @@ Patch a [`Parameter`](@ref) via `PATCH /parameter/{id}`. Any keyword left as `no
 left untouched. Fails when the parent iteration has already been ended.
 """
 function update_parameter(
-    client::Client, id::Integer;
+    client::Client,
+    id::Integer;
     key::Optional{AbstractString}=nothing,
     value::Optional{AbstractString}=nothing,
 )::Nothing
-    _request(
-        client, "PATCH", "/parameter/$id";
-        body=Dict("key" => key, "value" => value),
-    )
+    _request(client, "PATCH", "/parameter/$id"; body=Dict("key" => key, "value" => value))
     return nothing
 end
 
@@ -97,10 +94,9 @@ end
 `Real`-typed overload of [`update_parameter`](@ref); stringifies `value` before sending.
 """
 function update_parameter(
-    client::Client, id::Integer, value::Real;
-    key::Optional{AbstractString}=nothing,
+    client::Client, id::Integer, value::Real; key::Optional{AbstractString}=nothing
 )::Nothing
-    return update_parameter(client, id; key=key, value=(value |> string))
+    return update_parameter(client, id; key=key, value=(string(value)))
 end
 
 """

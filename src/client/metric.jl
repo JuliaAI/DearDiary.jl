@@ -6,7 +6,7 @@ Fetch a [`Metric`](@ref) via `GET /metric/{id}`. Returns `nothing` when the serv
 """
 function get_metric(client::Client, id::Integer)::Optional{Metric}
     try
-        return _json(_request(client, "GET", "/metric/$id")) |> Metric
+        return Metric(_json(_request(client, "GET", "/metric/$id")))
     catch err
         err isa ClientError && err.status == 404 && return nothing
         rethrow(err)
@@ -16,8 +16,7 @@ end
 """
     get_metrics(client::Client, iteration_id::Integer)::Array{Metric,1}
 
-Convenience wrapper returning the first 50 [`Metric`](@ref) rows for `iteration_id`. Rows
-arrive ordered by `step` ascending so they form a chronological series ready to plot.
+Returns the first 50 [`Metric`](@ref) rows for `iteration_id`, ordered by `step` ascending.
 """
 function get_metrics(client::Client, iteration_id::Integer)::Array{Metric,1}
     return get_metrics(client, iteration_id, Pagination(50, 0)).data
@@ -30,10 +29,12 @@ Fetch a page of [`Metric`](@ref) records under `iteration_id` via
 `GET /metric/iteration/{iteration_id}?limit=…&offset=…`.
 """
 function get_metrics(
-    client::Client, iteration_id::Integer, page::Pagination,
+    client::Client, iteration_id::Integer, page::Pagination
 )::PaginatedResponse{Metric}
     response = _request(
-        client, "GET", "/metric/iteration/$iteration_id";
+        client,
+        "GET",
+        "/metric/iteration/$iteration_id";
         query=Dict("limit" => page.limit, "offset" => page.offset),
     )
     return _paginated(Metric, _json(response))
@@ -57,13 +58,14 @@ function create_metric(
     recorded_at::Optional{DateTime}=nothing,
 )::Int64
     response = _request(
-        client, "POST", "/metric/iteration/$iteration_id";
+        client,
+        "POST",
+        "/metric/iteration/$iteration_id";
         body=Dict(
             "key" => key,
-            "value" => value |> Float64,
+            "value" => Float64(value),
             "step" => step,
-            "recorded_at" => (recorded_at |> isnothing) ?
-                nothing : (recorded_at |> string),
+            "recorded_at" => (isnothing(recorded_at)) ? nothing : (string(recorded_at)),
         ),
     )
     return _json(response)["metric_id"]
@@ -93,20 +95,18 @@ function log_metrics(
     step::Optional{Integer}=nothing,
     recorded_at::Optional{DateTime}=nothing,
 )::Array{Int64,1}
-    items = [
-        Dict("key" => k |> String, "value" => v |> Float64)
-        for (k, v) in metrics
-    ]
+    items = [Dict("key" => String(k), "value" => Float64(v)) for (k, v) in metrics]
     response = _request(
-        client, "POST", "/metric/iteration/$iteration_id/batch";
+        client,
+        "POST",
+        "/metric/iteration/$iteration_id/batch";
         body=Dict(
             "step" => step,
-            "recorded_at" => (recorded_at |> isnothing) ?
-                nothing : (recorded_at |> string),
+            "recorded_at" => (isnothing(recorded_at)) ? nothing : (string(recorded_at)),
             "metrics" => items,
         ),
     )
-    return [id |> Int64 for id in _json(response)["metric_ids"]]
+    return [Int64(id) for id in _json(response)["metric_ids"]]
 end
 
 """
@@ -116,20 +116,22 @@ Patch a [`Metric`](@ref) via `PATCH /metric/{id}`. Any keyword left as `nothing`
 untouched server-side. The owning iteration must not be terminated.
 """
 function update_metric(
-    client::Client, id::Integer;
+    client::Client,
+    id::Integer;
     key::Optional{AbstractString}=nothing,
     value::Optional{Real}=nothing,
     step::Optional{Integer}=nothing,
     recorded_at::Optional{DateTime}=nothing,
 )::Nothing
     _request(
-        client, "PATCH", "/metric/$id";
+        client,
+        "PATCH",
+        "/metric/$id";
         body=Dict(
             "key" => key,
-            "value" => (value |> isnothing) ? nothing : (value |> Float64),
+            "value" => (isnothing(value)) ? nothing : (Float64(value)),
             "step" => step,
-            "recorded_at" => (recorded_at |> isnothing) ?
-                nothing : (recorded_at |> string),
+            "recorded_at" => (isnothing(recorded_at)) ? nothing : (string(recorded_at)),
         ),
     )
     return nothing

@@ -58,10 +58,10 @@ of [`Created`](@ref). Registration against a non-existent project returns
 - An [`UpsertResult`](@ref).
 """
 function create_model(
-    project_id::Integer, name::AbstractString,
+    project_id::Integer, name::AbstractString
 )::@NamedTuple{id::Optional{<:Int64}, status::DataType}
-    project = project_id |> get_project
-    if project |> isnothing
+    project = get_project(project_id)
+    if isnothing(project)
         return (id=nothing, status=Unprocessable)
     end
 
@@ -86,20 +86,14 @@ Update a [`Model`](@ref)'s mutable fields. Any keyword left as `nothing` is left
 An [`UpsertResult`](@ref).
 """
 function update_model(
-    id::Integer,
-    name::Optional{AbstractString},
-    description::Optional{AbstractString},
+    id::Integer, name::Optional{AbstractString}, description::Optional{AbstractString}
 )::Type{<:UpsertResult}
-    model = id |> get_model
-    if model |> isnothing
+    model = get_model(id)
+    if isnothing(model)
         return Unprocessable
     end
 
-    should_be_updated = compare_object_fields(
-        model;
-        name=name,
-        description=description,
-    )
+    should_be_updated = compare_object_fields(model; name=name, description=description)
     if !should_be_updated
         return Updated
     end
@@ -111,8 +105,8 @@ end
     delete_model(id::Integer)::Bool
 
 Delete a [`Model`](@ref) and cascade every [`ModelVersion`](@ref) under it. The underlying
-[`Resource`](@ref) artifacts referenced by those versions are **not** removed — model
-deletion does not own the artifact bytes, only the registry rows.
+[`Resource`](@ref) artifacts referenced by those versions are not removed; model
+deletion owns only the registry rows, not the artifact bytes.
 
 # Arguments
 - `id::Integer`: The id of the model to delete.
@@ -121,8 +115,8 @@ deletion does not own the artifact bytes, only the registry rows.
 `true` on success, `false` otherwise.
 """
 function delete_model(id::Integer)::Bool
-    model = id |> get_model
-    if model |> isnothing
+    model = get_model(id)
+    if isnothing(model)
         return false
     end
 

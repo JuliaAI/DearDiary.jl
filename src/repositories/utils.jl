@@ -1,84 +1,68 @@
 """
-    row_to_dict(row::SQLite.Row)::Dict{Symbol,Any}
+    duckdbify(query::AbstractString)::String
 
-Transforms a SQLite row into a dictionary.
-
-# Arguments
-- `row::SQLite.Row`: The row to transform.
-
-# Returns
-A dictionary representation of the row.
+Rewrite `:name` bind-parameter placeholders to DuckDB's `\$name` form. DuckDB's SQL parser
+rejects the `:name` syntax that the rest of the repository (and `DBInterface` convention)
+writes, so every query is normalized at this single execute choke point rather than editing
+each SQL constant. DDL strings contain no `:` tokens, so this is a no-op for them.
 """
-function row_to_dict(row::SQLite.Row)::Dict{Symbol,Any}
-    return zip((row |> keys), (row |> values)) |> collect |> Dict
-end
+const _NAMED_PARAM = r":([A-Za-z_][A-Za-z0-9_]*)"
+duckdbify(query::AbstractString)::String = replace(query, _NAMED_PARAM => s"$\1")
+
+"""
+    row_to_dict(row)::Dict{Symbol,Any}
+
+Convert a query row (a `NamedTuple` from `Tables.namedtupleiterator`) to a dictionary.
+DuckDB returns SQL `NULL` as `missing`, matching the previous SQLite behaviour.
+"""
+row_to_dict(row)::Dict{Symbol,Any} = Dict{Symbol,Any}(pairs(row))
 
 """
     fetch(query::AbstractString, parameters::NamedTuple)::Optional{Dict{Symbol,Any}}
 
-Fetch a record from the database.
-
-# Arguments
-- `query::AbstractString`: The query to execute.
-- `parameters::NamedTuple`: The query parameters.
-
-# Returns
-A dictionary of the record. If the record does not exist, return `nothing`.
+Execute `query` with `parameters` and return the first row as a dictionary, or `nothing` if
+no row matches.
 """
 function fetch(query::AbstractString, parameters::NamedTuple)::Optional{Dict{Symbol,Any}}
-    result = DBInterface.execute(get_database(), query, parameters)
-    if (result |> isempty)
-        return nothing
-    end
-    return result |> first |> row_to_dict
+    result = DBInterface.execute(get_database(), duckdbify(query), parameters)
+    state = iterate(Tables.namedtupleiterator(result))
+    state === nothing && return nothing
+    return row_to_dict(state[1])
 end
 
 """
     fetch_all(query::AbstractString; parameters::NamedTuple=(;))::Array{Dict{Symbol,Any},1}
 
-Fetch all records from the database.
-
-# Arguments
-- `query::AbstractString`: The query to execute.
-- `parameters::NamedTuple`: The query parameters.
-
-# Returns
-An array of dictionaries of the records.
+Execute `query` with `parameters` and return all rows as an array of dictionaries.
 """
 function fetch_all(
     query::AbstractString; parameters::NamedTuple=(;)
 )::Array{Dict{Symbol,Any},1}
-    results = DBInterface.execute(get_database(), query, parameters)
-    return [(record |> row_to_dict) for record in results]
+    results = DBInterface.execute(get_database(), duckdbify(query), parameters)
+    return [row_to_dict(record) for record in Tables.namedtupleiterator(results)]
 end
 
 """
     fetch_count(query::AbstractString; parameters::NamedTuple=(;))::Int64
 
-Run a `SELECT COUNT(*) AS count FROM ...` query and return the integer count.
-
-# Arguments
-- `query::AbstractString`: The COUNT query to execute.
-- `parameters::NamedTuple`: The query parameters.
-
-# Returns
-The count value, or `0` if the query returns no rows.
+Run a `SELECT COUNT(*) AS count FROM ...` query and return the count, or `0` if the query
+returns no rows.
 """
 function fetch_count(query::AbstractString; parameters::NamedTuple=(;))::Int64
     row = fetch(query, parameters)
-    return (row |> isnothing) ? 0 : (row[:count] |> Int64)
+    return (isnothing(row)) ? 0 : (Int64(row[:count]))
 end
 
 """
     fetch_page(select_query, count_query; parameters, page::Pagination)::@NamedTuple{rows, total}
 
-Execute a SELECT (with `LIMIT :limit OFFSET :offset` appended) and a matching COUNT in one
-shot. The page-bounded rows and total count are returned as raw dictionaries; concrete entity
-overloads typically wrap these into a [`PaginatedResponse`](@ref).
+Execute `select_query` (with `LIMIT :limit OFFSET :offset` appended) and `count_query` in one
+call. Returns raw dictionaries; concrete entity overloads typically wrap these into a
+[`PaginatedResponse`](@ref).
 
 # Arguments
-- `select_query::AbstractString`: SELECT query without `LIMIT`/`OFFSET`. The helper appends them.
-- `count_query::AbstractString`: COUNT query that filters by the same parameters.
+- `select_query::AbstractString`: SELECT query without `LIMIT`/`OFFSET`; the helper appends them.
+- `count_query::AbstractString`: COUNT query filtered by the same parameters.
 - `parameters::NamedTuple`: Filter parameters shared by both queries.
 - `page::Pagination`: Page bounds.
 
@@ -101,29 +85,34 @@ end
 """
     insert(query::AbstractString, parameters::NamedTuple)::NamedTuple{id::Optional{<:Int64},status::DataType}
 
-Insert a record into the database.
+Execute an INSERT and return the new row id with a status code.
 
 # Arguments
-- `query::AbstractString`: The query to execute.
-- `parameters::NamedTuple`: The query parameters.
+- `query::AbstractString`: The INSERT query (must use `RETURNING id`).
+- `parameters::NamedTuple`: Bind parameters.
 
 # Returns
-- The inserted record ID. If an error occurs, `nothing` is returned.
-- An [`UpsertResult`](@ref). [`Created`](@ref) if the record was successfully created, [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
+A named tuple `(id, status)` where `status` is one of [`Created`](@ref),
+[`Duplicate`](@ref), [`Unprocessable`](@ref), or [`Error`](@ref). On failure `id` is
+`nothing`.
 """
 function insert(
     query::AbstractString, parameters::NamedTuple
 )::@NamedTuple{id::Optional{<:Int64}, status::DataType}
     try
-        result = DBInterface.execute(get_database(), query, parameters)
-        record_id = result |> first |> first
+        result = DBInterface.execute(get_database(), duckdbify(query), parameters)
+        record_id = first(Tables.namedtupleiterator(result)).id
         return (id=record_id, status=Created)
     catch exception
-        if occursin("UNIQUE constraint failed", (exception.msg |> string))
+        msg = sprint(showerror, exception)
+        if occursin("violates unique constraint", msg) ||
+            occursin("violates primary key constraint", msg)
             return (id=nothing, status=Duplicate)
-        elseif occursin("CHECK constraint failed", (exception.msg |> string))
+        elseif occursin("CHECK constraint failed", msg)
             return (id=nothing, status=Unprocessable)
-        elseif occursin("FOREIGN KEY constraint failed", (exception.msg |> string))
+        elseif occursin("foreign key constraint", lowercase(msg))
+            return (id=nothing, status=Unprocessable)
+        elseif occursin("NOT NULL constraint failed", msg)
             return (id=nothing, status=Unprocessable)
         else
             return (id=nothing, status=Error)
@@ -134,33 +123,36 @@ end
 """
     update(query::AbstractString, object::Optional{<:ResultType}; parameters...)::Type{<:UpsertResult}
 
-Update a record in the database.
+Execute an UPDATE for `object`, setting only the non-`nothing` keyword fields.
 
 # Arguments
-- `query::AbstractString`: The query to execute.
-- `object::Optional{<:UpsertType}`: The object to update.
-- `parameters`: The fields to update.
+- `query::AbstractString`: UPDATE query with a `{fields}` placeholder and `:id` bind.
+- `object::Optional{<:UpsertType}`: The record to update (provides the `:id` bind value).
+- `parameters`: Fields to update; `nothing` values are skipped.
 
 # Returns
-An [`UpsertResult`](@ref). [`Updated`](@ref) if the record was successfully updated, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred.
+[`Updated`](@ref) on success, [`Unprocessable`](@ref) on constraint violation, or
+[`Error`](@ref) on any other failure.
 """
 function update(
     query::AbstractString, object::Optional{<:ResultType}; parameters...
 )::Type{<:UpsertResult}
     try
-        parameters = parameters |> NamedTuple
+        parameters = NamedTuple(parameters)
         fields = join(
-            ["$key=:$key" for key in (parameters |> keys) if parameters[key] |> !isnothing],
+            ["$key=:$key" for key in (keys(parameters)) if !isnothing(parameters[key])],
             ", ",
         )
         DBInterface.execute(
             get_database(),
-            replace(query, "{fields}" => fields),
+            duckdbify(replace(query, "{fields}" => fields)),
             merge(parameters, (id=getfield(object, :id),)),
         )
         return Updated
     catch exception
-        if occursin("CHECK constraint failed", (exception.msg |> string))
+        msg = sprint(showerror, exception)
+        if occursin("CHECK constraint failed", msg) ||
+            occursin("foreign key constraint", lowercase(msg))
             return Unprocessable
         else
             return Error
@@ -171,18 +163,11 @@ end
 """
     delete(query::AbstractString, id::Integer)::Bool
 
-Delete a record from the database.
-
-# Arguments
-- `query::AbstractString`: The query to execute.
-- `id::Integer`: The ID of the record to delete.
-
-# Returns
-`true` if the record was successfully deleted, `false` otherwise.
+Execute a DELETE for the row identified by `id`. Returns `true` on success, `false` on error.
 """
 function delete(query::AbstractString, id::Integer)::Bool
     try
-        DBInterface.execute(get_database(), query, (id=id,))
+        DBInterface.execute(get_database(), duckdbify(query), (id=id,))
         return true
     catch _
         return false

@@ -17,7 +17,8 @@
 
         @testset "project CRUD" begin
             project_id = create_project(client, "Client Project")
-            @test project_id isa Integer
+            @test project_id isa String
+            @test !isempty(project_id)
 
             project = get_project(client, project_id)
             @test project isa DearDiary.Project
@@ -30,7 +31,7 @@
             projects = get_projects(client)
             @test any(p -> p.id == project_id, projects)
 
-            @test isnothing(get_project(client, 99_999))
+            @test isnothing(get_project(client, "00000000-0000-0000-0000-000000000000"))
         end
 
         @testset "experiment + iteration lifecycle" begin
@@ -38,7 +39,8 @@
             experiment_id = create_experiment(
                 client, project_id, DearDiary.IN_PROGRESS, "Lifecycle Exp"
             )
-            @test experiment_id isa Integer
+            @test experiment_id isa String
+            @test !isempty(experiment_id)
 
             experiment = get_experiment(client, experiment_id)
             @test experiment.name == "Lifecycle Exp"
@@ -61,7 +63,8 @@
             @test params[1].key == "lr"
 
             metric_id = create_metric(client, iteration.id, "loss", 0.42)
-            @test metric_id isa Integer
+            @test metric_id isa String
+            @test !isempty(metric_id)
             metrics = get_metrics(client, iteration.id)
             @test (length(metrics)) == 1
             @test metrics[1].value ≈ 0.42
@@ -94,7 +97,7 @@
                 client, project_id, DearDiary.IN_PROGRESS, "Crash Exp"
             )
 
-            captured_id = Ref{Int64}(0)
+            captured_id = Ref{String}("")
             @test_throws ErrorException with_iteration(client, experiment_id) do iter
                 captured_id[] = iter.id
                 error("boom")
@@ -133,7 +136,8 @@
 
             payload = UInt8[0x01, 0x02, 0x03, 0x04, 0x05]
             resource_id = create_resource(client, experiment_id, "weights.bin", payload)
-            @test resource_id isa Integer
+            @test resource_id isa String
+            @test !isempty(resource_id)
 
             stored = get_resource(client, resource_id)
             @test stored.name == "weights.bin"
@@ -167,7 +171,8 @@
 
         @testset "user CRUD" begin
             user_id = create_user(client, "Alice", "Doe", "alice-client", "s3cret!")
-            @test user_id isa Integer
+            @test user_id isa String
+            @test !isempty(user_id)
 
             user = get_user(client, user_id)
             @test user isa DearDiary.UserResponse
@@ -200,7 +205,8 @@
             permission_id = create_userpermission(
                 client, user_id, project_id, true, true, false, false
             )
-            @test permission_id isa Integer
+            @test permission_id isa String
+            @test !isempty(permission_id)
 
             fetched = get_userpermission(client, user_id, project_id)
             @test fetched isa DearDiary.UserPermission
@@ -303,8 +309,10 @@
 
             string_id = create_parameter(client, iteration.id, "optimizer", "adam")
             real_id = create_parameter(client, iteration.id, "lr", 1e-3)
-            @test string_id isa Integer
-            @test real_id isa Integer
+            @test string_id isa String
+            @test !isempty(string_id)
+            @test real_id isa String
+            @test !isempty(real_id)
 
             single = get_parameter(client, real_id)
             @test single isa DearDiary.Parameter
@@ -349,7 +357,8 @@
         @testset "tag get-by-id and delete" begin
             project_id = create_project(client, "TagCRUD Project")
             association_id = add_tag(client, DearDiary.Project, project_id, "client-tag")
-            @test association_id isa Integer
+            @test association_id isa String
+            @test !isempty(association_id)
 
             tags = get_tags(client, DearDiary.Project, project_id)
             tag = tags[findfirst(t -> t.value == "client-tag", tags)]
@@ -383,7 +392,8 @@
             try
                 write(file_path, payload)
                 resource_id = create_resource(client, experiment_id, file_path)
-                @test resource_id isa Integer
+                @test resource_id isa String
+                @test !isempty(resource_id)
 
                 stored = get_resource(client, resource_id)
                 @test stored.name == basename(file_path)
@@ -450,7 +460,7 @@
             ids = log_metrics(
                 client, iteration.id, Dict("acc" => 0.94, "val_acc" => 0.89); step=7
             )
-            @test ids isa Array{Int64,1}
+            @test ids isa Array{String,1}
             @test (length(ids)) == 2
             batched = [get_metric(client, id) for id in ids]
             @test all(m -> m.step == 7, batched)

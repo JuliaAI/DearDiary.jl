@@ -1,6 +1,11 @@
 @testset verbose = true "parameter type custom constructor" begin
     @testset verbose = true "constructing Parameter with Real value" begin
-        param = DearDiary.Parameter(1, 1, "learning_rate", 0.01)
+        param = DearDiary.Parameter(
+            "00000000-0000-0000-0000-000000000001",
+            "00000000-0000-0000-0000-000000000002",
+            "learning_rate",
+            0.01,
+        )
 
         @test param isa DearDiary.Parameter
         @test param.value == "0.01"

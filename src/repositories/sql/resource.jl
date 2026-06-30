@@ -27,6 +27,7 @@ const SQL_SELECT_RESOURCES_BY_EXPERIMENT_ID = """
         r.size_bytes,
         r.content_hash
     FROM resource r WHERE r.experiment_id = :id
+    ORDER BY r.created_date ASC
     """
 
 const SQL_COUNT_RESOURCES_BY_EXPERIMENT_ID = """

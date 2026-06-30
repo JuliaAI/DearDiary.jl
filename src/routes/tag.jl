@@ -7,7 +7,7 @@ function setup_tag_routes()
     root = router("/tag"; tags=["tag"])
 
     @get root("/{id}", middleware=[AdminRequiredMiddleware]) function (
-        ::HTTP.Request, id::Integer
+        ::HTTP.Request, id::String
     )
         response_tag = get_tag(id)
 
@@ -22,28 +22,28 @@ function setup_tag_routes()
     @get root(
         "/project/{project_id}",
         middleware=[ProjectPermissionRequiredMiddleware(Tag, ReadPermission)],
-    ) function (::HTTP.Request, project_id::Integer)
+    ) function (::HTTP.Request, project_id::String)
         return json(get_tags(Project, project_id); status=HTTP.StatusCodes.OK)
     end
 
     @get root(
         "/experiment/{experiment_id}",
         middleware=[ProjectPermissionRequiredMiddleware(Tag, ReadPermission)],
-    ) function (::HTTP.Request, experiment_id::Integer)
+    ) function (::HTTP.Request, experiment_id::String)
         return json(get_tags(Experiment, experiment_id); status=HTTP.StatusCodes.OK)
     end
 
     @get root(
         "/iteration/{iteration_id}",
         middleware=[ProjectPermissionRequiredMiddleware(Tag, ReadPermission)],
-    ) function (::HTTP.Request, iteration_id::Integer)
+    ) function (::HTTP.Request, iteration_id::String)
         return json(get_tags(Iteration, iteration_id); status=HTTP.StatusCodes.OK)
     end
 
     @post root(
         "/project/{project_id}",
         middleware=[ProjectPermissionRequiredMiddleware(Tag, CreatePermission)],
-    ) function (::HTTP.Request, project_id::Integer, parameters::Json{TagCreatePayload})
+    ) function (::HTTP.Request, project_id::String, parameters::Json{TagCreatePayload})
         association_id, upsert_result = add_tag(
             Project, project_id, parameters.payload.value
         )
@@ -60,7 +60,7 @@ function setup_tag_routes()
     @post root(
         "/experiment/{experiment_id}",
         middleware=[ProjectPermissionRequiredMiddleware(Tag, CreatePermission)],
-    ) function (::HTTP.Request, experiment_id::Integer, parameters::Json{TagCreatePayload})
+    ) function (::HTTP.Request, experiment_id::String, parameters::Json{TagCreatePayload})
         association_id, upsert_result = add_tag(
             Experiment, experiment_id, parameters.payload.value
         )
@@ -77,7 +77,7 @@ function setup_tag_routes()
     @post root(
         "/iteration/{iteration_id}",
         middleware=[ProjectPermissionRequiredMiddleware(Tag, CreatePermission)],
-    ) function (::HTTP.Request, iteration_id::Integer, parameters::Json{TagCreatePayload})
+    ) function (::HTTP.Request, iteration_id::String, parameters::Json{TagCreatePayload})
         association_id, upsert_result = add_tag(
             Iteration, iteration_id, parameters.payload.value
         )
@@ -92,7 +92,7 @@ function setup_tag_routes()
     end
 
     @delete root("/{id}", middleware=[AdminRequiredMiddleware]) function (
-        ::HTTP.Request, id::Integer
+        ::HTTP.Request, id::String
     )
         success = delete_tag(id)
 

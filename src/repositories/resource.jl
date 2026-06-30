@@ -1,9 +1,9 @@
-function fetch(::Type{<:Resource}, id::Integer)::Optional{Resource}
+function fetch(::Type{<:Resource}, id::AbstractString)::Optional{Resource}
     resource = fetch(SQL_SELECT_RESOURCE_BY_ID, (id=id,))
     return (isnothing(resource)) ? nothing : (Resource(resource))
 end
 
-function fetch_all(::Type{<:Resource}, experiment_id::Integer)::Array{Resource,1}
+function fetch_all(::Type{<:Resource}, experiment_id::AbstractString)::Array{Resource,1}
     resources = fetch_all(
         SQL_SELECT_RESOURCES_BY_EXPERIMENT_ID; parameters=(id=experiment_id,)
     )
@@ -11,7 +11,7 @@ function fetch_all(::Type{<:Resource}, experiment_id::Integer)::Array{Resource,1
 end
 
 function fetch_page(
-    ::Type{<:Resource}, experiment_id::Integer, page::Pagination
+    ::Type{<:Resource}, experiment_id::AbstractString, page::Pagination
 )::PaginatedResponse{Resource}
     paged = fetch_page(
         SQL_SELECT_RESOURCES_BY_EXPERIMENT_ID,
@@ -26,14 +26,14 @@ end
 
 function insert(
     ::Type{<:Resource},
-    experiment_id::Integer,
+    experiment_id::AbstractString,
     name::AbstractString,
     data::AbstractArray{UInt8,1},
     backend::AbstractString,
     uri::AbstractString,
     size_bytes::Integer,
     content_hash::AbstractString,
-)::@NamedTuple{id::Optional{<:Int64}, status::DataType}
+)::@NamedTuple{id::Optional{String}, status::DataType}
     fields = (
         experiment_id=experiment_id,
         name=name,
@@ -53,10 +53,10 @@ end
 # pre-computing hash + size at every insertion site.
 function insert(
     ::Type{<:Resource},
-    experiment_id::Integer,
+    experiment_id::AbstractString,
     name::AbstractString,
     data::AbstractArray{UInt8,1},
-)::@NamedTuple{id::Optional{<:Int64}, status::DataType}
+)::@NamedTuple{id::Optional{String}, status::DataType}
     return insert(
         Resource, experiment_id, name, data, "inline", "", (length(data)), sha256_hex(data)
     )
@@ -64,7 +64,7 @@ end
 
 function update(
     ::Type{<:Resource},
-    id::Integer;
+    id::AbstractString;
     name::Optional{AbstractString}=nothing,
     description::Optional{AbstractString}=nothing,
     data::Optional{AbstractArray{UInt8,1}}=nothing,
@@ -84,4 +84,4 @@ function update(
     return update(SQL_UPDATE_RESOURCE, fetch(Resource, id); fields...)
 end
 
-delete(::Type{<:Resource}, id::Integer)::Bool = delete(SQL_DELETE_RESOURCE, id)
+delete(::Type{<:Resource}, id::AbstractString)::Bool = delete(SQL_DELETE_RESOURCE, id)

@@ -9,7 +9,7 @@ function setup_experiment_routes()
     @get root(
         "/{id}",
         middleware=[ProjectPermissionRequiredMiddleware(Experiment, ReadPermission)],
-    ) function (::HTTP.Request, id::Integer)
+    ) function (::HTTP.Request, id::String)
         response_experiment = get_experiment(id)
 
         if (isnothing(response_experiment))
@@ -23,7 +23,7 @@ function setup_experiment_routes()
     @get root(
         "/project/{project_id}",
         middleware=[ProjectPermissionRequiredMiddleware(Experiment, ReadPermission)],
-    ) function (request::HTTP.Request, project_id::Integer)
+    ) function (request::HTTP.Request, project_id::String)
         page = parse_pagination(request)
         return json(get_experiments(project_id, page); status=HTTP.StatusCodes.OK)
     end
@@ -32,7 +32,7 @@ function setup_experiment_routes()
         "/project/{project_id}",
         middleware=[ProjectPermissionRequiredMiddleware(Experiment, CreatePermission)],
     ) function (
-        ::HTTP.Request, project_id::Integer, parameters::Json{ExperimentCreatePayload}
+        ::HTTP.Request, project_id::String, parameters::Json{ExperimentCreatePayload}
     )
         experiment_id, upsert_result = create_experiment(
             project_id, parameters.payload.status_id, parameters.payload.name
@@ -50,7 +50,7 @@ function setup_experiment_routes()
     @patch root(
         "/{id}",
         middleware=[ProjectPermissionRequiredMiddleware(Experiment, UpdatePermission)],
-    ) function (::HTTP.Request, id::Integer, parameters::Json{ExperimentUpdatePayload})
+    ) function (::HTTP.Request, id::String, parameters::Json{ExperimentUpdatePayload})
         upsert_result = update_experiment(
             id,
             parameters.payload.status_id,
@@ -71,7 +71,7 @@ function setup_experiment_routes()
     @delete root(
         "/{id}",
         middleware=[ProjectPermissionRequiredMiddleware(Experiment, DeletePermission)],
-    ) function (::HTTP.Request, id::Integer)
+    ) function (::HTTP.Request, id::String)
         success = delete_experiment(id)
 
         if !success

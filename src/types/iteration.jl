@@ -4,13 +4,13 @@
 A struct representing an iteration within an experiment.
 
 Fields
-- `id::Int64`: The unique identifier of the iteration.
-- `experiment_id::Int64`: The identifier of the experiment to which the iteration belongs.
+- `id::String`: The unique identifier of the iteration.
+- `experiment_id::String`: The identifier of the experiment to which the iteration belongs.
 - `notes::String`: Notes associated with the iteration.
 - `created_date::DateTime`: The date and time when the iteration was created.
 - `end_date::Optional{DateTime}`: The date and time when the iteration ended, or `nothing`
   if it is still ongoing.
-- `parent_iteration_id::Optional{Int64}`: The identifier of the parent [`Iteration`](@ref)
+- `parent_iteration_id::Optional{String}`: The identifier of the parent [`Iteration`](@ref)
   when this iteration is a child run (e.g. one trial in an HPO sweep, one fold in a nested
   CV, one worker in a distributed run). `nothing` for top-level iterations.
 - `status_id::Int64`: The current lifecycle [`IterationStatus`](@ref). `RUNNING` while the
@@ -29,12 +29,12 @@ Fields
   the bit-exact dependency tree that [`restore`](@ref) reconstructs.
 """
 struct Iteration <: ResultType
-    id::Int64
-    experiment_id::Int64
+    id::String
+    experiment_id::String
     notes::String
     created_date::DateTime
     end_date::Optional{DateTime}
-    parent_iteration_id::Optional{Int64}
+    parent_iteration_id::Optional{String}
     status_id::Int64
     error_message::String
     julia_version::String

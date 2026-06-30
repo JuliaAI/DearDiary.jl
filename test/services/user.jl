@@ -6,15 +6,17 @@
             )
 
             @test user_upsert_result === DearDiary.Created
-            @test user_id isa Integer
+            @test user_id isa String
+            @test !isempty(user_id)
         end
 
         @testset verbose = true "get user by username" begin
             @testset "get user by existing username" begin
-                user = DearDiary.get_user("missy")
+                user = DearDiary.get_user_by_username("missy")
 
                 @test user isa DearDiary.User
-                @test user.id isa Int
+                @test user.id isa String
+                @test !isempty(user.id)
                 @test user.first_name == "Missy"
                 @test user.last_name == "Gala"
                 @test user.username == "missy"
@@ -24,7 +26,7 @@
         end
 
         @testset "get user by non-existing username" begin
-            @test isnothing(DearDiary.get_user("gala"))
+            @test isnothing(DearDiary.get_user_by_username("gala"))
         end
 
         @testset verbose = true "get_users" begin
@@ -37,15 +39,17 @@
 
         @testset verbose = true "update user" begin
             @testset "with non-existing user id" begin
-                @test DearDiary.update_user(9999, "Ana", "Gala", "Choclo", true) ===
-                    DearDiary.Unprocessable
+                @test DearDiary.update_user(
+                    "00000000-0000-0000-0000-000000000000", "Ana", "Gala", "Choclo", true
+                ) === DearDiary.Unprocessable
             end
 
             @testset "with existing user id" begin
-                @test DearDiary.update_user(2, "Ana", nothing, "Choclo", nothing) ===
+                missy = DearDiary.get_user_by_username("missy")
+                @test DearDiary.update_user(missy.id, "Ana", nothing, "Choclo", nothing) ===
                     DearDiary.Updated
 
-                user = DearDiary.get_user("missy")
+                user = DearDiary.get_user_by_username("missy")
 
                 @test user.first_name == "Ana"
                 @test user.last_name == "Gala"
@@ -53,9 +57,10 @@
         end
 
         @testset verbose = true "delete user" begin
-            @test DearDiary.delete_user(2)
+            missy = DearDiary.get_user_by_username("missy")
+            @test DearDiary.delete_user(missy.id)
 
-            @test isnothing(DearDiary.get_user("missy"))
+            @test isnothing(DearDiary.get_user_by_username("missy"))
         end
     end
 end

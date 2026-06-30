@@ -13,7 +13,7 @@
         mktempdir() do root
             DearDiary.initialize_database(; file_name="migrate_test.db")
             try
-                user = DearDiary.get_user("default")
+                user = DearDiary.get_user_by_username("default")
                 project_id, _ = DearDiary.create_project(user.id, "Migrate Project")
                 experiment_id, _ = DearDiary.create_experiment(
                     project_id, DearDiary.IN_PROGRESS, "Migrate Experiment"
@@ -58,7 +58,7 @@
         mktempdir() do root
             DearDiary.initialize_database(; file_name="migrate_test.db")
             try
-                user = DearDiary.get_user("default")
+                user = DearDiary.get_user_by_username("default")
                 project_id, _ = DearDiary.create_project(user.id, "Migrate Project")
                 experiment_id, _ = DearDiary.create_experiment(
                     project_id, DearDiary.IN_PROGRESS, "Migrate Experiment"

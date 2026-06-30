@@ -4,6 +4,10 @@
         try
             write(dummy_file, rand(UInt8, 1024))
 
+            experiment_id = ""
+            resource_id = ""
+            second_resource_id = ""
+
             @testset verbose = true "create resource" begin
                 project_payload = JSON.json(Dict("name" => "Resource Project"))
                 project_response = HTTP.post(
@@ -45,18 +49,19 @@
 
                 @test response.status == HTTP.StatusCodes.CREATED
                 data = JSON.parse(String(response.body), Dict{String,Any})
-                @test data["resource_id"] == 1
+                resource_id = data["resource_id"]
+                @test resource_id isa String
             end
 
             @testset verbose = true "get resource by id" begin
                 response = HTTP.get(
-                    "http://127.0.0.1:9000/resource/1"; status_exception=false
+                    "http://127.0.0.1:9000/resource/$(resource_id)"; status_exception=false
                 )
                 @test response.status == HTTP.StatusCodes.OK
                 data = JSON.parse(String(response.body), Dict{String,Any})
                 resource = DearDiary.Resource(data)
-                @test resource.id isa Int
-                @test resource.experiment_id == 1
+                @test resource.id isa String
+                @test resource.experiment_id == experiment_id
                 @test resource.name == "model_weights"
                 # `data` is omitted from the metadata response as of v0.7.0; the bytes are
                 # only reachable via /resource/{id}/data.
@@ -67,7 +72,8 @@
 
             @testset verbose = true "get resource data streams bytes" begin
                 response = HTTP.get(
-                    "http://127.0.0.1:9000/resource/1/data"; status_exception=false
+                    "http://127.0.0.1:9000/resource/$(resource_id)/data";
+                    status_exception=false,
                 )
                 @test response.status == HTTP.StatusCodes.OK
                 @test (length(response.body)) == 1024
@@ -83,14 +89,16 @@
                     ),
                 )
 
-                HTTP.post(
-                    "http://127.0.0.1:9000/resource/experiment/1";
+                r = HTTP.post(
+                    "http://127.0.0.1:9000/resource/experiment/$(experiment_id)";
                     body=form,
                     status_exception=false,
                 )
+                second_resource_id = JSON.parse(String(r.body), Dict{String,Any})["resource_id"]
 
                 response = HTTP.get(
-                    "http://127.0.0.1:9000/resource/experiment/1"; status_exception=false
+                    "http://127.0.0.1:9000/resource/experiment/$(experiment_id)";
+                    status_exception=false,
                 )
                 @test response.status == HTTP.StatusCodes.OK
                 data = JSON.parse(String(response.body), Dict{String,Any})
@@ -112,7 +120,9 @@
                 )
 
                 response = HTTP.patch(
-                    "http://127.0.0.1:9000/resource/2"; body=form, status_exception=false
+                    "http://127.0.0.1:9000/resource/$(second_resource_id)";
+                    body=form,
+                    status_exception=false,
                 )
 
                 @test response.status == HTTP.StatusCodes.OK
@@ -120,7 +130,8 @@
                 @test data["message"] == "UPDATED"
 
                 response = HTTP.get(
-                    "http://127.0.0.1:9000/resource/2"; status_exception=false
+                    "http://127.0.0.1:9000/resource/$(second_resource_id)";
+                    status_exception=false,
                 )
                 data = JSON.parse(String(response.body), Dict{String,Any})
                 resource = DearDiary.Resource(data)
@@ -130,14 +141,16 @@
 
                 # Confirm the bytes round-trip through the streaming endpoint.
                 bytes_response = HTTP.get(
-                    "http://127.0.0.1:9000/resource/2/data"; status_exception=false
+                    "http://127.0.0.1:9000/resource/$(second_resource_id)/data";
+                    status_exception=false,
                 )
                 @test (length(bytes_response.body)) == 1024
             end
 
             @testset verbose = true "delete resource" begin
                 response = HTTP.delete(
-                    "http://127.0.0.1:9000/resource/2"; status_exception=false
+                    "http://127.0.0.1:9000/resource/$(second_resource_id)";
+                    status_exception=false,
                 )
                 @test response.status == HTTP.StatusCodes.OK
                 data = JSON.parse(String(response.body), Dict{String,Any})

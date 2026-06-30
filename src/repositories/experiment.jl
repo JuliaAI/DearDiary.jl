@@ -1,9 +1,9 @@
-function fetch(::Type{<:Experiment}, id::Integer)::Optional{Experiment}
+function fetch(::Type{<:Experiment}, id::AbstractString)::Optional{Experiment}
     experiment = fetch(SQL_SELECT_EXPERIMENT_BY_ID, (id=id,))
     return (isnothing(experiment)) ? nothing : (Experiment(experiment))
 end
 
-function fetch_all(::Type{<:Experiment}, project_id::Integer)::Array{Experiment,1}
+function fetch_all(::Type{<:Experiment}, project_id::AbstractString)::Array{Experiment,1}
     experiments = fetch_all(
         SQL_SELECT_EXPERIMENTS_BY_PROJECT_ID; parameters=(id=project_id,)
     )
@@ -11,7 +11,7 @@ function fetch_all(::Type{<:Experiment}, project_id::Integer)::Array{Experiment,
 end
 
 function fetch_page(
-    ::Type{<:Experiment}, project_id::Integer, page::Pagination
+    ::Type{<:Experiment}, project_id::AbstractString, page::Pagination
 )::PaginatedResponse{Experiment}
     paged = fetch_page(
         SQL_SELECT_EXPERIMENTS_BY_PROJECT_ID,
@@ -25,8 +25,11 @@ function fetch_page(
 end
 
 function insert(
-    ::Type{<:Experiment}, project_id::Integer, status_id::Integer, name::AbstractString
-)::@NamedTuple{id::Optional{<:Int64}, status::DataType}
+    ::Type{<:Experiment},
+    project_id::AbstractString,
+    status_id::Integer,
+    name::AbstractString,
+)::@NamedTuple{id::Optional{String}, status::DataType}
     fields = (
         project_id=project_id, status_id=status_id, name=name, created_date=(string(now()))
     )
@@ -35,7 +38,7 @@ end
 
 function update(
     ::Type{<:Experiment},
-    id::Integer;
+    id::AbstractString;
     status_id::Optional{Integer}=nothing,
     name::Optional{AbstractString}=nothing,
     description::Optional{String}=nothing,
@@ -60,4 +63,4 @@ function update(
     return update(SQL_UPDATE_EXPERIMENT, fetch(Experiment, id); fields...)
 end
 
-delete(::Type{<:Experiment}, id::Integer)::Bool = delete(SQL_DELETE_EXPERIMENT, id)
+delete(::Type{<:Experiment}, id::AbstractString)::Bool = delete(SQL_DELETE_EXPERIMENT, id)

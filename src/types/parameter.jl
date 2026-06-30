@@ -4,19 +4,19 @@
 A struct representing a parameter with its details.
 
 Fields
-- `id::Int64`: The ID of the parameter.
-- `iteration_id::Int64`: The ID of the iteration this parameter belongs to.
+- `id::String`: The ID of the parameter.
+- `iteration_id::String`: The ID of the iteration this parameter belongs to.
 - `key::String`: The key/name of the parameter.
 - `value::String`: The value of the parameter.
 """
 struct Parameter <: ResultType
-    id::Int64
-    iteration_id::Int64
+    id::String
+    iteration_id::String
     key::String
     value::String
 end
 function Parameter(
-    id::Integer, iteration_id::Integer, key::AbstractString, value::Real
+    id::AbstractString, iteration_id::AbstractString, key::AbstractString, value::Real
 )::Parameter
     return Parameter(id, iteration_id, key, string(value))
 end

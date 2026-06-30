@@ -8,7 +8,7 @@ function setup_resource_routes()
 
     @get root(
         "/{id}", middleware=[ProjectPermissionRequiredMiddleware(Resource, ReadPermission)]
-    ) function (::HTTP.Request, id::Integer)
+    ) function (::HTTP.Request, id::String)
         response_resource = get_resource(id)
 
         if (isnothing(response_resource))
@@ -26,7 +26,7 @@ function setup_resource_routes()
     @get root(
         "/{id}/data",
         middleware=[ProjectPermissionRequiredMiddleware(Resource, ReadPermission)],
-    ) function (::HTTP.Request, id::Integer)
+    ) function (::HTTP.Request, id::String)
         response_resource = get_resource(id)
         if (isnothing(response_resource))
             return error_response(
@@ -53,7 +53,7 @@ function setup_resource_routes()
     @get root(
         "/experiment/{experiment_id}",
         middleware=[ProjectPermissionRequiredMiddleware(Resource, ReadPermission)],
-    ) function (request::HTTP.Request, experiment_id::Integer)
+    ) function (request::HTTP.Request, experiment_id::String)
         page = parse_pagination(request)
         return json(get_resources(experiment_id, page); status=HTTP.StatusCodes.OK)
     end
@@ -61,7 +61,7 @@ function setup_resource_routes()
     @post root(
         "/experiment/{experiment_id}",
         middleware=[ProjectPermissionRequiredMiddleware(Resource, CreatePermission)],
-    ) function (request::HTTP.Request, experiment_id::Integer)
+    ) function (request::HTTP.Request, experiment_id::String)
         form_data = HTTP.parse_multipart_form(request)
         # Both `name` and `data` are required, but `find` returns `nothing` when a part is
         # absent; dereference `.data` only after we know the part exists.
@@ -91,7 +91,7 @@ function setup_resource_routes()
     @patch root(
         "/{id}",
         middleware=[ProjectPermissionRequiredMiddleware(Resource, UpdatePermission)],
-    ) function (request::HTTP.Request, id::Integer)
+    ) function (request::HTTP.Request, id::String)
         form_data = HTTP.parse_multipart_form(request)
         # Any subset of these parts may be sent; `find` returns `nothing` when one is absent.
         name_part = find(form_data, "name")
@@ -121,7 +121,7 @@ function setup_resource_routes()
     @delete root(
         "/{id}",
         middleware=[ProjectPermissionRequiredMiddleware(Resource, DeletePermission)],
-    ) function (::HTTP.Request, id::Integer)
+    ) function (::HTTP.Request, id::String)
         success = delete_resource(id)
 
         if !success

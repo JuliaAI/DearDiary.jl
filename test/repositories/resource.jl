@@ -2,7 +2,7 @@
     @testset verbose = true "resource repository" begin
         @testset verbose = true "insert" begin
             @testset "with existing experiment" begin
-                user = DearDiary.get_user("default")
+                user = DearDiary.get_user_by_username("default")
                 project_id, _ = DearDiary.create_project(user.id, "Test Project")
                 experiment_id, _ = DearDiary.create_experiment(
                     project_id, DearDiary.IN_PROGRESS, "Test Experiment"
@@ -14,13 +14,17 @@
                     "Test Resource",
                     UInt8[0x01, 0x02, 0x03, 0x04],
                 )
-                @test id isa Integer
+                @test id isa String
+                @test !isempty(id)
                 @test status === DearDiary.Created
             end
 
             @testset "with non-existing experiment" begin
                 id, status = DearDiary.insert(
-                    DearDiary.Resource, 9999, "Test Resource", UInt8[0x01, 0x02, 0x03, 0x04]
+                    DearDiary.Resource,
+                    "00000000-0000-0000-0000-000000000000",
+                    "Test Resource",
+                    UInt8[0x01, 0x02, 0x03, 0x04],
                 )
                 @test isnothing(id)
                 @test status === DearDiary.Unprocessable
@@ -29,7 +33,7 @@
 
         @testset verbose = true "fetch" begin
             @testset "existing resource" begin
-                user = DearDiary.get_user("default")
+                user = DearDiary.get_user_by_username("default")
                 project_id, _ = DearDiary.create_project(user.id, "Test Project")
                 experiment_id, _ = DearDiary.create_experiment(
                     project_id, DearDiary.IN_PROGRESS, "Test Experiment"
@@ -51,14 +55,16 @@
             end
 
             @testset "non-existing resource" begin
-                resource = DearDiary.fetch(DearDiary.Resource, 9999)
+                resource = DearDiary.fetch(
+                    DearDiary.Resource, "00000000-0000-0000-0000-000000000000"
+                )
 
                 @test isnothing(resource)
             end
         end
 
         @testset verbose = true "fetch all" begin
-            user = DearDiary.get_user("default")
+            user = DearDiary.get_user_by_username("default")
             project_id, _ = DearDiary.create_project(user.id, "Test Project")
             experiment_id, _ = DearDiary.create_experiment(
                 project_id, DearDiary.IN_PROGRESS, "Test Experiment"
@@ -84,7 +90,7 @@
         end
 
         @testset verbose = true "update" begin
-            user = DearDiary.get_user("default")
+            user = DearDiary.get_user_by_username("default")
             project_id, _ = DearDiary.create_project(user.id, "Test Project")
             experiment_id, _ = DearDiary.create_experiment(
                 project_id, DearDiary.IN_PROGRESS, "Test Experiment"
@@ -112,7 +118,7 @@
         end
 
         @testset verbose = true "delete" begin
-            user = DearDiary.get_user("default")
+            user = DearDiary.get_user_by_username("default")
             project_id, _ = DearDiary.create_project(user.id, "Test Project")
             experiment_id, _ = DearDiary.create_experiment(
                 project_id, DearDiary.IN_PROGRESS, "Test Experiment"

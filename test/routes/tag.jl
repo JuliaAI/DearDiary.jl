@@ -1,6 +1,6 @@
 @with_deardiary_test_db begin
     @testset verbose = true "tag routes" begin
-        user = DearDiary.get_user("default")
+        user = DearDiary.get_user_by_username("default")
         project_id, _ = DearDiary.create_project(user.id, "Tagged Project")
         experiment_id, _ = DearDiary.create_experiment(
             project_id, DearDiary.IN_PROGRESS, "Tagged Experiment"
@@ -17,7 +17,7 @@
 
             @test response.status == HTTP.StatusCodes.CREATED
             data = JSON.parse(String(response.body), Dict{String,Any})
-            @test data["association_id"] isa Int
+            @test data["association_id"] isa String
         end
 
         @testset "attach tag to experiment" begin
@@ -78,7 +78,7 @@
         end
 
         @testset "get tag by id" begin
-            tag = DearDiary.get_tag("alpha")
+            tag = DearDiary.get_tag_by_value("alpha")
             response = HTTP.get(
                 "http://127.0.0.1:9000/tag/$(tag.id)"; status_exception=false
             )
@@ -95,11 +95,11 @@
             )
 
             @test response.status == HTTP.StatusCodes.OK
-            @test isnothing(DearDiary.get_tag("orphan"))
+            @test isnothing(DearDiary.get_tag_by_value("orphan"))
         end
 
         @testset "delete attached tag is rejected" begin
-            tag = DearDiary.get_tag("gamma")
+            tag = DearDiary.get_tag_by_value("gamma")
             response = HTTP.delete(
                 "http://127.0.0.1:9000/tag/$(tag.id)"; status_exception=false
             )

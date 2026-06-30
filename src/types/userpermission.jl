@@ -4,18 +4,18 @@
 A struct representing a user's permissions for a specific project.
 
 Fields
-- `id::Int64`: The unique identifier for the user permission record.
-- `user_id::Int64`: The ID of the user.
-- `project_id::Int64`: The ID of the project.
+- `id::String`: The unique identifier for the user permission record.
+- `user_id::String`: The ID of the user.
+- `project_id::String`: The ID of the project.
 - `create_permission::Bool`: Permission to create resources.
 - `read_permission::Bool`: Permission to read resources.
 - `update_permission::Bool`: Permission to update resources.
 - `delete_permission::Bool`: Permission to delete resources.
 """
 struct UserPermission <: ResultType
-    id::Int64
-    user_id::Int64
-    project_id::Int64
+    id::String
+    user_id::String
+    project_id::String
     create_permission::Bool
     read_permission::Bool
     update_permission::Bool

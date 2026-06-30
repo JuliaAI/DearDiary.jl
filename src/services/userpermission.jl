@@ -1,61 +1,65 @@
 """
-    get_userpermission(user_id::Integer, project_id::Integer)::Optional{UserPermission}
+    get_userpermission(user_id::AbstractString, project_id::AbstractString)::Optional{UserPermission}
 
 Get a [`UserPermission`](@ref) by [`User`](@ref) id and [`Project`](@ref) IDs.
 
 # Arguments
-- `user_id::Integer`: The id of the user.
-- `project_id::Integer`: The id of the project.
+- `user_id::AbstractString`: The id of the user.
+- `project_id::AbstractString`: The id of the project.
 
 # Returns
 A [`UserPermission`](@ref) object. If the record does not exist, return `nothing`.
 """
-function get_userpermission(user_id::Integer, project_id::Integer)::Optional{UserPermission}
+function get_userpermission(
+    user_id::AbstractString, project_id::AbstractString
+)::Optional{UserPermission}
     return fetch(UserPermission, user_id, project_id)
 end
 
 """
-    get_userpermissions(::Type{<:Project}, project_id::Integer)::Array{UserPermission,1}
+    get_userpermissions(::Type{<:Project}, project_id::AbstractString)::Array{UserPermission,1}
 
 List every [`UserPermission`](@ref) record granting access to the given [`Project`](@ref).
 
 # Arguments
 - `::Type{<:Project}`: Dispatch tag selecting the project-scoped listing.
-- `project_id::Integer`: The project whose members are being listed.
+- `project_id::AbstractString`: The project whose members are being listed.
 
 # Returns
 An array of [`UserPermission`](@ref) records (possibly empty).
 """
 function get_userpermissions(
-    ::Type{<:Project}, project_id::Integer
+    ::Type{<:Project}, project_id::AbstractString
 )::Array{UserPermission,1}
     return fetch_all(UserPermission, Project, project_id)
 end
 
 """
-    get_userpermissions(::Type{<:User}, user_id::Integer)::Array{UserPermission,1}
+    get_userpermissions(::Type{<:User}, user_id::AbstractString)::Array{UserPermission,1}
 
 List every [`UserPermission`](@ref) record held by the given [`User`](@ref).
 
 # Arguments
 - `::Type{<:User}`: Dispatch tag selecting the user-scoped listing.
-- `user_id::Integer`: The user whose project memberships are being listed.
+- `user_id::AbstractString`: The user whose project memberships are being listed.
 
 # Returns
 An array of [`UserPermission`](@ref) records (possibly empty).
 """
-function get_userpermissions(::Type{<:User}, user_id::Integer)::Array{UserPermission,1}
+function get_userpermissions(
+    ::Type{<:User}, user_id::AbstractString
+)::Array{UserPermission,1}
     return fetch_all(UserPermission, User, user_id)
 end
 
 """
-    create_userpermission(user_id::Integer, project_id::Integer, create_permission::Bool, read_permission::Bool, update_permission::Bool, delete_permission::Bool)::NamedTuple{id::Optional{<:Int64},status::DataType}
+    create_userpermission(user_id::AbstractString, project_id::AbstractString, create_permission::Bool, read_permission::Bool, update_permission::Bool, delete_permission::Bool)::NamedTuple{id::Optional{String},status::DataType}
 
 Create a [`UserPermission`](@ref).
 
 # Arguments
-- `user_id::Integer`: The id of the user.
-- `project_id::Integer`: The id of the project.
+- `user_id::AbstractString`: The id of the user.
+- `project_id::AbstractString`: The id of the project.
 - `create_permission::Bool`: Whether the user has create permission.
 - `read_permission::Bool`: Whether the user has read permission.
 - `update_permission::Bool`: Whether the user has update permission.
@@ -66,13 +70,13 @@ Create a [`UserPermission`](@ref).
 - An [`UpsertResult`](@ref). [`Created`](@ref) if the record was successfully created, [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
 """
 function create_userpermission(
-    user_id::Integer,
-    project_id::Integer,
+    user_id::AbstractString,
+    project_id::AbstractString,
     create_permission::Bool,
     read_permission::Bool,
     update_permission::Bool,
     delete_permission::Bool,
-)::@NamedTuple{id::Optional{<:Int64}, status::DataType}
+)::@NamedTuple{id::Optional{String}, status::DataType}
     user = get_user(user_id)
     if isnothing(user)
         return (id=nothing, status=Unprocessable)
@@ -105,12 +109,12 @@ function create_userpermission(
 end
 
 """
-    update_userpermission(id::Integer, create_permission::Optional{Bool}, read_permission::Optional{Bool}, update_permission::Optional{Bool}, delete_permission::Optional{Bool})::Type{<:UpsertResult}
+    update_userpermission(id::AbstractString, create_permission::Optional{Bool}, read_permission::Optional{Bool}, update_permission::Optional{Bool}, delete_permission::Optional{Bool})::Type{<:UpsertResult}
 
 Update a [`UserPermission`](@ref).
 
 # Arguments
-- `id::Integer`: The id of the user permission to update.
+- `id::AbstractString`: The id of the user permission to update.
 - `create_permission::Optional{Bool}`: The new create permission.
 - `read_permission::Optional{Bool}`: The new read permission.
 - `update_permission::Optional{Bool}`: The new update permission.
@@ -120,7 +124,7 @@ Update a [`UserPermission`](@ref).
 An [`UpsertResult`](@ref). [`Updated`](@ref) if the record was successfully updated (or no fields were changed), [`Unprocessable`](@ref) if the record violates a constraint or if no fields were provided to update, and [`Error`](@ref) if an error occurred while updating the record.
 """
 function update_userpermission(
-    id::Integer,
+    id::AbstractString,
     create_permission::Optional{Bool},
     read_permission::Optional{Bool},
     update_permission::Optional{Bool},
@@ -153,17 +157,17 @@ function update_userpermission(
 end
 
 """
-    delete_userpermission(id::Integer)::Bool
+    delete_userpermission(id::AbstractString)::Bool
 
 Delete a [`UserPermission`](@ref).
 
 # Arguments
-- `id::Integer`: The id of the user permission to delete.
+- `id::AbstractString`: The id of the user permission to delete.
 
 # Returns
 `true` if the record was successfully deleted, `false` otherwise.
 """
-delete_userpermission(id::Integer)::Bool = delete(UserPermission, id)
+delete_userpermission(id::AbstractString)::Bool = delete(UserPermission, id)
 
 """
     has_permission(permission::UserPermission, ::Type{<:PermissionAction})::Bool

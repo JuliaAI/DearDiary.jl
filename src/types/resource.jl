@@ -4,8 +4,8 @@
 A struct representing a resource associated with an experiment.
 
 Fields
-- `id::Int64`: The ID of the resource.
-- `experiment_id::Int64`: The ID of the experiment this resource belongs to.
+- `id::String`: The ID of the resource.
+- `experiment_id::String`: The ID of the experiment this resource belongs to.
 - `name::String`: The name of the resource.
 - `description::String`: A description of the resource.
 - `data::Optional{Array{UInt8,1}}`: The binary data of the resource. Populated for the
@@ -23,8 +23,8 @@ Fields
   legacy rows not yet re-hashed by the backfill pass.
 """
 struct Resource <: ResultType
-    id::Int64
-    experiment_id::Int64
+    id::String
+    experiment_id::String
     name::String
     description::String
     data::Optional{Array{UInt8,1}}

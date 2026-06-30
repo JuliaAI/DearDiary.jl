@@ -1,56 +1,56 @@
 """
-    get_parameter(id::Integer)::Optional{Parameter}
+    get_parameter(id::AbstractString)::Optional{Parameter}
 
 Get a [`Parameter`](@ref) by id.
 
 # Arguments
-- `id::Integer`: The id of the parameter to query.
+- `id::AbstractString`: The id of the parameter to query.
 
 # Returns
 A [`Parameter`](@ref) object. If the record does not exist, return `nothing`.
 """
-get_parameter(id::Integer)::Optional{Parameter} = fetch(Parameter, id)
+get_parameter(id::AbstractString)::Optional{Parameter} = fetch(Parameter, id)
 
 """
-    get_parameters(iteration_id::Integer)::Array{Parameter, 1}
+    get_parameters(iteration_id::AbstractString)::Array{Parameter, 1}
 
 Get all [`Parameter`](@ref) for a given iteration.
 
 # Arguments
-- `iteration_id::Integer`: The id of the iteration to query.
+- `iteration_id::AbstractString`: The id of the iteration to query.
 
 # Returns
 An array of [`Parameter`](@ref) objects.
 """
-function get_parameters(iteration_id::Integer)::Array{Parameter,1}
+function get_parameters(iteration_id::AbstractString)::Array{Parameter,1}
     return fetch_all(Parameter, iteration_id)
 end
 
 """
-    get_parameters(iteration_id::Integer, page::Pagination)::PaginatedResponse{Parameter}
+    get_parameters(iteration_id::AbstractString, page::Pagination)::PaginatedResponse{Parameter}
 
 Get a page of [`Parameter`](@ref) records for an iteration, with `total` count populated.
 
 # Arguments
-- `iteration_id::Integer`: The id of the iteration to query.
+- `iteration_id::AbstractString`: The id of the iteration to query.
 - `page::Pagination`: The page bounds (limit + offset).
 
 # Returns
 A [`PaginatedResponse`](@ref) of `Parameter`.
 """
 function get_parameters(
-    iteration_id::Integer, page::Pagination
+    iteration_id::AbstractString, page::Pagination
 )::PaginatedResponse{Parameter}
     return fetch_page(Parameter, iteration_id, page)
 end
 
 """
-    create_parameter(iteration_id::Integer, key::AbstractString, value::AbstractString)::NamedTuple{id::Optional{<:Int64},status::DataType}
+    create_parameter(iteration_id::AbstractString, key::AbstractString, value::AbstractString)::NamedTuple{id::Optional{String},status::DataType}
 
 Create a [`Parameter`](@ref).
 
 # Arguments
-- `iteration_id::Integer`: The id of the iteration to create the parameter for.
+- `iteration_id::AbstractString`: The id of the iteration to create the parameter for.
 - `key::AbstractString`: The key of the parameter.
 - `value::AbstractString`: The value of the parameter.
 
@@ -59,8 +59,8 @@ Create a [`Parameter`](@ref).
 - An [`UpsertResult`](@ref). [`Created`](@ref) if the record was successfully created, [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
 """
 function create_parameter(
-    iteration_id::Integer, key::AbstractString, value::AbstractString
-)::@NamedTuple{id::Optional{<:Int64}, status::DataType}
+    iteration_id::AbstractString, key::AbstractString, value::AbstractString
+)::@NamedTuple{id::Optional{String}, status::DataType}
     iteration = get_iteration(iteration_id)
     if isnothing(iteration)
         return (id=nothing, status=Unprocessable)
@@ -79,12 +79,12 @@ function create_parameter(
 end
 
 """
-    create_parameter(iteration_id::Integer, key::AbstractString, value::Real)::NamedTuple{id::Optional{<:Int64},status::DataType}
+    create_parameter(iteration_id::AbstractString, key::AbstractString, value::Real)::NamedTuple{id::Optional{String},status::DataType}
 
 Create a [`Parameter`](@ref).
 
 # Arguments
-- `iteration_id::Integer`: The id of the iteration to create the parameter for.
+- `iteration_id::AbstractString`: The id of the iteration to create the parameter for.
 - `key::AbstractString`: The key of the parameter.
 - `value::Real`: The value of the parameter.
 
@@ -93,18 +93,18 @@ Create a [`Parameter`](@ref).
 - An [`UpsertResult`](@ref). [`Created`](@ref) if the record was successfully created, [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
 """
 function create_parameter(
-    iteration_id::Integer, key::AbstractString, value::Real
-)::@NamedTuple{id::Optional{<:Int64}, status::DataType}
+    iteration_id::AbstractString, key::AbstractString, value::Real
+)::@NamedTuple{id::Optional{String}, status::DataType}
     return create_parameter(iteration_id, key, string(value))
 end
 
 """
-    update_parameter(id::Integer, key::Optional{AbstractString}, value::Optional{AbstractString})::Type{<:UpsertResult}
+    update_parameter(id::AbstractString, key::Optional{AbstractString}, value::Optional{AbstractString})::Type{<:UpsertResult}
 
 Update a [`Parameter`](@ref) record.
 
 # Arguments
-- `id::Integer`: The id of the parameter to update.
+- `id::AbstractString`: The id of the parameter to update.
 - `key::Optional{AbstractString}`: The new key for the parameter.
 - `value::Optional{AbstractString}`: The new value for the parameter.
 
@@ -112,7 +112,7 @@ Update a [`Parameter`](@ref) record.
 An [`UpsertResult`](@ref). [`Updated`](@ref) if the record was successfully updated (or no changes were made), [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
 """
 function update_parameter(
-    id::Integer, key::Optional{AbstractString}, value::Optional{AbstractString}
+    id::AbstractString, key::Optional{AbstractString}, value::Optional{AbstractString}
 )::Type{<:UpsertResult}
     parameter = get_parameter(id)
     if isnothing(parameter)
@@ -134,12 +134,12 @@ function update_parameter(
 end
 
 """
-    update_parameter(id::Integer, key::Optional{AbstractString}, value::Real)::Type{<:UpsertResult}
+    update_parameter(id::AbstractString, key::Optional{AbstractString}, value::Real)::Type{<:UpsertResult}
 
 Update a [`Parameter`](@ref) record.
 
 # Arguments
-- `id::Integer`: The id of the parameter to update.
+- `id::AbstractString`: The id of the parameter to update.
 - `key::Optional{AbstractString}`: The new key for the parameter.
 - `value::Real`: The new value for the parameter.
 
@@ -147,23 +147,23 @@ Update a [`Parameter`](@ref) record.
 An [`UpsertResult`](@ref). [`Updated`](@ref) if the record was successfully updated (or no changes were made), [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
 """
 function update_parameter(
-    id::Integer, key::Optional{AbstractString}, value::Real
+    id::AbstractString, key::Optional{AbstractString}, value::Real
 )::Type{<:UpsertResult}
     return update_parameter(id, key, (string(value)))
 end
 
 """
-    delete_parameter(id::Integer)::Bool
+    delete_parameter(id::AbstractString)::Bool
 
 Delete a [`Parameter`](@ref) record.
 
 # Arguments
-- `id::Integer`: The id of the parameter to delete.
+- `id::AbstractString`: The id of the parameter to delete.
 
 # Returns
 `true` if the record was successfully deleted, `false` otherwise.
 """
-function delete_parameter(id::Integer)::Bool
+function delete_parameter(id::AbstractString)::Bool
     parameter = get_parameter(id)
     if isnothing(parameter)
         return false
@@ -192,7 +192,7 @@ Delete all [`Parameter`](@ref) records associated with a given [`Iteration`](@re
 delete_parameters(iteration::Iteration)::Bool = delete(Parameter, iteration)
 
 """
-    get_project_id(parameter::Parameter)::Optional{Int64}
+    get_project_id(parameter::Parameter)::Optional{String}
 
 Return the [`Project`](@ref) id that owns the given [`Parameter`](@ref) by walking up to its
 parent [`Iteration`](@ref) and [`Experiment`](@ref).
@@ -203,7 +203,7 @@ parent [`Iteration`](@ref) and [`Experiment`](@ref).
 # Returns
 The owning project id, or `nothing` if any ancestor is missing.
 """
-function get_project_id(parameter::Parameter)::Optional{Int64}
+function get_project_id(parameter::Parameter)::Optional{String}
     iteration = get_iteration(parameter.iteration_id)
     return isnothing(iteration) ? nothing : (get_project_id(iteration))
 end

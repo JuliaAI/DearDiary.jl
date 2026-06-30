@@ -1,5 +1,5 @@
 """
-    with_iteration(f::Function, client::Client, experiment_id::Integer; parent_iteration_id=nothing, snapshot=parent_iteration_id |> isnothing)
+    with_iteration(f::Function, client::Client, experiment_id::AbstractString; parent_iteration_id=nothing, snapshot=parent_iteration_id |> isnothing)
 
 Open a fresh [`Iteration`](@ref) under `experiment_id`, invoke `f(iteration)`, and finalise
 the iteration regardless of whether the body returns normally or throws. On a clean return
@@ -30,8 +30,8 @@ end
 function with_iteration(
     f::Function,
     client::Client,
-    experiment_id::Integer;
-    parent_iteration_id::Optional{<:Integer}=nothing,
+    experiment_id::AbstractString;
+    parent_iteration_id::Optional{<:AbstractString}=nothing,
     snapshot::Bool=(isnothing(parent_iteration_id)),
 )
     iteration = create_iteration(

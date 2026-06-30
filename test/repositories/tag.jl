@@ -2,29 +2,33 @@
     @testset verbose = true "tag repository" begin
         @testset verbose = true "insert" begin
             result = DearDiary.insert(DearDiary.Tag, "test-tag")
-            @test result.id isa Integer
+            @test result.id isa String
+            @test !isempty(result.id)
             @test result.status === DearDiary.Created
         end
 
         @testset verbose = true "fetch by id" begin
-            tag = DearDiary.fetch(DearDiary.Tag, 1)
+            inserted = DearDiary.insert(DearDiary.Tag, "test-tag-fetchbyid")
+            tag = DearDiary.fetch(DearDiary.Tag, inserted.id)
 
             @test tag isa DearDiary.Tag
-            @test tag.id == 1
-            @test tag.value == "test-tag"
+            @test tag.id == inserted.id
+            @test tag.value == "test-tag-fetchbyid"
         end
 
         @testset verbose = true "fetch by value" begin
-            tag = DearDiary.fetch(DearDiary.Tag, "test-tag")
+            tag = DearDiary.fetch_by_value(DearDiary.Tag, "test-tag")
 
             @test tag isa DearDiary.Tag
-            @test tag.id == 1
+            @test tag.id isa String
+            @test !isempty(tag.id)
             @test tag.value == "test-tag"
         end
 
         @testset verbose = true "delete" begin
-            @test DearDiary.delete(DearDiary.Tag, 1)
-            @test isnothing(DearDiary.fetch(DearDiary.Tag, 1))
+            inserted = DearDiary.insert(DearDiary.Tag, "test-tag-delete")
+            @test DearDiary.delete(DearDiary.Tag, inserted.id)
+            @test isnothing(DearDiary.fetch(DearDiary.Tag, inserted.id))
         end
     end
 
@@ -102,11 +106,14 @@
             DearDiary.Iteration, iteration_result.id, "test-iteration-tag"
         )
 
-        @test project_tag_result.id isa Integer
+        @test project_tag_result.id isa String
+        @test !isempty(project_tag_result.id)
         @test project_tag_result.status === DearDiary.Created
-        @test experiment_tag_result.id isa Integer
+        @test experiment_tag_result.id isa String
+        @test !isempty(experiment_tag_result.id)
         @test experiment_tag_result.status === DearDiary.Created
-        @test iteration_tag_result.id isa Integer
+        @test iteration_tag_result.id isa String
+        @test !isempty(iteration_tag_result.id)
         @test iteration_tag_result.status === DearDiary.Created
     end
 end

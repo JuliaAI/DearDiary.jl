@@ -18,7 +18,7 @@ const SQL_SELECT_METRICS_BY_ITERATION_ID = """
         p.step,
         p.recorded_at
     FROM metric p WHERE p.iteration_id = :id
-    ORDER BY p.step ASC, p.id ASC
+    ORDER BY p.step ASC, p.recorded_at ASC
     """
 
 const SQL_COUNT_METRICS_BY_ITERATION_ID = """

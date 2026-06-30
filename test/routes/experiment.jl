@@ -1,5 +1,9 @@
 @with_deardiary_test_db begin
     @testset verbose = true "experiment routes" begin
+        project_id = ""
+        experiment_id = ""
+        second_experiment_id = ""
+
         @testset verbose = true "create experiment" begin
             project_payload = JSON.json(Dict("name" => "Test Project"))
             project_response = HTTP.post(
@@ -24,20 +28,21 @@
 
             @test response.status == HTTP.StatusCodes.CREATED
             data = JSON.parse(String(response.body), Dict{String,Any})
-            @test data["experiment_id"] == 1
+            experiment_id = data["experiment_id"]
+            @test experiment_id isa String
         end
 
         @testset verbose = true "get experiment by id" begin
             response = HTTP.get(
-                "http://127.0.0.1:9000/experiment/1"; status_exception=false
+                "http://127.0.0.1:9000/experiment/$(experiment_id)"; status_exception=false
             )
 
             @test response.status == HTTP.StatusCodes.OK
             data = JSON.parse(String(response.body), Dict{String,Any})
             experiment = DearDiary.Experiment(data)
 
-            @test experiment.id isa Int
-            @test experiment.project_id == 1
+            @test experiment.id isa String
+            @test experiment.project_id == project_id
             @test experiment.status_id == (Integer(DearDiary.IN_PROGRESS))
             @test experiment.name == "Test Experiment"
             @test isempty(experiment.description)
@@ -51,14 +56,16 @@
                     "name" => "Second Experiment",
                 ),
             )
-            HTTP.post(
-                "http://127.0.0.1:9000/experiment/project/1";
+            r = HTTP.post(
+                "http://127.0.0.1:9000/experiment/project/$(project_id)";
                 body=payload,
                 status_exception=false,
             )
+            second_experiment_id = JSON.parse(String(r.body), Dict{String,Any})["experiment_id"]
 
             response = HTTP.get(
-                "http://127.0.0.1:9000/experiment/project/1"; status_exception=false
+                "http://127.0.0.1:9000/experiment/project/$(project_id)";
+                status_exception=false,
             )
 
             @test response.status == HTTP.StatusCodes.OK
@@ -73,7 +80,7 @@
 
             @testset "limit / offset pagination" begin
                 page1 = HTTP.get(
-                    "http://127.0.0.1:9000/experiment/project/1?limit=1&offset=0";
+                    "http://127.0.0.1:9000/experiment/project/$(project_id)?limit=1&offset=0";
                     status_exception=false,
                 )
                 p1 = JSON.parse(String(page1.body), Dict{String,Any})
@@ -83,7 +90,7 @@
                 @test p1["offset"] == 0
 
                 page2 = HTTP.get(
-                    "http://127.0.0.1:9000/experiment/project/1?limit=1&offset=1";
+                    "http://127.0.0.1:9000/experiment/project/$(project_id)?limit=1&offset=1";
                     status_exception=false,
                 )
                 p2 = JSON.parse(String(page2.body), Dict{String,Any})
@@ -92,7 +99,7 @@
                 @test p1["data"][1]["id"] != p2["data"][1]["id"]
 
                 empty_page = HTTP.get(
-                    "http://127.0.0.1:9000/experiment/project/1?limit=10&offset=99";
+                    "http://127.0.0.1:9000/experiment/project/$(project_id)?limit=10&offset=99";
                     status_exception=false,
                 )
                 ep = JSON.parse(String(empty_page.body), Dict{String,Any})
@@ -102,7 +109,7 @@
 
             @testset "max_limit cap" begin
                 response = HTTP.get(
-                    "http://127.0.0.1:9000/experiment/project/1?limit=99999";
+                    "http://127.0.0.1:9000/experiment/project/$(project_id)?limit=99999";
                     status_exception=false,
                 )
                 data = JSON.parse(String(response.body), Dict{String,Any})
@@ -111,7 +118,7 @@
 
             @testset "invalid limit / offset fall back to defaults" begin
                 response = HTTP.get(
-                    "http://127.0.0.1:9000/experiment/project/1?limit=abc&offset=-5";
+                    "http://127.0.0.1:9000/experiment/project/$(project_id)?limit=abc&offset=-5";
                     status_exception=false,
                 )
                 data = JSON.parse(String(response.body), Dict{String,Any})
@@ -130,7 +137,9 @@
                 ),
             )
             response = HTTP.patch(
-                "http://127.0.0.1:9000/experiment/2"; body=payload, status_exception=false
+                "http://127.0.0.1:9000/experiment/$(second_experiment_id)";
+                body=payload,
+                status_exception=false,
             )
 
             @test response.status == HTTP.StatusCodes.OK
@@ -138,7 +147,8 @@
             @test data["message"] == "UPDATED"
 
             response = HTTP.get(
-                "http://127.0.0.1:9000/experiment/2"; status_exception=false
+                "http://127.0.0.1:9000/experiment/$(second_experiment_id)";
+                status_exception=false,
             )
             data = JSON.parse(String(response.body), Dict{String,Any})
             experiment = DearDiary.Experiment(data)
@@ -150,7 +160,8 @@
 
         @testset verbose = true "delete experiment" begin
             response = HTTP.delete(
-                "http://127.0.0.1:9000/experiment/2"; status_exception=false
+                "http://127.0.0.1:9000/experiment/$(second_experiment_id)";
+                status_exception=false,
             )
             @test response.status == HTTP.StatusCodes.OK
             data = JSON.parse(String(response.body), Dict{String,Any})
@@ -159,7 +170,7 @@
 
         @testset verbose = true "error envelope on upsert failure" begin
             response = HTTP.post(
-                "http://127.0.0.1:9000/experiment/project/9999";
+                "http://127.0.0.1:9000/experiment/project/00000000-0000-0000-0000-000000000000";
                 body=(JSON.json(
                     Dict(
                         "status_id" => (Integer(DearDiary.IN_PROGRESS)),
@@ -176,7 +187,8 @@
 
         @testset verbose = true "GET 404 carries NOT_FOUND code" begin
             response = HTTP.get(
-                "http://127.0.0.1:9000/experiment/9999"; status_exception=false
+                "http://127.0.0.1:9000/experiment/00000000-0000-0000-0000-000000000000";
+                status_exception=false,
             )
             @test response.status == HTTP.StatusCodes.NOT_FOUND
             data = JSON.parse(String(response.body), Dict{String,Any})

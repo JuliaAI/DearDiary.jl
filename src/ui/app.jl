@@ -32,8 +32,8 @@ end
 
 function build_ui_app()::Bonito.App
     return Bonito.App(; title="DearDiary") do session::Bonito.Session
-        user = get_user("default")
-        selected = Observables.Observable{Optional{Int64}}(nothing)
+        user = get_user_by_username("default")
+        selected = Observables.Observable{Optional{String}}(nothing)
 
         sidebar = _render_sidebar(user, selected)
         main_content = Observables.map(_render_iteration_detail, selected)
@@ -86,6 +86,7 @@ const _UI_STYLES = """
     .dd-experiment { font-weight: 500; margin-top: 0.5rem; color: #cbd2d9; }
     .dd-iter-link { display: block; padding: 0.2rem 0.4rem; color: #9aa5b1; text-decoration: none; border-radius: 0.25rem; font-size: 0.85rem; }
     .dd-iter-link:hover { background: #323f4b; color: #e4e7eb; }
+    .dd-iter-active { background: #323f4b; box-shadow: inset 3px 0 0 #4e79a7; }
     .dd-iter-running { color: #ffd479; }
     .dd-iter-failed { color: #ff9b9b; }
     .dd-iter-killed { color: #c8a2c8; }
@@ -103,6 +104,9 @@ const _UI_STYLES = """
     .dd-badge-killed { background: #ede9fe; color: #5b21b6; }
     .dd-meta { color: #52606d; font-size: 0.9rem; margin: 0.25rem 0; }
     .dd-meta b { color: #1f2933; font-weight: 600; }
+    .dd-meta-id { color: #7b8794; font-size: 0.82rem; font-family: ui-monospace, monospace; word-break: break-all; }
+    .dd-mono { font-family: ui-monospace, monospace; font-size: 0.85rem; word-break: break-all; }
+    .dd-tag { display: inline-block; background: #e4e7eb; color: #3e4c59; border-radius: 9999px; padding: 0.1rem 0.55rem; font-size: 0.75rem; font-weight: 600; margin-right: 0.35rem; }
     .dd-error { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 0.75rem 1rem; border-radius: 0.375rem; font-family: ui-monospace, monospace; font-size: 0.85rem; white-space: pre-wrap; }
 """
 
@@ -154,15 +158,16 @@ end
 
 function _render_experiment_block(experiment, selected::Observables.Observable)
     iterations = get_iterations(experiment.id)
-    # Sort by id (creation order) and assign per-experiment ordinals. The sidebar labels
+    # Sort by creation date and assign per-experiment ordinals. The sidebar labels
     # iterations as "Iteration 1, 2, 3..." within each experiment rather than exposing the
-    # global database id. The canonical id stays visible in the detail pane header.
-    sorted_iters = sort(iterations; by=it -> it.id)
-    ordinals = Dict{Int64,Int}(it.id => i for (i, it) in enumerate(sorted_iters))
+    # canonical id. The canonical id stays visible in the detail pane header. (UUID ids are
+    # not chronologically ordered, so creation order comes from `created_date`.)
+    sorted_iters = sort(iterations; by=it -> it.created_date)
+    ordinals = Dict{String,Int}(it.id => i for (i, it) in enumerate(sorted_iters))
 
     # Group children by parent so the tree renderer can recurse one level at a time.
     # Top-level iterations (no `parent_iteration_id`) become the roots of the tree.
-    children_by_parent = Dict{Int64,Vector{Iteration}}()
+    children_by_parent = Dict{String,Vector{Iteration}}()
     top_level = Iteration[]
     for iteration in sorted_iters
         if isnothing(iteration.parent_iteration_id)
@@ -187,8 +192,8 @@ end
 
 function _render_iteration_node(
     iteration::Iteration,
-    children_by_parent::Dict{Int64,Vector{Iteration}},
-    ordinals::Dict{Int64,Int},
+    children_by_parent::Dict{String,Vector{Iteration}},
+    ordinals::Dict{String,Int},
     selected::Observables.Observable,
 )
     children = get(children_by_parent, iteration.id, Iteration[])
@@ -204,7 +209,7 @@ function _render_iteration_node(
 end
 
 function _render_iteration_anchor(
-    iteration::Iteration, ordinals::Dict{Int64,Int}, selected::Observables.Observable
+    iteration::Iteration, ordinals::Dict{String,Int}, selected::Observables.Observable
 )
     status = iteration.status_id
     class = "dd-iter-link"
@@ -217,28 +222,46 @@ function _render_iteration_anchor(
     end
     ordinal = get(ordinals, iteration.id, 0)
     label = "$(_status_glyph(status)) Iteration $(ordinal) · $(_relative_time(iteration.created_date))"
+    # Selection is click-driven, so the persistent highlight is moved on the client: clear the
+    # active class from every row, set it on the clicked one, then notify the `selected`
+    # observable that drives the detail pane. Doing it in the click handler avoids rebuilding
+    # the sidebar (which would lose scroll position) on every selection.
     return Bonito.DOM.a(
-        label; href="#", class=class, onclick=Bonito.js"event => {
-                                          event.preventDefault();
-                                          $(selected).notify($(iteration.id));
-                                      }"
+        label;
+        href="#",
+        class=class,
+        onclick=Bonito.js"""event => {
+            event.preventDefault();
+            document.querySelectorAll('.dd-iter-link').forEach(el => el.classList.remove('dd-iter-active'));
+            event.currentTarget.classList.add('dd-iter-active');
+            $(selected).notify($(iteration.id));
+        }"""
     )
 end
 
-function _iteration_title(iteration_id::Optional{<:Integer})::String
+# Iterations are surfaced to the user by their per-experiment ordinal ("Iteration 1, 2, ...")
+# rather than their opaque UUID. `get_iterations` returns the experiment's iterations ordered by
+# `created_date`, so the 1-based position in that list is the same ordinal the sidebar assigns.
+function _iteration_ordinal(iteration)::Int
+    siblings = get_iterations(iteration.experiment_id)
+    idx = findfirst(sibling -> sibling.id == iteration.id, siblings)
+    return isnothing(idx) ? 0 : idx
+end
+
+function _iteration_title(iteration_id::Optional{<:AbstractString})::String
     if isnothing(iteration_id)
         return "DearDiary"
     end
     iteration = get_iteration(iteration_id)
     if isnothing(iteration)
-        return "Iteration #$(iteration_id) not found · DearDiary"
+        return "Iteration not found · DearDiary"
     end
     experiment = get_experiment(iteration.experiment_id)
     experiment_name = (isnothing(experiment)) ? "?" : experiment.name
-    return "#$(iteration.id) · $(experiment_name) · DearDiary"
+    return "#$(_iteration_ordinal(iteration)) · $(experiment_name) · DearDiary"
 end
 
-function _render_iteration_detail(iteration_id::Optional{<:Integer})
+function _render_iteration_detail(iteration_id::Optional{<:AbstractString})
     if isnothing(iteration_id)
         return Bonito.DOM.div(
             Bonito.DOM.p(
@@ -258,6 +281,7 @@ function _render_iteration_detail(iteration_id::Optional{<:Integer})
         _render_iteration_header(iteration),
         _render_parameters_card(iteration),
         _render_metrics_card(iteration),
+        _render_environment_card(iteration),
     )
 end
 
@@ -267,9 +291,10 @@ function _render_iteration_header(iteration)
     experiment_name = (isnothing(experiment)) ? "?" : experiment.name
 
     rows = Any[
-        Bonito.DOM.h2("Iteration #$(iteration.id)"),
+        Bonito.DOM.h2("Iteration $(_iteration_ordinal(iteration))"),
         Bonito.DOM.span(badge_text; class="dd-badge $badge_class"),
         Bonito.DOM.p(Bonito.DOM.b("Experiment: "), experiment_name; class="dd-meta"),
+        Bonito.DOM.p(Bonito.DOM.b("ID: "), iteration.id; class="dd-meta dd-meta-id"),
         Bonito.DOM.p(
             Bonito.DOM.b("Created: "), string(iteration.created_date); class="dd-meta"
         ),
@@ -281,21 +306,103 @@ function _render_iteration_header(iteration)
                 Bonito.DOM.b("Ended: "), string(iteration.end_date); class="dd-meta"
             ),
         )
-    end
-    if !(isnothing(iteration.parent_iteration_id))
         push!(
             rows,
             Bonito.DOM.p(
-                Bonito.DOM.b("Parent iteration: "),
-                "#$(iteration.parent_iteration_id)";
+                Bonito.DOM.b("Duration: "),
+                _format_duration(iteration.end_date - iteration.created_date);
                 class="dd-meta",
             ),
         )
+    end
+    if !(isnothing(iteration.parent_iteration_id))
+        parent = get_iteration(iteration.parent_iteration_id)
+        parent_ordinal = (isnothing(parent)) ? "?" : string(_iteration_ordinal(parent))
+        push!(
+            rows,
+            Bonito.DOM.p(
+                Bonito.DOM.b("Parent iteration: "), "#$(parent_ordinal)"; class="dd-meta"
+            ),
+        )
+    end
+    if !(isempty(iteration.notes))
+        push!(rows, Bonito.DOM.p(Bonito.DOM.b("Notes: "), iteration.notes; class="dd-meta"))
+    end
+    tags = get_tags(Iteration, iteration.id)
+    if !(isempty(tags))
+        chips = [Bonito.DOM.span(tag.value; class="dd-tag") for tag in tags]
+        push!(rows, Bonito.DOM.p(Bonito.DOM.b("Tags: "), chips...; class="dd-meta"))
     end
     if !(isempty(iteration.error_message))
         push!(rows, Bonito.DOM.div(iteration.error_message; class="dd-error"))
     end
     return Bonito.DOM.section(rows...; class="dd-card")
+end
+
+# Render a coarse human-readable duration. Sub-second runs show milliseconds; otherwise the
+# largest one or two units (s, m, h) so a quick scan reads "1.06s" / "2m 3s" / "1h 12m".
+function _format_duration(d::Millisecond)::String
+    ms = d.value
+    ms < 0 && return "—"
+    ms < 1000 && return "$(ms) ms"
+    s = ms / 1000
+    s < 60 && return "$(round(s; digits=2))s"
+    if s < 3600
+        m, rem = divrem(round(Int, s), 60)
+        return "$(m)m $(rem)s"
+    end
+    h, rem = divrem(round(Int, s), 3600)
+    return "$(h)h $(rem ÷ 60)m"
+end
+
+function _render_environment_card(iteration)
+    has_env =
+        !(isempty(iteration.julia_version)) ||
+        !(isempty(iteration.git_sha)) ||
+        !(isempty(iteration.entrypoint))
+    body = if !has_env
+        Bonito.DOM.p("No environment captured."; class="dd-empty")
+    else
+        git = if (isempty(iteration.git_sha))
+            "—"
+        elseif iteration.git_dirty
+            "$(iteration.git_sha) (dirty)"
+        else
+            iteration.git_sha
+        end
+        Bonito.DOM.table(
+            Bonito.DOM.tbody(
+                Bonito.DOM.tr(
+                    Bonito.DOM.td(Bonito.DOM.b("Julia version")),
+                    Bonito.DOM.td(
+                        if (isempty(iteration.julia_version))
+                            "—"
+                        else
+                            iteration.julia_version
+                        end,
+                    ),
+                ),
+                Bonito.DOM.tr(
+                    Bonito.DOM.td(Bonito.DOM.b("Git commit")),
+                    Bonito.DOM.td(Bonito.DOM.span(git; class="dd-mono")),
+                ),
+                Bonito.DOM.tr(
+                    Bonito.DOM.td(Bonito.DOM.b("Entrypoint")),
+                    Bonito.DOM.td(
+                        Bonito.DOM.span(
+                            if (isempty(iteration.entrypoint))
+                                "—"
+                            else
+                                iteration.entrypoint
+                            end;
+                            class="dd-mono",
+                        ),
+                    ),
+                ),
+            ),
+        )
+    end
+    return Bonito.DOM.section(Bonito.DOM.h3("Environment"), body; class="dd-card")
 end
 
 function _status_chrome(status_id::Integer)::Tuple{String,String}

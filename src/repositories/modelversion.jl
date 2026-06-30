@@ -1,15 +1,15 @@
-function fetch(::Type{<:ModelVersion}, id::Integer)::Optional{ModelVersion}
+function fetch(::Type{<:ModelVersion}, id::AbstractString)::Optional{ModelVersion}
     version = fetch(SQL_SELECT_MODELVERSION_BY_ID, (id=id,))
     return (isnothing(version)) ? nothing : (ModelVersion(version))
 end
 
-function fetch_all(::Type{<:ModelVersion}, model_id::Integer)::Array{ModelVersion,1}
+function fetch_all(::Type{<:ModelVersion}, model_id::AbstractString)::Array{ModelVersion,1}
     versions = fetch_all(SQL_SELECT_MODELVERSIONS_BY_MODEL_ID; parameters=(id=model_id,))
     return ModelVersion.(versions)
 end
 
 function fetch_page(
-    ::Type{<:ModelVersion}, model_id::Integer, page::Pagination
+    ::Type{<:ModelVersion}, model_id::AbstractString, page::Pagination
 )::PaginatedResponse{ModelVersion}
     paged = fetch_page(
         SQL_SELECT_MODELVERSIONS_BY_MODEL_ID,
@@ -24,12 +24,12 @@ end
 
 function insert(
     ::Type{<:ModelVersion},
-    model_id::Integer,
-    iteration_id::Integer,
-    resource_id::Optional{<:Integer},
+    model_id::AbstractString,
+    iteration_id::AbstractString,
+    resource_id::Optional{<:AbstractString},
     stage_id::Integer,
     description::AbstractString,
-)::@NamedTuple{id::Optional{<:Int64}, status::DataType}
+)::@NamedTuple{id::Optional{String}, status::DataType}
     fields = (
         model_id=model_id,
         iteration_id=iteration_id,
@@ -43,10 +43,10 @@ end
 
 function update(
     ::Type{<:ModelVersion},
-    id::Integer;
+    id::AbstractString;
     stage_id::Optional{Integer}=nothing,
     description::Optional{AbstractString}=nothing,
-    resource_id::Optional{Integer}=nothing,
+    resource_id::Optional{AbstractString}=nothing,
 )::Type{<:UpsertResult}
     fields = (
         stage_id=stage_id,
@@ -57,15 +57,17 @@ function update(
     return update(SQL_UPDATE_MODELVERSION, fetch(ModelVersion, id); fields...)
 end
 
-delete(::Type{<:ModelVersion}, id::Integer)::Bool = delete(SQL_DELETE_MODELVERSION, id)
+delete(::Type{<:ModelVersion}, id::AbstractString)::Bool = delete(
+    SQL_DELETE_MODELVERSION, id
+)
 
 """
-    delete_all(::Type{<:ModelVersion}, model_id::Integer)::Bool
+    delete_all(::Type{<:ModelVersion}, model_id::AbstractString)::Bool
 
 Delete every [`ModelVersion`](@ref) under `model_id` in a single statement. Used by the
 service-layer cascade when a [`Model`](@ref) is deleted.
 """
-function delete_all(::Type{<:ModelVersion}, model_id::Integer)::Bool
+function delete_all(::Type{<:ModelVersion}, model_id::AbstractString)::Bool
     try
         DBInterface.execute(
             get_database(), duckdbify(SQL_DELETE_MODELVERSIONS_BY_MODEL_ID), (id=model_id,)
@@ -77,14 +79,16 @@ function delete_all(::Type{<:ModelVersion}, model_id::Integer)::Bool
 end
 
 """
-    archive_production_siblings(model_id::Integer, excluded_id::Integer)::Bool
+    archive_production_siblings(model_id::AbstractString, excluded_id::AbstractString)::Bool
 
 Demote every [`ModelVersion`](@ref) under `model_id` that currently holds [`PRODUCTION`](@ref)
 to [`ARCHIVED`](@ref), skipping `excluded_id`. The service layer calls this immediately after
 promoting a new version to `PRODUCTION` to restore the "at most one production version per
 model" invariant.
 """
-function archive_production_siblings(model_id::Integer, excluded_id::Integer)::Bool
+function archive_production_siblings(
+    model_id::AbstractString, excluded_id::AbstractString
+)::Bool
     try
         DBInterface.execute(
             get_database(),

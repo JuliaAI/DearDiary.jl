@@ -38,13 +38,15 @@ function setup_auth_routes()
     @get root("/me") function (request::HTTP.Request)
         global _DEARDIARY_APICONFIG
         if !_DEARDIARY_APICONFIG.enable_auth
-            request.context[:user] = get(request.context, :user, get_user("default"))
+            request.context[:user] = get(
+                request.context, :user, get_user_by_username("default")
+            )
         end
         return json((sanitize_user(request.context[:user])); status=HTTP.StatusCodes.OK)
     end
 
     @post root("/") function (::HTTP.Request, parameters::Json{UserLoginPayload})
-        user = get_user(parameters.payload.username)
+        user = get_user_by_username(parameters.payload.username)
 
         if isnothing(user)
             return error_response(
@@ -68,7 +70,7 @@ function setup_auth_routes()
         user = if _DEARDIARY_APICONFIG.enable_auth
             request.context[:user]
         else
-            get(request.context, :user, get_user("default"))
+            get(request.context, :user, get_user_by_username("default"))
         end
         return json(issue_token(user); status=HTTP.StatusCodes.OK)
     end

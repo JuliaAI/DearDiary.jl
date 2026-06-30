@@ -9,7 +9,8 @@
                 created_date=string(now()),
             )
             id, status = DearDiary.insert(DearDiary.SQL_INSERT_USER, first_user)
-            @test id isa Integer
+            @test id isa String
+            @test !isempty(id)
             @test status === DearDiary.Created
 
             second_user = (
@@ -20,7 +21,8 @@
                 created_date=string(now()),
             )
             id, status = DearDiary.insert(DearDiary.SQL_INSERT_USER, second_user)
-            @test id isa Integer
+            @test id isa String
+            @test !isempty(id)
             @test status === DearDiary.Created
         end
 
@@ -30,7 +32,8 @@
             )
 
             @test user isa Dict{Symbol,Any}
-            @test user[:id] isa Int
+            @test user[:id] isa String
+            @test !isempty(user[:id])
             @test user[:first_name] == "Missy"
         end
 
@@ -42,7 +45,12 @@
         end
 
         @testset verbose = true "update" begin
-            user = DearDiary.User(DearDiary.fetch(DearDiary.SQL_SELECT_USER_BY_ID, (id=2,)))
+            missy_row = DearDiary.fetch(
+                DearDiary.SQL_SELECT_USER_BY_USERNAME, (username="missy",)
+            )
+            user = DearDiary.User(
+                DearDiary.fetch(DearDiary.SQL_SELECT_USER_BY_ID, (id=missy_row[:id],))
+            )
 
             @test DearDiary.update(
                 DearDiary.SQL_UPDATE_USER, user; first_name="Ana", last_name=nothing
@@ -56,7 +64,10 @@
         end
 
         @testset verbose = true "delete" begin
-            @test DearDiary.delete(DearDiary.SQL_DELETE_USER, 2)
+            missy_row = DearDiary.fetch(
+                DearDiary.SQL_SELECT_USER_BY_USERNAME, (username="missy",)
+            )
+            @test DearDiary.delete(DearDiary.SQL_DELETE_USER, missy_row[:id])
 
             @test isnothing(
                 DearDiary.fetch(DearDiary.SQL_SELECT_USER_BY_USERNAME, (username="missy",))

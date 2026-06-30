@@ -2,7 +2,7 @@
     @testset verbose = true "experiment repository" begin
         @testset verbose = true "insert" begin
             @testset "with existing project" begin
-                user = DearDiary.get_user("default")
+                user = DearDiary.get_user_by_username("default")
                 project_id, _ = DearDiary.create_project(user.id, "Experiment Project")
 
                 id, status = DearDiary.insert(
@@ -11,14 +11,15 @@
                     Integer(DearDiary.IN_PROGRESS),
                     "Test Experiment",
                 )
-                @test id isa Integer
+                @test id isa String
+                @test !isempty(id)
                 @test status === DearDiary.Created
             end
 
             @testset "with non-existing project" begin
                 id, status = DearDiary.insert(
                     DearDiary.Experiment,
-                    9999,
+                    "00000000-0000-0000-0000-000000000000",
                     Integer(DearDiary.IN_PROGRESS),
                     "Test Experiment",
                 )
@@ -27,7 +28,7 @@
             end
 
             @testset "with non-allowed status" begin
-                user = DearDiary.get_user("default")
+                user = DearDiary.get_user_by_username("default")
                 project_id, _ = DearDiary.create_project(user.id, "Experiment Project")
 
                 id, status = DearDiary.insert(
@@ -40,7 +41,7 @@
 
         @testset verbose = true "fetch" begin
             @testset "existing experiment" begin
-                user = DearDiary.get_user("default")
+                user = DearDiary.get_user_by_username("default")
                 project_id, _ = DearDiary.create_project(user.id, "Experiment Project")
                 experiment_id, _ = DearDiary.insert(
                     DearDiary.Experiment,
@@ -60,14 +61,16 @@
             end
 
             @testset "non-existing experiment" begin
-                experiment = DearDiary.fetch(DearDiary.Experiment, 9999)
+                experiment = DearDiary.fetch(
+                    DearDiary.Experiment, "00000000-0000-0000-0000-000000000000"
+                )
 
                 @test isnothing(experiment)
             end
         end
 
         @testset verbose = true "fetch all" begin
-            user = DearDiary.get_user("default")
+            user = DearDiary.get_user_by_username("default")
             project_id, _ = DearDiary.create_project(user.id, "Experiment Project")
             DearDiary.insert(
                 DearDiary.Experiment,
@@ -89,7 +92,7 @@
         end
 
         @testset verbose = true "update" begin
-            user = DearDiary.get_user("default")
+            user = DearDiary.get_user_by_username("default")
             project_id, _ = DearDiary.create_project(user.id, "Experiment Project")
             experiment_id, _ = DearDiary.insert(
                 DearDiary.Experiment,
@@ -117,7 +120,7 @@
         end
 
         @testset verbose = true "delete" begin
-            user = DearDiary.get_user("default")
+            user = DearDiary.get_user_by_username("default")
             project_id, _ = DearDiary.create_project(user.id, "Experiment Project")
             experiment_id, _ = DearDiary.insert(
                 DearDiary.Experiment,

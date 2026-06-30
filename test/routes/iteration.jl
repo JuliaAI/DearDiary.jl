@@ -1,5 +1,9 @@
 @with_deardiary_test_db begin
     @testset verbose = true "iteration routes" begin
+        experiment_id = ""
+        iteration_id = ""
+        second_iteration_id = ""
+
         @testset verbose = true "create iteration" begin
             project_payload = JSON.json(Dict("name" => "Iteration Project"))
             project_response = HTTP.post(
@@ -31,29 +35,35 @@
 
             @test response.status == HTTP.StatusCodes.CREATED
             data = JSON.parse(String(response.body), Dict{String,Any})
-            @test data["iteration_id"] == 1
+            iteration_id = data["iteration_id"]
+            @test iteration_id isa String
         end
 
         @testset verbose = true "get iteration by id" begin
-            response = HTTP.get("http://127.0.0.1:9000/iteration/1"; status_exception=false)
+            response = HTTP.get(
+                "http://127.0.0.1:9000/iteration/$(iteration_id)"; status_exception=false
+            )
 
             @test response.status == HTTP.StatusCodes.OK
             data = JSON.parse(String(response.body), Dict{String,Any})
             iteration = DearDiary.Iteration(data)
 
-            @test iteration.id isa Int
-            @test iteration.experiment_id == 1
+            @test iteration.id isa String
+            @test iteration.experiment_id == experiment_id
             @test isempty(iteration.notes)
             @test iteration.created_date isa DateTime
         end
 
         @testset verbose = true "get iterations" begin
-            HTTP.post(
-                "http://127.0.0.1:9000/iteration/experiment/1"; status_exception=false
+            r = HTTP.post(
+                "http://127.0.0.1:9000/iteration/experiment/$(experiment_id)";
+                status_exception=false,
             )
+            second_iteration_id = JSON.parse(String(r.body), Dict{String,Any})["iteration_id"]
 
             response = HTTP.get(
-                "http://127.0.0.1:9000/iteration/experiment/1"; status_exception=false
+                "http://127.0.0.1:9000/iteration/experiment/$(experiment_id)";
+                status_exception=false,
             )
 
             @test response.status == HTTP.StatusCodes.OK
@@ -72,14 +82,19 @@
                 Dict("notes" => "Updated notes for iteration", "end_date" => nothing)
             )
             response = HTTP.patch(
-                "http://127.0.0.1:9000/iteration/2"; body=payload, status_exception=false
+                "http://127.0.0.1:9000/iteration/$(second_iteration_id)";
+                body=payload,
+                status_exception=false,
             )
 
             @test response.status == HTTP.StatusCodes.OK
             data = JSON.parse(String(response.body), Dict{String,Any})
             @test data["message"] == "UPDATED"
 
-            response = HTTP.get("http://127.0.0.1:9000/iteration/2"; status_exception=false)
+            response = HTTP.get(
+                "http://127.0.0.1:9000/iteration/$(second_iteration_id)";
+                status_exception=false,
+            )
             data = JSON.parse(String(response.body), Dict{String,Any})
             iteration = DearDiary.Iteration(data)
 
@@ -88,7 +103,8 @@
 
         @testset verbose = true "delete iteration" begin
             response = HTTP.delete(
-                "http://127.0.0.1:9000/iteration/2"; status_exception=false
+                "http://127.0.0.1:9000/iteration/$(second_iteration_id)";
+                status_exception=false,
             )
             @test response.status == HTTP.StatusCodes.OK
             data = JSON.parse(String(response.body), Dict{String,Any})

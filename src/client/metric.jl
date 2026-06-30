@@ -1,10 +1,10 @@
 """
-    get_metric(client::Client, id::Integer)::Optional{Metric}
+    get_metric(client::Client, id::AbstractString)::Optional{Metric}
 
 Fetch a [`Metric`](@ref) via `GET /metric/{id}`. Returns `nothing` when the server replies
 404 and raises [`ClientError`](@ref) for other failures.
 """
-function get_metric(client::Client, id::Integer)::Optional{Metric}
+function get_metric(client::Client, id::AbstractString)::Optional{Metric}
     try
         return Metric(_json(_request(client, "GET", "/metric/$id")))
     catch err
@@ -14,22 +14,22 @@ function get_metric(client::Client, id::Integer)::Optional{Metric}
 end
 
 """
-    get_metrics(client::Client, iteration_id::Integer)::Array{Metric,1}
+    get_metrics(client::Client, iteration_id::AbstractString)::Array{Metric,1}
 
 Returns the first 50 [`Metric`](@ref) rows for `iteration_id`, ordered by `step` ascending.
 """
-function get_metrics(client::Client, iteration_id::Integer)::Array{Metric,1}
+function get_metrics(client::Client, iteration_id::AbstractString)::Array{Metric,1}
     return get_metrics(client, iteration_id, Pagination(50, 0)).data
 end
 
 """
-    get_metrics(client::Client, iteration_id::Integer, page::Pagination)::PaginatedResponse{Metric}
+    get_metrics(client::Client, iteration_id::AbstractString, page::Pagination)::PaginatedResponse{Metric}
 
 Fetch a page of [`Metric`](@ref) records under `iteration_id` via
 `GET /metric/iteration/{iteration_id}?limit=…&offset=…`.
 """
 function get_metrics(
-    client::Client, iteration_id::Integer, page::Pagination
+    client::Client, iteration_id::AbstractString, page::Pagination
 )::PaginatedResponse{Metric}
     response = _request(
         client,
@@ -41,7 +41,7 @@ function get_metrics(
 end
 
 """
-    create_metric(client::Client, iteration_id::Integer, key::AbstractString, value::Real; step=nothing, recorded_at=nothing)::Int64
+    create_metric(client::Client, iteration_id::AbstractString, key::AbstractString, value::Real; step=nothing, recorded_at=nothing)::String
 
 Append a [`Metric`](@ref) to `iteration_id` via `POST /metric/iteration/{iteration_id}`.
 
@@ -51,12 +51,12 @@ clock when omitted. The parent iteration must not be terminated.
 """
 function create_metric(
     client::Client,
-    iteration_id::Integer,
+    iteration_id::AbstractString,
     key::AbstractString,
     value::Real;
     step::Optional{Integer}=nothing,
     recorded_at::Optional{DateTime}=nothing,
-)::Int64
+)::String
     response = _request(
         client,
         "POST",
@@ -72,7 +72,7 @@ function create_metric(
 end
 
 """
-    log_metrics(client::Client, iteration_id::Integer, metrics::AbstractDict{<:AbstractString,<:Real}; step=nothing, recorded_at=nothing)::Array{Int64,1}
+    log_metrics(client::Client, iteration_id::AbstractString, metrics::AbstractDict{<:AbstractString,<:Real}; step=nothing, recorded_at=nothing)::Array{String,1}
 
 Record many metric values at once via `POST /metric/iteration/{iteration_id}/batch`. Cuts
 N HTTP round-trips per epoch to one. When `step` is omitted, each `key` independently gets
@@ -90,11 +90,11 @@ Returns the ids of the inserted metrics in the order they were processed.
 """
 function log_metrics(
     client::Client,
-    iteration_id::Integer,
+    iteration_id::AbstractString,
     metrics::AbstractDict{<:AbstractString,<:Real};
     step::Optional{Integer}=nothing,
     recorded_at::Optional{DateTime}=nothing,
-)::Array{Int64,1}
+)::Array{String,1}
     items = [Dict("key" => String(k), "value" => Float64(v)) for (k, v) in metrics]
     response = _request(
         client,
@@ -106,18 +106,18 @@ function log_metrics(
             "metrics" => items,
         ),
     )
-    return [Int64(id) for id in _json(response)["metric_ids"]]
+    return [string(id) for id in _json(response)["metric_ids"]]
 end
 
 """
-    update_metric(client::Client, id::Integer; key=nothing, value=nothing, step=nothing, recorded_at=nothing)::Nothing
+    update_metric(client::Client, id::AbstractString; key=nothing, value=nothing, step=nothing, recorded_at=nothing)::Nothing
 
 Patch a [`Metric`](@ref) via `PATCH /metric/{id}`. Any keyword left as `nothing` is left
 untouched server-side. The owning iteration must not be terminated.
 """
 function update_metric(
     client::Client,
-    id::Integer;
+    id::AbstractString;
     key::Optional{AbstractString}=nothing,
     value::Optional{Real}=nothing,
     step::Optional{Integer}=nothing,
@@ -138,12 +138,12 @@ function update_metric(
 end
 
 """
-    delete_metric(client::Client, id::Integer)::Nothing
+    delete_metric(client::Client, id::AbstractString)::Nothing
 
 Delete a [`Metric`](@ref) via `DELETE /metric/{id}`. Requires [`DeletePermission`](@ref)
 on the iteration's project.
 """
-function delete_metric(client::Client, id::Integer)::Nothing
+function delete_metric(client::Client, id::AbstractString)::Nothing
     _request(client, "DELETE", "/metric/$id")
     return nothing
 end

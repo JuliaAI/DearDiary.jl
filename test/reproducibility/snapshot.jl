@@ -43,7 +43,7 @@ end
 
 @with_deardiary_test_db begin
     @testset verbose = true "snapshot_environment! persists to iteration row" begin
-        user = DearDiary.get_user("default")
+        user = DearDiary.get_user_by_username("default")
         project_id, _ = DearDiary.create_project(user.id, "Repro Project")
         experiment_id, _ = DearDiary.create_experiment(
             project_id, DearDiary.IN_PROGRESS, "Repro Experiment"
@@ -63,11 +63,12 @@ end
     end
 
     @testset verbose = true "snapshot_environment! rejects missing iteration" begin
-        @test DearDiary.snapshot_environment!(9999) === DearDiary.Unprocessable
+        @test DearDiary.snapshot_environment!("00000000-0000-0000-0000-000000000000") ===
+            DearDiary.Unprocessable
     end
 
     @testset verbose = true "with_iteration auto-snapshots driver but not children" begin
-        user = DearDiary.get_user("default")
+        user = DearDiary.get_user_by_username("default")
         project_id, _ = DearDiary.create_project(user.id, "Repro Auto Project")
         experiment_id, _ = DearDiary.create_experiment(
             project_id, DearDiary.IN_PROGRESS, "Repro Auto Experiment"
@@ -102,7 +103,7 @@ end
 
 @with_deardiary_test_db begin
     @testset verbose = true "restore materialises the captured environment" begin
-        user = DearDiary.get_user("default")
+        user = DearDiary.get_user_by_username("default")
         project_id, _ = DearDiary.create_project(user.id, "Restore Project")
         experiment_id, _ = DearDiary.create_experiment(
             project_id, DearDiary.IN_PROGRESS, "Restore Experiment"
@@ -130,11 +131,11 @@ end
     end
 
     @testset verbose = true "restore rejects missing iteration" begin
-        @test_throws ArgumentError DearDiary.restore(9999)
+        @test_throws ArgumentError DearDiary.restore("00000000-0000-0000-0000-000000000000")
     end
 
     @testset verbose = true "restore rejects iteration without snapshot" begin
-        user = DearDiary.get_user("default")
+        user = DearDiary.get_user_by_username("default")
         project_id, _ = DearDiary.create_project(user.id, "Restore Empty Project")
         experiment_id, _ = DearDiary.create_experiment(
             project_id, DearDiary.IN_PROGRESS, "No Snapshot"

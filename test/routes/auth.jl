@@ -213,10 +213,12 @@
                     "http://127.0.0.1:9000/auth"; body=payload, status_exception=false
                 )
 
-                token = JSON.parse(String(response.body), Dict{String,Any})["access_token"]
+                login_data = JSON.parse(String(response.body), Dict{String,Any})
+                token = login_data["access_token"]
+                user_id = login_data["user"]["id"]
 
                 response = HTTP.get(
-                    "http://127.0.0.1:9000/user/1";
+                    "http://127.0.0.1:9000/user/$user_id";
                     headers=Dict("Authorization" => "Bearer $token"),
                     status_exception=false,
                 )
@@ -301,7 +303,7 @@
                 @test contains("Token has expired")(String(response.body))
             end
 
-            @testset "with string as id in JWT" begin
+            @testset "with unknown string id in JWT" begin
                 claims = Dict(
                     "sub" => "default",
                     "id" => "one",
@@ -322,7 +324,7 @@
                 )
 
                 @test response.status == HTTP.StatusCodes.UNAUTHORIZED
-                @test contains("Invalid token payload")(String(response.body))
+                @test contains("User not found")(String(response.body))
             end
 
             @testset "with zero as id in JWT" begin
@@ -352,7 +354,7 @@
             @testset "with non-existing user id in JWT" begin
                 claims = Dict(
                     "sub" => "default",
-                    "id" => 9999,
+                    "id" => "00000000-0000-0000-0000-000000000000",
                     "exp" => Int((floor(datetime2unix((now() + Hour(1)))))),
                 )
                 jwt = JWT(; payload=claims)

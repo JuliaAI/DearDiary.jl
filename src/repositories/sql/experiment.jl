@@ -20,6 +20,7 @@ const SQL_SELECT_EXPERIMENTS_BY_PROJECT_ID = """
         e.created_date,
         e.end_date
     FROM experiment e WHERE e.project_id = :id
+    ORDER BY e.created_date ASC
     """
 
 const SQL_COUNT_EXPERIMENTS_BY_PROJECT_ID = """

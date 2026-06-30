@@ -2,7 +2,7 @@
     @testset verbose = true "metric service" begin
         @testset verbose = true "create metric" begin
             @testset "with existing iteration" begin
-                user = DearDiary.get_user("default")
+                user = DearDiary.get_user_by_username("default")
                 project_id, _ = DearDiary.create_project(user.id, "Test Project")
                 experiment_id, _ = DearDiary.create_experiment(
                     project_id, DearDiary.IN_PROGRESS, "Test experiment"
@@ -11,12 +11,15 @@
 
                 metric_id, result = DearDiary.create_metric(iteration_id, "accuracy", 0.95)
 
-                @test metric_id isa Integer
+                @test metric_id isa String
+                @test !isempty(metric_id)
                 @test result === DearDiary.Created
             end
 
             @testset "with non-existing iteration" begin
-                metric_id, result = DearDiary.create_metric(9999, "accuracy", 0.95)
+                metric_id, result = DearDiary.create_metric(
+                    "00000000-0000-0000-0000-000000000000", "accuracy", 0.95
+                )
 
                 @test isnothing(metric_id)
                 @test result === DearDiary.Unprocessable
@@ -25,7 +28,7 @@
 
         @testset verbose = true "get metric by id" begin
             @testset "existing metric" begin
-                user = DearDiary.get_user("default")
+                user = DearDiary.get_user_by_username("default")
                 project_id, _ = DearDiary.create_project(user.id, "Test Project")
                 experiment_id, _ = DearDiary.create_experiment(
                     project_id, DearDiary.IN_PROGRESS, "Test experiment"
@@ -43,14 +46,14 @@
             end
 
             @testset "non-existing metric" begin
-                metric = DearDiary.get_metric(9999)
+                metric = DearDiary.get_metric("00000000-0000-0000-0000-000000000000")
 
                 @test isnothing(metric)
             end
         end
 
         @testset verbose = true "get metrics" begin
-            user = DearDiary.get_user("default")
+            user = DearDiary.get_user_by_username("default")
             project_id, _ = DearDiary.create_project(user.id, "Test Project")
             experiment_id, _ = DearDiary.create_experiment(
                 project_id, DearDiary.IN_PROGRESS, "Test experiment"
@@ -67,12 +70,14 @@
 
         @testset verbose = true "update metric" begin
             @testset "with non-existing id" begin
-                update_result = DearDiary.update_metric(9999, "accuracy", 0.98)
+                update_result = DearDiary.update_metric(
+                    "00000000-0000-0000-0000-000000000000", "accuracy", 0.98
+                )
                 @test update_result === DearDiary.Unprocessable
             end
 
             @testset "with existing id" begin
-                user = DearDiary.get_user("default")
+                user = DearDiary.get_user_by_username("default")
                 project_id, _ = DearDiary.create_project(user.id, "Test Project")
                 experiment_id, _ = DearDiary.create_experiment(
                     project_id, DearDiary.IN_PROGRESS, "Test experiment"
@@ -95,7 +100,7 @@
 
         @testset verbose = true "delete metric" begin
             @testset "single metric" begin
-                user = DearDiary.get_user("default")
+                user = DearDiary.get_user_by_username("default")
                 project_id, _ = DearDiary.create_project(user.id, "Test Project")
                 experiment_id, _ = DearDiary.create_experiment(
                     project_id, DearDiary.IN_PROGRESS, "Test experiment"
@@ -108,7 +113,7 @@
             end
 
             @testset "all metrics by iteration" begin
-                user = DearDiary.get_user("default")
+                user = DearDiary.get_user_by_username("default")
                 project_id, _ = DearDiary.create_project(user.id, "Test Project")
                 experiment_id, _ = DearDiary.create_experiment(
                     project_id, DearDiary.IN_PROGRESS, "Test experiment"
@@ -124,7 +129,7 @@
         end
 
         @testset verbose = true "step and recorded_at semantics" begin
-            user = DearDiary.get_user("default")
+            user = DearDiary.get_user_by_username("default")
             project_id, _ = DearDiary.create_project(user.id, "StepProject")
             experiment_id, _ = DearDiary.create_experiment(
                 project_id, DearDiary.IN_PROGRESS, "Step experiment"
@@ -171,7 +176,7 @@
         end
 
         @testset verbose = true "log_metrics batch" begin
-            user = DearDiary.get_user("default")
+            user = DearDiary.get_user_by_username("default")
             project_id, _ = DearDiary.create_project(user.id, "BatchProject")
             experiment_id, _ = DearDiary.create_experiment(
                 project_id, DearDiary.IN_PROGRESS, "Batch experiment"
@@ -214,7 +219,7 @@
         end
 
         @testset verbose = true "get project id" begin
-            user = DearDiary.get_user("default")
+            user = DearDiary.get_user_by_username("default")
             project_id, _ = DearDiary.create_project(user.id, "Test Project")
             experiment_id, _ = DearDiary.create_experiment(
                 project_id, DearDiary.IN_PROGRESS, "Test experiment"

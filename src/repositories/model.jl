@@ -1,15 +1,15 @@
-function fetch(::Type{<:Model}, id::Integer)::Optional{Model}
+function fetch(::Type{<:Model}, id::AbstractString)::Optional{Model}
     model = fetch(SQL_SELECT_MODEL_BY_ID, (id=id,))
     return (isnothing(model)) ? nothing : (Model(model))
 end
 
-function fetch_all(::Type{<:Model}, project_id::Integer)::Array{Model,1}
+function fetch_all(::Type{<:Model}, project_id::AbstractString)::Array{Model,1}
     models = fetch_all(SQL_SELECT_MODELS_BY_PROJECT_ID; parameters=(id=project_id,))
     return Model.(models)
 end
 
 function fetch_page(
-    ::Type{<:Model}, project_id::Integer, page::Pagination
+    ::Type{<:Model}, project_id::AbstractString, page::Pagination
 )::PaginatedResponse{Model}
     paged = fetch_page(
         SQL_SELECT_MODELS_BY_PROJECT_ID,
@@ -23,15 +23,15 @@ function fetch_page(
 end
 
 function insert(
-    ::Type{<:Model}, project_id::Integer, name::AbstractString
-)::@NamedTuple{id::Optional{<:Int64}, status::DataType}
+    ::Type{<:Model}, project_id::AbstractString, name::AbstractString
+)::@NamedTuple{id::Optional{String}, status::DataType}
     fields = (project_id=project_id, name=name, created_date=(string(now())))
     return insert(SQL_INSERT_MODEL, fields)
 end
 
 function update(
     ::Type{<:Model},
-    id::Integer;
+    id::AbstractString;
     name::Optional{AbstractString}=nothing,
     description::Optional{AbstractString}=nothing,
 )::Type{<:UpsertResult}
@@ -39,4 +39,4 @@ function update(
     return update(SQL_UPDATE_MODEL, fetch(Model, id); fields...)
 end
 
-delete(::Type{<:Model}, id::Integer)::Bool = delete(SQL_DELETE_MODEL, id)
+delete(::Type{<:Model}, id::AbstractString)::Bool = delete(SQL_DELETE_MODEL, id)

@@ -1,20 +1,21 @@
 """
-    get_tag(id::Integer)::Optional{Tag}
+    get_tag(id::AbstractString)::Optional{Tag}
 
 Get a [`Tag`](@ref) by id.
 
 # Arguments
-- `id::Integer`: The id of the tag to query.
+- `id::AbstractString`: The id of the tag to query.
 
 # Returns
 A [`Tag`](@ref) object. If the record does not exist, return `nothing`.
 """
-get_tag(id::Integer)::Optional{Tag} = fetch(Tag, id)
+get_tag(id::AbstractString)::Optional{Tag} = fetch(Tag, id)
 
 """
-    get_tag(value::AbstractString)::Optional{Tag}
+    get_tag_by_value(value::AbstractString)::Optional{Tag}
 
-Get a [`Tag`](@ref) by value.
+Get a [`Tag`](@ref) by value. Distinct from [`get_tag`](@ref) because ids and values are both
+strings now and can no longer be told apart by argument type.
 
 # Arguments
 - `value::AbstractString`: The value of the tag to query.
@@ -22,58 +23,58 @@ Get a [`Tag`](@ref) by value.
 # Returns
 A [`Tag`](@ref) object. If the record does not exist, return `nothing`.
 """
-get_tag(value::AbstractString)::Optional{Tag} = fetch(Tag, value)
+get_tag_by_value(value::AbstractString)::Optional{Tag} = fetch_by_value(Tag, value)
 
 """
-    get_tags(::Type{<:Project}, project_id::Integer)::Array{Tag, 1}
+    get_tags(::Type{<:Project}, project_id::AbstractString)::Array{Tag, 1}
 
 Get all [`Tag`](@ref) for a given project.
 
 # Arguments
 - `::Type{<:Project}`: The project type.
-- `project_id::Integer`: The id of the project to query.
+- `project_id::AbstractString`: The id of the project to query.
 
 # Returns
 An array of [`Tag`](@ref) objects.
 """
-function get_tags(::Type{<:Project}, project_id::Integer)::Array{Tag,1}
+function get_tags(::Type{<:Project}, project_id::AbstractString)::Array{Tag,1}
     return fetch_tags(Project, project_id)
 end
 
 """
-    get_tags(::Type{<:Experiment}, experiment_id::Integer)::Array{Tag, 1}
+    get_tags(::Type{<:Experiment}, experiment_id::AbstractString)::Array{Tag, 1}
 
 Get all [`Tag`](@ref) for a given experiment.
 
 # Arguments
 - `::Type{<:Experiment}`: The experiment type.
-- `experiment_id::Integer`: The id of the experiment to query.
+- `experiment_id::AbstractString`: The id of the experiment to query.
 
 # Returns
 An array of [`Tag`](@ref) objects.
 """
-function get_tags(::Type{<:Experiment}, experiment_id::Integer)::Array{Tag,1}
+function get_tags(::Type{<:Experiment}, experiment_id::AbstractString)::Array{Tag,1}
     return fetch_tags(Experiment, experiment_id)
 end
 
 """
-    get_tags(::Type{<:Iteration}, iteration_id::Integer)::Array{Tag, 1}
+    get_tags(::Type{<:Iteration}, iteration_id::AbstractString)::Array{Tag, 1}
 
 Get all [`Tag`](@ref) for a given iteration.
 
 # Arguments
 - `::Type{<:Iteration}`: The iteration type.
-- `iteration_id::Integer`: The id of the iteration to query.
+- `iteration_id::AbstractString`: The id of the iteration to query.
 
 # Returns
 An array of [`Tag`](@ref) objects.
 """
-function get_tags(::Type{<:Iteration}, iteration_id::Integer)::Array{Tag,1}
+function get_tags(::Type{<:Iteration}, iteration_id::AbstractString)::Array{Tag,1}
     return fetch_tags(Iteration, iteration_id)
 end
 
 """
-    create_tag(value::AbstractString)::NamedTuple{id::Optional{<:Int64},status::DataType}
+    create_tag(value::AbstractString)::NamedTuple{id::Optional{String},status::DataType}
 
 Create a [`Tag`](@ref).
 
@@ -86,18 +87,18 @@ Create a [`Tag`](@ref).
 """
 function create_tag(
     value::AbstractString
-)::@NamedTuple{id::Optional{<:Int64}, status::DataType}
+)::@NamedTuple{id::Optional{String}, status::DataType}
     return insert(Tag, value)
 end
 
 """
-    add_tag(::Type{<:Project}, project_id::Integer, tag_value::AbstractString)::NamedTuple{id::Optional{<:Int64},status::DataType}
+    add_tag(::Type{<:Project}, project_id::AbstractString, tag_value::AbstractString)::NamedTuple{id::Optional{String},status::DataType}
 
 Add a tag to a project.
 
 # Arguments
 - `::Type{<:Project}`: The project type.
-- `project_id::Integer`: The id of the project to add the tag to.
+- `project_id::AbstractString`: The id of the project to add the tag to.
 - `tag_value::AbstractString`: The value of the tag to add.
 
 # Returns
@@ -105,8 +106,8 @@ Add a tag to a project.
 - An [`UpsertResult`](@ref). [`Created`](@ref) if the record was successfully created, [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
 """
 function add_tag(
-    ::Type{<:Project}, project_id::Integer, tag_value::AbstractString
-)::@NamedTuple{id::Optional{<:Int64}, status::DataType}
+    ::Type{<:Project}, project_id::AbstractString, tag_value::AbstractString
+)::@NamedTuple{id::Optional{String}, status::DataType}
     project = get_project(project_id)
     if isnothing(project)
         return (id=nothing, status=Unprocessable)
@@ -115,13 +116,13 @@ function add_tag(
 end
 
 """
-    add_tag(::Type{<:Experiment}, experiment_id::Integer, tag_value::AbstractString)::NamedTuple{id::Optional{<:Int64},status::DataType}
+    add_tag(::Type{<:Experiment}, experiment_id::AbstractString, tag_value::AbstractString)::NamedTuple{id::Optional{String},status::DataType}
 
 Add a tag to an experiment.
 
 # Arguments
 - `::Type{<:Experiment}`: The experiment type.
-- `experiment_id::Integer`: The id of the experiment to add the tag to.
+- `experiment_id::AbstractString`: The id of the experiment to add the tag to.
 - `tag_value::AbstractString`: The value of the tag to add.
 
 # Returns
@@ -129,8 +130,8 @@ Add a tag to an experiment.
 - An [`UpsertResult`](@ref). [`Created`](@ref) if the record was successfully created, [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
 """
 function add_tag(
-    ::Type{<:Experiment}, experiment_id::Integer, tag_value::AbstractString
-)::@NamedTuple{id::Optional{<:Int64}, status::DataType}
+    ::Type{<:Experiment}, experiment_id::AbstractString, tag_value::AbstractString
+)::@NamedTuple{id::Optional{String}, status::DataType}
     experiment = get_experiment(experiment_id)
     if isnothing(experiment)
         return (id=nothing, status=Unprocessable)
@@ -139,13 +140,13 @@ function add_tag(
 end
 
 """
-    add_tag(::Type{<:Iteration}, iteration_id::Integer, tag_value::AbstractString)::NamedTuple{id::Optional{<:Int64},status::DataType}
+    add_tag(::Type{<:Iteration}, iteration_id::AbstractString, tag_value::AbstractString)::NamedTuple{id::Optional{String},status::DataType}
 
 Add a tag to an iteration.
 
 # Arguments
 - `::Type{<:Iteration}`: The iteration type.
-- `iteration_id::Integer`: The id of the iteration to add the tag to.
+- `iteration_id::AbstractString`: The id of the iteration to add the tag to.
 - `tag_value::AbstractString`: The value of the tag to add.
 
 # Returns
@@ -153,8 +154,8 @@ Add a tag to an iteration.
 - An [`UpsertResult`](@ref). [`Created`](@ref) if the record was successfully created, [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
 """
 function add_tag(
-    ::Type{<:Iteration}, iteration_id::Integer, tag_value::AbstractString
-)::@NamedTuple{id::Optional{<:Int64}, status::DataType}
+    ::Type{<:Iteration}, iteration_id::AbstractString, tag_value::AbstractString
+)::@NamedTuple{id::Optional{String}, status::DataType}
     iteration = get_iteration(iteration_id)
     if isnothing(iteration)
         return (id=nothing, status=Unprocessable)
@@ -167,14 +168,14 @@ function add_tag(
 end
 
 """
-    delete_tag(id::Integer)::Bool
+    delete_tag(id::AbstractString)::Bool
 
 Delete a [`Tag`](@ref) record.
 
 # Arguments
-- `id::Integer`: The id of the tag to delete.
+- `id::AbstractString`: The id of the tag to delete.
 
 # Returns
 `true` if the record was successfully deleted, `false` otherwise.
 """
-delete_tag(id::Integer)::Bool = delete(Tag, id)
+delete_tag(id::AbstractString)::Bool = delete(Tag, id)

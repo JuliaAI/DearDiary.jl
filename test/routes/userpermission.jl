@@ -1,7 +1,7 @@
 @with_deardiary_test_db begin
     @testset verbose = true "userpermission routes" begin
         @testset verbose = true "create" begin
-            user = DearDiary.get_user("default")
+            user = DearDiary.get_user_by_username("default")
             project_id, _ = DearDiary.create_project(user.id, "Test Project")
             new_user_id, _ = DearDiary.create_user("Choclo", "Dokie", "choclo", "dokie")
             payload = JSON.json(
@@ -27,7 +27,7 @@
         end
 
         @testset verbose = true "get by user id and project id" begin
-            user = DearDiary.get_user("default")
+            user = DearDiary.get_user_by_username("default")
             project_id, _ = DearDiary.create_project(user.id, "Test Project")
             new_user_id, _ = DearDiary.create_user("Dokie", "Choclo", "dokie", "choclo")
             userpermission_id, _ = DearDiary.create_userpermission(
@@ -54,7 +54,7 @@
         end
 
         @testset verbose = true "update" begin
-            user = DearDiary.get_user("default")
+            user = DearDiary.get_user_by_username("default")
             project_id, _ = DearDiary.create_project(user.id, "Test Project")
             new_user_id, _ = DearDiary.create_user("Ana", "Missy", "ana", "missy")
             userpermission_id, _ = DearDiary.create_userpermission(
@@ -89,7 +89,7 @@
         end
 
         @testset verbose = true "delete" begin
-            user = DearDiary.get_user("default")
+            user = DearDiary.get_user_by_username("default")
             project_id, _ = DearDiary.create_project(user.id, "Test Project")
             new_user_id, _ = DearDiary.create_user("Galinha", "Ana", "galinha", "ana")
             userpermission_id, _ = DearDiary.create_userpermission(

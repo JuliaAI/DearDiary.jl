@@ -1,11 +1,11 @@
 """
-    get_experiment(client::Client, id::Integer)::Optional{Experiment}
+    get_experiment(client::Client, id::AbstractString)::Optional{Experiment}
 
 Fetch an [`Experiment`](@ref) via `GET /experiment/{id}`. Returns `nothing` when the
 server replies 404 (record missing or viewer lacks [`ReadPermission`](@ref) on the owning
 project) and raises [`ClientError`](@ref) for other failures.
 """
-function get_experiment(client::Client, id::Integer)::Optional{Experiment}
+function get_experiment(client::Client, id::AbstractString)::Optional{Experiment}
     try
         return Experiment(_json(_request(client, "GET", "/experiment/$id")))
     catch err
@@ -15,24 +15,24 @@ function get_experiment(client::Client, id::Integer)::Optional{Experiment}
 end
 
 """
-    get_experiments(client::Client, project_id::Integer)::Array{Experiment,1}
+    get_experiments(client::Client, project_id::AbstractString)::Array{Experiment,1}
 
 Returns the first page (default limit) of [`Experiment`](@ref) records under `project_id`,
 discarding the pagination envelope.
 """
-function get_experiments(client::Client, project_id::Integer)::Array{Experiment,1}
+function get_experiments(client::Client, project_id::AbstractString)::Array{Experiment,1}
     return get_experiments(client, project_id, Pagination(50, 0)).data
 end
 
 """
-    get_experiments(client::Client, project_id::Integer, page::Pagination)::PaginatedResponse{Experiment}
+    get_experiments(client::Client, project_id::AbstractString, page::Pagination)::PaginatedResponse{Experiment}
 
 Fetch a page of [`Experiment`](@ref) records under `project_id` via
 `GET /experiment/project/{project_id}?limit=…&offset=…`. Requires
 [`ReadPermission`](@ref) on the project.
 """
 function get_experiments(
-    client::Client, project_id::Integer, page::Pagination
+    client::Client, project_id::AbstractString, page::Pagination
 )::PaginatedResponse{Experiment}
     response = _request(
         client,
@@ -44,15 +44,15 @@ function get_experiments(
 end
 
 """
-    create_experiment(client::Client, project_id::Integer, status_id::Integer, name::AbstractString)::Int64
+    create_experiment(client::Client, project_id::AbstractString, status_id::Integer, name::AbstractString)::String
 
 Create an [`Experiment`](@ref) under `project_id` via `POST /experiment/project/{project_id}`.
 `status_id` must equal `Integer(IN_PROGRESS)`; the server rejects experiments created already terminated. Requires [`CreatePermission`](@ref) on the project. Returns
 the new experiment id.
 """
 function create_experiment(
-    client::Client, project_id::Integer, status_id::Integer, name::AbstractString
-)::Int64
+    client::Client, project_id::AbstractString, status_id::Integer, name::AbstractString
+)::String
     response = _request(
         client,
         "POST",
@@ -63,19 +63,22 @@ function create_experiment(
 end
 
 """
-    create_experiment(client::Client, project_id::Integer, status::ExperimentStatus, name::AbstractString)::Int64
+    create_experiment(client::Client, project_id::AbstractString, status::ExperimentStatus, name::AbstractString)::String
 
 [`ExperimentStatus`](@ref)-typed overload of [`create_experiment`](@ref). The server only accepts
 [`IN_PROGRESS`](@ref); the other variants exist for symmetry with the local API.
 """
 function create_experiment(
-    client::Client, project_id::Integer, status::ExperimentStatus, name::AbstractString
-)::Int64
+    client::Client,
+    project_id::AbstractString,
+    status::ExperimentStatus,
+    name::AbstractString,
+)::String
     return create_experiment(client, project_id, (Integer(status)), name)
 end
 
 """
-    update_experiment(client::Client, id::Integer; status_id=nothing, name=nothing, description=nothing, end_date=nothing)::Nothing
+    update_experiment(client::Client, id::AbstractString; status_id=nothing, name=nothing, description=nothing, end_date=nothing)::Nothing
 
 Patch an [`Experiment`](@ref) via `PATCH /experiment/{id}`. Any keyword left as `nothing`
 is left untouched server-side. Reopening (`status_id == Integer(IN_PROGRESS)` on a row
@@ -84,7 +87,7 @@ that previously had an `end_date`) clears `end_date` automatically. Requires
 """
 function update_experiment(
     client::Client,
-    id::Integer;
+    id::AbstractString;
     status_id::Optional{Integer}=nothing,
     name::Optional{AbstractString}=nothing,
     description::Optional{AbstractString}=nothing,
@@ -105,13 +108,13 @@ function update_experiment(
 end
 
 """
-    update_experiment(client::Client, id::Integer, status::ExperimentStatus; name=nothing, description=nothing, end_date=nothing)::Nothing
+    update_experiment(client::Client, id::AbstractString, status::ExperimentStatus; name=nothing, description=nothing, end_date=nothing)::Nothing
 
 [`ExperimentStatus`](@ref)-typed overload of [`update_experiment`](@ref).
 """
 function update_experiment(
     client::Client,
-    id::Integer,
+    id::AbstractString,
     status::ExperimentStatus;
     name::Optional{AbstractString}=nothing,
     description::Optional{AbstractString}=nothing,
@@ -128,12 +131,12 @@ function update_experiment(
 end
 
 """
-    delete_experiment(client::Client, id::Integer)::Nothing
+    delete_experiment(client::Client, id::AbstractString)::Nothing
 
 Delete an [`Experiment`](@ref) (and its [`Iteration`](@ref)s + [`Resource`](@ref)s) via
 `DELETE /experiment/{id}`. Requires [`DeletePermission`](@ref) on the owning project.
 """
-function delete_experiment(client::Client, id::Integer)::Nothing
+function delete_experiment(client::Client, id::AbstractString)::Nothing
     _request(client, "DELETE", "/experiment/$id")
     return nothing
 end

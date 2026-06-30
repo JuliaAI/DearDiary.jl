@@ -2,7 +2,7 @@
     @testset verbose = true "resource service" begin
         @testset verbose = true "create resource" begin
             @testset "with existing experiment" begin
-                user = DearDiary.get_user("default")
+                user = DearDiary.get_user_by_username("default")
                 project_id, _ = DearDiary.create_project(user.id, "Test Project")
                 experiment_id, _ = DearDiary.create_experiment(
                     project_id, DearDiary.IN_PROGRESS, "Test Experiment"
@@ -12,13 +12,16 @@
                     experiment_id, "Test Resource", UInt8[0x01, 0x02, 0x03, 0x04]
                 )
 
-                @test resource_id isa Integer
+                @test resource_id isa String
+                @test !isempty(resource_id)
                 @test result === DearDiary.Created
             end
 
             @testset "with non-existing experiment" begin
                 resource_id, result = DearDiary.create_resource(
-                    9999, "Test Resource", UInt8[0x01, 0x02, 0x03, 0x04]
+                    "00000000-0000-0000-0000-000000000000",
+                    "Test Resource",
+                    UInt8[0x01, 0x02, 0x03, 0x04],
                 )
 
                 @test isnothing(resource_id)
@@ -28,7 +31,7 @@
 
         @testset verbose = true "get resource by id" begin
             @testset "existing resource" begin
-                user = DearDiary.get_user("default")
+                user = DearDiary.get_user_by_username("default")
                 project_id, _ = DearDiary.create_project(user.id, "Test Project")
                 experiment_id, _ = DearDiary.create_experiment(
                     project_id, DearDiary.IN_PROGRESS, "Test Experiment"
@@ -48,14 +51,14 @@
             end
 
             @testset "non-existing resource" begin
-                resource = DearDiary.get_resource(9999)
+                resource = DearDiary.get_resource("00000000-0000-0000-0000-000000000000")
 
                 @test isnothing(resource)
             end
         end
 
         @testset verbose = true "get resources" begin
-            user = DearDiary.get_user("default")
+            user = DearDiary.get_user_by_username("default")
             project_id, _ = DearDiary.create_project(user.id, "Test Project")
             experiment_id, _ = DearDiary.create_experiment(
                 project_id, DearDiary.IN_PROGRESS, "Test Experiment"
@@ -76,7 +79,7 @@
         @testset verbose = true "update resource" begin
             @testset "with non-existing id" begin
                 result = DearDiary.update_resource(
-                    9999,
+                    "00000000-0000-0000-0000-000000000000",
                     "Updated Resource",
                     "This is an updated resource.",
                     UInt8[0x0D, 0x0E, 0x0F],
@@ -86,7 +89,7 @@
             end
 
             @testset "with existing id" begin
-                user = DearDiary.get_user("default")
+                user = DearDiary.get_user_by_username("default")
                 project_id, _ = DearDiary.create_project(user.id, "Test Project")
                 experiment_id, _ = DearDiary.create_experiment(
                     project_id, DearDiary.IN_PROGRESS, "Test Experiment"
@@ -115,7 +118,7 @@
         end
 
         @testset verbose = true "delete resource" begin
-            user = DearDiary.get_user("default")
+            user = DearDiary.get_user_by_username("default")
             project_id, _ = DearDiary.create_project(user.id, "Test Project")
             experiment_id, _ = DearDiary.create_experiment(
                 project_id, DearDiary.IN_PROGRESS, "Test Experiment"
@@ -129,7 +132,7 @@
         end
 
         @testset verbose = true "get project id" begin
-            user = DearDiary.get_user("default")
+            user = DearDiary.get_user_by_username("default")
             project_id, _ = DearDiary.create_project(user.id, "Test Project")
             experiment_id, _ = DearDiary.create_experiment(
                 project_id, DearDiary.IN_PROGRESS, "Test Experiment"

@@ -1,19 +1,29 @@
 @with_deardiary_test_db begin
     @testset verbose = true "userpermission service" begin
         @testset verbose = true "create" begin
-            user = DearDiary.get_user("default")
+            user = DearDiary.get_user_by_username("default")
             project_id, _ = DearDiary.create_project(user.id, "Test Project")
 
             @testset "create with no existing user" begin
                 _, upsert_result = DearDiary.create_userpermission(
-                    9999, project_id, false, true, false, false
+                    "00000000-0000-0000-0000-000000000000",
+                    project_id,
+                    false,
+                    true,
+                    false,
+                    false,
                 )
                 @test upsert_result === DearDiary.Unprocessable
             end
 
             @testset "create with no existing project" begin
                 _, upsert_result = DearDiary.create_userpermission(
-                    user.id, 9999, false, true, false, false
+                    user.id,
+                    "00000000-0000-0000-0000-000000000000",
+                    false,
+                    true,
+                    false,
+                    false,
                 )
                 @test upsert_result === DearDiary.Unprocessable
             end
@@ -24,7 +34,8 @@
                     new_user_id, project_id, false, true, false, false
                 )
                 @test upsert_result === DearDiary.Created
-                @test userpermission_id isa Integer
+                @test userpermission_id isa String
+                @test !isempty(userpermission_id)
             end
 
             @testset "create duplicate user permission" begin
@@ -36,7 +47,7 @@
         end
 
         @testset verbose = true "get by user id and project id" begin
-            user = DearDiary.get_user("default")
+            user = DearDiary.get_user_by_username("default")
             project_id, _ = DearDiary.create_project(user.id, "Test Project")
 
             @testset "get with existing user and project" begin
@@ -48,19 +59,26 @@
             end
 
             @testset "get with non-existing user" begin
-                userpermission = DearDiary.get_userpermission(9999, project_id)
+                userpermission = DearDiary.get_userpermission(
+                    "00000000-0000-0000-0000-000000000000", project_id
+                )
 
                 @test isnothing(userpermission)
             end
 
             @testset "get with non-existing project" begin
-                userpermission = DearDiary.get_userpermission(user.id, 9999)
+                userpermission = DearDiary.get_userpermission(
+                    user.id, "00000000-0000-0000-0000-000000000000"
+                )
 
                 @test isnothing(userpermission)
             end
 
             @testset "get with non-existing user and project" begin
-                userpermission = DearDiary.get_userpermission(9999, 9999)
+                userpermission = DearDiary.get_userpermission(
+                    "00000000-0000-0000-0000-000000000000",
+                    "00000000-0000-0000-0000-000000000000",
+                )
 
                 @test isnothing(userpermission)
             end
@@ -69,13 +87,13 @@
         @testset verbose = true "update" begin
             @testset "with non-existing id" begin
                 result = DearDiary.update_userpermission(
-                    9999, true, nothing, nothing, nothing
+                    "00000000-0000-0000-0000-000000000000", true, nothing, nothing, nothing
                 )
                 @test result === DearDiary.Unprocessable
             end
 
             @testset "with existing id" begin
-                user = DearDiary.get_user("default")
+                user = DearDiary.get_user_by_username("default")
                 project_id, _ = DearDiary.create_project(user.id, "Test Project")
 
                 userpermission = DearDiary.get_userpermission(user.id, project_id)
@@ -96,7 +114,7 @@
         end
 
         @testset verbose = true "delete" begin
-            user = DearDiary.get_user("default")
+            user = DearDiary.get_user_by_username("default")
             project_id, _ = DearDiary.create_project(user.id, "Test Project")
             userpermission = DearDiary.get_userpermission(user.id, project_id)
 
@@ -105,7 +123,7 @@
         end
 
         @testset verbose = true "list by project" begin
-            user = DearDiary.get_user("default")
+            user = DearDiary.get_user_by_username("default")
             project_id, _ = DearDiary.create_project(user.id, "Listing Project")
             other_user_id, _ = DearDiary.create_user("Pip", "Po", "pip", "po")
             DearDiary.create_userpermission(
@@ -129,7 +147,7 @@
         end
 
         @testset verbose = true "list by user" begin
-            user = DearDiary.get_user("default")
+            user = DearDiary.get_user_by_username("default")
             project_a, _ = DearDiary.create_project(user.id, "User Listing A")
             project_b, _ = DearDiary.create_project(user.id, "User Listing B")
 
@@ -144,14 +162,30 @@
         end
 
         @testset verbose = true "has permission" begin
-            permission = DearDiary.UserPermission(1, 1, 1, true, false, true, false)
+            permission = DearDiary.UserPermission(
+                "00000000-0000-0000-0000-000000000001",
+                "00000000-0000-0000-0000-000000000002",
+                "00000000-0000-0000-0000-000000000003",
+                true,
+                false,
+                true,
+                false,
+            )
 
             @test DearDiary.has_permission(permission, DearDiary.CreatePermission) == true
             @test DearDiary.has_permission(permission, DearDiary.ReadPermission) == false
             @test DearDiary.has_permission(permission, DearDiary.UpdatePermission) == true
             @test DearDiary.has_permission(permission, DearDiary.DeletePermission) == false
 
-            denied = DearDiary.UserPermission(2, 1, 1, false, false, false, false)
+            denied = DearDiary.UserPermission(
+                "00000000-0000-0000-0000-000000000004",
+                "00000000-0000-0000-0000-000000000002",
+                "00000000-0000-0000-0000-000000000003",
+                false,
+                false,
+                false,
+                false,
+            )
             @test DearDiary.has_permission(denied, DearDiary.CreatePermission) == false
             @test DearDiary.has_permission(denied, DearDiary.ReadPermission) == false
             @test DearDiary.has_permission(denied, DearDiary.UpdatePermission) == false

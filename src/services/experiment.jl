@@ -1,56 +1,56 @@
 """
-    get_experiment(id::Integer)::Optional{Experiment}
+    get_experiment(id::AbstractString)::Optional{Experiment}
 
 Get a [`Experiment`](@ref) by id.
 
 # Arguments
-- `id::Integer`: The id of the experiment to query.
+- `id::AbstractString`: The id of the experiment to query.
 
 # Returns
 A [`Experiment`](@ref) object. If the record does not exist, return `nothing`.
 """
-get_experiment(id::Integer)::Optional{Experiment} = fetch(Experiment, id)
+get_experiment(id::AbstractString)::Optional{Experiment} = fetch(Experiment, id)
 
 """
-    get_experiments(project_id::Integer)::Array{Experiment, 1}
+    get_experiments(project_id::AbstractString)::Array{Experiment, 1}
 
 Get all [`Experiment`](@ref) for a given project.
 
 # Arguments
-- `project_id::Integer`: The id of the project to query.
+- `project_id::AbstractString`: The id of the project to query.
 
 # Returns
 An array of [`Experiment`](@ref) objects.
 """
-function get_experiments(project_id::Integer)::Array{Experiment,1}
+function get_experiments(project_id::AbstractString)::Array{Experiment,1}
     return fetch_all(Experiment, project_id)
 end
 
 """
-    get_experiments(project_id::Integer, page::Pagination)::PaginatedResponse{Experiment}
+    get_experiments(project_id::AbstractString, page::Pagination)::PaginatedResponse{Experiment}
 
 Get a page of [`Experiment`](@ref) records for a project, with `total` count populated.
 
 # Arguments
-- `project_id::Integer`: The id of the project to query.
+- `project_id::AbstractString`: The id of the project to query.
 - `page::Pagination`: The page bounds (limit + offset).
 
 # Returns
 A [`PaginatedResponse`](@ref) of `Experiment`.
 """
 function get_experiments(
-    project_id::Integer, page::Pagination
+    project_id::AbstractString, page::Pagination
 )::PaginatedResponse{Experiment}
     return fetch_page(Experiment, project_id, page)
 end
 
 """
-    create_experiment(project_id::Integer, status_id::Integer, name::AbstractString)::NamedTuple{id::Optional{<:Int64},status::DataType}
+    create_experiment(project_id::AbstractString, status_id::Integer, name::AbstractString)::NamedTuple{id::Optional{String},status::DataType}
 
 Create a [`Experiment`](@ref).
 
 # Arguments
-- `project_id::Integer`: The id of the project to create the experiment for.
+- `project_id::AbstractString`: The id of the project to create the experiment for.
 - `status_id::Integer`: The status of the experiment.
 - `name::AbstractString`: The name of the experiment.
 
@@ -59,8 +59,8 @@ Create a [`Experiment`](@ref).
 - An [`UpsertResult`](@ref). [`Created`](@ref) if the record was successfully created, [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
 """
 function create_experiment(
-    project_id::Integer, status_id::Integer, name::AbstractString
-)::@NamedTuple{id::Optional{<:Int64}, status::DataType}
+    project_id::AbstractString, status_id::Integer, name::AbstractString
+)::@NamedTuple{id::Optional{String}, status::DataType}
     project = get_project(project_id)
     if isnothing(project)
         return (id=nothing, status=Unprocessable)
@@ -82,12 +82,12 @@ function create_experiment(
 end
 
 """
-    create_experiment(project_id::Integer, status::ExperimentStatus, name::AbstractString)::NamedTuple{id::Optional{<:Int64},status::DataType}
+    create_experiment(project_id::AbstractString, status::ExperimentStatus, name::AbstractString)::NamedTuple{id::Optional{String},status::DataType}
 
 Create a [`Experiment`](@ref).
 
 # Arguments
-- `project_id::Integer`: The id of the project to create the experiment for.
+- `project_id::AbstractString`: The id of the project to create the experiment for.
 - `status::ExperimentStatus`: The status of the experiment.
 - `name::AbstractString`: The name of the experiment.
 
@@ -96,18 +96,18 @@ Create a [`Experiment`](@ref).
 - An [`UpsertResult`](@ref). [`Created`](@ref) if the record was successfully created, [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
 """
 function create_experiment(
-    project_id::Integer, status::ExperimentStatus, name::AbstractString
-)::@NamedTuple{id::Optional{<:Int64}, status::DataType}
+    project_id::AbstractString, status::ExperimentStatus, name::AbstractString
+)::@NamedTuple{id::Optional{String}, status::DataType}
     return create_experiment(project_id, (Integer(status)), name)
 end
 
 """
-    update_experiment(id::Integer, status_id::Optional{Integer}, name::Optional{AbstractString}, description::Optional{AbstractString}, end_date::Optional{DateTime})::Type{<:UpsertResult}
+    update_experiment(id::AbstractString, status_id::Optional{Integer}, name::Optional{AbstractString}, description::Optional{AbstractString}, end_date::Optional{DateTime})::Type{<:UpsertResult}
 
 Update a [`Experiment`](@ref) record.
 
 # Arguments
-- `id::Integer`: The id of the experiment to update.
+- `id::AbstractString`: The id of the experiment to update.
 - `status_id::Optional{Integer}`: The new status of the experiment.
 - `name::Optional{AbstractString}`: The new name of the experiment.
 - `description::Optional{AbstractString}`: The new description of the experiment.
@@ -117,7 +117,7 @@ Update a [`Experiment`](@ref) record.
 An [`UpsertResult`](@ref). [`Updated`](@ref) if the record was successfully updated (or no changes were made), [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
 """
 function update_experiment(
-    id::Integer,
+    id::AbstractString,
     status_id::Optional{Integer},
     name::Optional{AbstractString},
     description::Optional{AbstractString},
@@ -161,12 +161,12 @@ function update_experiment(
 end
 
 """
-    update_experiment(id::Integer, status::ExperimentStatus, name::Optional{AbstractString}, description::Optional{AbstractString}, end_date::Optional{DateTime})::Type{<:UpsertResult}
+    update_experiment(id::AbstractString, status::ExperimentStatus, name::Optional{AbstractString}, description::Optional{AbstractString}, end_date::Optional{DateTime})::Type{<:UpsertResult}
 
 Update a [`Experiment`](@ref) record.
 
 # Arguments
-- `id::Integer`: The id of the experiment to update.
+- `id::AbstractString`: The id of the experiment to update.
 - `status::ExperimentStatus`: The new status of the experiment.
 - `name::Optional{AbstractString}`: The new name of the experiment.
 - `description::Optional{AbstractString}`: The new description of the experiment.
@@ -176,7 +176,7 @@ Update a [`Experiment`](@ref) record.
 An [`UpsertResult`](@ref). [`Updated`](@ref) if the record was successfully updated (or no changes were made), [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
 """
 function update_experiment(
-    id::Integer,
+    id::AbstractString,
     status::ExperimentStatus,
     name::Optional{AbstractString},
     description::Optional{AbstractString},
@@ -186,17 +186,17 @@ function update_experiment(
 end
 
 """
-    delete_experiment(id::Integer)::Bool
+    delete_experiment(id::AbstractString)::Bool
 
 Delete a [`Experiment`](@ref) record. Also deletes all associated [`Iteration`](@ref) and [`Resource`](@ref) records.
 
 # Arguments
-- `id::Integer`: The id of the experiment to delete.
+- `id::AbstractString`: The id of the experiment to delete.
 
 # Returns
 `true` if the record was successfully deleted, `false` otherwise.
 """
-function delete_experiment(id::Integer)::Bool
+function delete_experiment(id::AbstractString)::Bool
     experiment = fetch(Experiment, id)
 
     for iteration in get_iterations(experiment.id)
@@ -209,7 +209,7 @@ function delete_experiment(id::Integer)::Bool
 end
 
 """
-    get_project_id(experiment::Experiment)::Int64
+    get_project_id(experiment::Experiment)::String
 
 Return the [`Project`](@ref) id that owns the given [`Experiment`](@ref).
 
@@ -219,4 +219,4 @@ Return the [`Project`](@ref) id that owns the given [`Experiment`](@ref).
 # Returns
 The owning project id.
 """
-get_project_id(experiment::Experiment)::Int64 = experiment.project_id
+get_project_id(experiment::Experiment)::String = experiment.project_id

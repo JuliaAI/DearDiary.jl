@@ -1,10 +1,12 @@
-function fetch(::Type{<:User}, username::AbstractString)::Optional{User}
-    user = fetch(SQL_SELECT_USER_BY_USERNAME, (username=username,))
+function fetch(::Type{<:User}, id::AbstractString)::Optional{User}
+    user = fetch(SQL_SELECT_USER_BY_ID, (id=id,))
     return (isnothing(user)) ? nothing : (User(user))
 end
 
-function fetch(::Type{<:User}, id::Integer)::Optional{User}
-    user = fetch(SQL_SELECT_USER_BY_ID, (id=id,))
+# `username` is a string just like the UUID `id`, so the by-username lookup can no longer be a
+# `fetch(User, ::AbstractString)` overload distinguished by argument type. It gets its own name.
+function fetch_by_username(::Type{<:User}, username::AbstractString)::Optional{User}
+    user = fetch(SQL_SELECT_USER_BY_USERNAME, (username=username,))
     return (isnothing(user)) ? nothing : (User(user))
 end
 
@@ -16,7 +18,7 @@ function insert(
     last_name::AbstractString,
     username::AbstractString,
     password::AbstractString,
-)::@NamedTuple{id::Optional{<:Int64}, status::DataType}
+)::@NamedTuple{id::Optional{String}, status::DataType}
     fields = (
         first_name=first_name,
         last_name=last_name,
@@ -29,7 +31,7 @@ end
 
 function update(
     ::Type{<:User},
-    id::Integer;
+    id::AbstractString;
     first_name::Optional{AbstractString}=nothing,
     last_name::Optional{AbstractString}=nothing,
     password::Optional{AbstractString}=nothing,
@@ -41,4 +43,4 @@ function update(
     return update(SQL_UPDATE_USER, fetch(User, id); fields...)
 end
 
-delete(::Type{<:User}, id::Integer)::Bool = delete(SQL_DELETE_USER, id)
+delete(::Type{<:User}, id::AbstractString)::Bool = delete(SQL_DELETE_USER, id)

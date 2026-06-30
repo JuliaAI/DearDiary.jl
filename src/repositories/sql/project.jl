@@ -14,6 +14,7 @@ const SQL_SELECT_PROJECTS = """
         p.description,
         p.created_date
     FROM project p
+    ORDER BY p.created_date ASC
     """
 
 const SQL_INSERT_PROJECT = """

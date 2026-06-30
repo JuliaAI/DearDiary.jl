@@ -2,7 +2,7 @@
     @testset verbose = true "iteration service" begin
         @testset verbose = true "create iteration" begin
             @testset "with existing experiment" begin
-                user = DearDiary.get_user("default")
+                user = DearDiary.get_user_by_username("default")
                 project_id, _ = DearDiary.create_project(user.id, "Test Project")
                 experiment_id, _ = DearDiary.create_experiment(
                     project_id, DearDiary.IN_PROGRESS, "Test experiment"
@@ -10,19 +10,22 @@
 
                 iteration_id, result = DearDiary.create_iteration(experiment_id)
 
-                @test iteration_id isa Integer
+                @test iteration_id isa String
+                @test !isempty(iteration_id)
                 @test result === DearDiary.Created
             end
 
             @testset "with non-existing experiment" begin
-                iteration_id, result = DearDiary.create_iteration(9999)
+                iteration_id, result = DearDiary.create_iteration(
+                    "00000000-0000-0000-0000-000000000000"
+                )
 
                 @test isnothing(iteration_id)
                 @test result === DearDiary.Unprocessable
             end
 
             @testset "default status is RUNNING with no parent" begin
-                user = DearDiary.get_user("default")
+                user = DearDiary.get_user_by_username("default")
                 project_id, _ = DearDiary.create_project(user.id, "Lineage Project")
                 experiment_id, _ = DearDiary.create_experiment(
                     project_id, DearDiary.IN_PROGRESS, "Lineage Experiment"
@@ -36,7 +39,7 @@
             end
 
             @testset "with parent iteration in same experiment" begin
-                user = DearDiary.get_user("default")
+                user = DearDiary.get_user_by_username("default")
                 project_id, _ = DearDiary.create_project(user.id, "Lineage Project")
                 experiment_id, _ = DearDiary.create_experiment(
                     project_id, DearDiary.IN_PROGRESS, "Lineage Experiment"
@@ -47,14 +50,14 @@
                     experiment_id; parent_iteration_id=parent_id
                 )
 
-                @test child_id isa Integer
-                @test result === DearDiary.Created
+                @test child_id isa String
+                @test !isempty(child_id)
                 child = DearDiary.get_iteration(child_id)
                 @test child.parent_iteration_id == parent_id
             end
 
             @testset "with parent iteration from another experiment" begin
-                user = DearDiary.get_user("default")
+                user = DearDiary.get_user_by_username("default")
                 project_id, _ = DearDiary.create_project(user.id, "Lineage Project")
                 experiment_a, _ = DearDiary.create_experiment(
                     project_id, DearDiary.IN_PROGRESS, "Exp A"
@@ -72,14 +75,15 @@
             end
 
             @testset "with non-existing parent" begin
-                user = DearDiary.get_user("default")
+                user = DearDiary.get_user_by_username("default")
                 project_id, _ = DearDiary.create_project(user.id, "Lineage Project")
                 experiment_id, _ = DearDiary.create_experiment(
                     project_id, DearDiary.IN_PROGRESS, "Lineage Experiment"
                 )
 
                 child_id, result = DearDiary.create_iteration(
-                    experiment_id; parent_iteration_id=9999
+                    experiment_id;
+                    parent_iteration_id="00000000-0000-0000-0000-000000000000",
                 )
                 @test isnothing(child_id)
                 @test result === DearDiary.Unprocessable
@@ -87,7 +91,7 @@
         end
 
         @testset verbose = true "get child iterations" begin
-            user = DearDiary.get_user("default")
+            user = DearDiary.get_user_by_username("default")
             project_id, _ = DearDiary.create_project(user.id, "Children Project")
             experiment_id, _ = DearDiary.create_experiment(
                 project_id, DearDiary.IN_PROGRESS, "Children Experiment"
@@ -114,7 +118,7 @@
 
         @testset verbose = true "get iteration by id" begin
             @testset "existing iteration" begin
-                user = DearDiary.get_user("default")
+                user = DearDiary.get_user_by_username("default")
                 project_id, _ = DearDiary.create_project(user.id, "Test Project")
                 experiment_id, _ = DearDiary.create_experiment(
                     project_id, DearDiary.IN_PROGRESS, "Test experiment"
@@ -130,14 +134,14 @@
             end
 
             @testset "non-existing iteration" begin
-                iteration = DearDiary.get_iteration(9999)
+                iteration = DearDiary.get_iteration("00000000-0000-0000-0000-000000000000")
 
                 @test isnothing(iteration)
             end
         end
 
         @testset verbose = true "get iterations" begin
-            user = DearDiary.get_user("default")
+            user = DearDiary.get_user_by_username("default")
             project_id, _ = DearDiary.create_project(user.id, "Test Project")
             experiment_id, _ = DearDiary.create_experiment(
                 project_id, DearDiary.IN_PROGRESS, "Test experiment"
@@ -153,13 +157,15 @@
 
         @testset verbose = true "update iteration" begin
             @testset "with non-existing id" begin
-                result = DearDiary.update_iteration(9999, "Updated iteration notes", now())
+                result = DearDiary.update_iteration(
+                    "00000000-0000-0000-0000-000000000000", "Updated iteration notes", now()
+                )
 
                 @test result === DearDiary.Unprocessable
             end
 
             @testset "with existing id" begin
-                user = DearDiary.get_user("default")
+                user = DearDiary.get_user_by_username("default")
                 project_id, _ = DearDiary.create_project(user.id, "Test Project")
                 experiment_id, _ = DearDiary.create_experiment(
                     project_id, DearDiary.IN_PROGRESS, "Test experiment"
@@ -188,7 +194,7 @@
         end
 
         @testset verbose = true "delete iteration" begin
-            user = DearDiary.get_user("default")
+            user = DearDiary.get_user_by_username("default")
             project_id, _ = DearDiary.create_project(user.id, "Test Project")
             experiment_id, _ = DearDiary.create_experiment(
                 project_id, DearDiary.IN_PROGRESS, "Test experiment"
@@ -201,7 +207,7 @@
 
         @testset verbose = true "with_iteration" begin
             @testset "closes on success" begin
-                user = DearDiary.get_user("default")
+                user = DearDiary.get_user_by_username("default")
                 project_id, _ = DearDiary.create_project(user.id, "Withiter Project")
                 experiment_id, _ = DearDiary.create_experiment(
                     project_id, DearDiary.IN_PROGRESS, "Withiter Experiment"
@@ -221,13 +227,13 @@
             end
 
             @testset "closes on failure and rethrows" begin
-                user = DearDiary.get_user("default")
+                user = DearDiary.get_user_by_username("default")
                 project_id, _ = DearDiary.create_project(user.id, "Withiter Crash Project")
                 experiment_id, _ = DearDiary.create_experiment(
                     project_id, DearDiary.IN_PROGRESS, "Withiter Crash Experiment"
                 )
 
-                captured_id = Ref{Int64}(0)
+                captured_id = Ref{String}("")
                 @test_throws ErrorException DearDiary.with_iteration(experiment_id) do iter
                     captured_id[] = iter.id
                     error("boom")
@@ -240,7 +246,7 @@
             end
 
             @testset "propagates parent_iteration_id" begin
-                user = DearDiary.get_user("default")
+                user = DearDiary.get_user_by_username("default")
                 project_id, _ = DearDiary.create_project(user.id, "Withiter Sweep Project")
                 experiment_id, _ = DearDiary.create_experiment(
                     project_id, DearDiary.IN_PROGRESS, "Sweep"
@@ -259,7 +265,7 @@
             end
 
             @testset "raises when experiment cannot accept iterations" begin
-                user = DearDiary.get_user("default")
+                user = DearDiary.get_user_by_username("default")
                 project_id, _ = DearDiary.create_project(
                     user.id, "Withiter Stopped Project"
                 )
@@ -277,7 +283,7 @@
         end
 
         @testset verbose = true "get project id" begin
-            user = DearDiary.get_user("default")
+            user = DearDiary.get_user_by_username("default")
             project_id, _ = DearDiary.create_project(user.id, "Test Project")
             experiment_id, _ = DearDiary.create_experiment(
                 project_id, DearDiary.IN_PROGRESS, "Test experiment"

@@ -7,7 +7,7 @@ function setup_user_routes()
     root = router("/user"; tags=["user"])
 
     @get root("/{id}", middleware=[SameUserOrAdminRequiredMiddleware]) function (
-        ::HTTP.Request, id::Integer
+        ::HTTP.Request, id::String
     )
         response_user = get_user(id)
 
@@ -24,7 +24,7 @@ function setup_user_routes()
     end
 
     @get root("/{id}/permissions", middleware=[SameUserOrAdminRequiredMiddleware]) function (
-        ::HTTP.Request, id::Integer
+        ::HTTP.Request, id::String
     )
         return json(get_userpermissions(User, id); status=HTTP.StatusCodes.OK)
     end
@@ -49,7 +49,7 @@ function setup_user_routes()
     end
 
     @patch root("/{id}", middleware=[SameUserOrAdminRequiredMiddleware]) function (
-        request::HTTP.Request, id::Integer, parameters::Json{UserUpdatePayload}
+        request::HTTP.Request, id::String, parameters::Json{UserUpdatePayload}
     )
         # `is_admin` is a privilege boundary: only an admin may change it. A non-admin
         # reaches this handler solely for their own id (SameUserOrAdminRequiredMiddleware),
@@ -81,7 +81,7 @@ function setup_user_routes()
     end
 
     @delete root("/{id}", middleware=[SameUserOrAdminRequiredMiddleware]) function (
-        ::HTTP.Request, id::Integer
+        ::HTTP.Request, id::String
     )
         success = delete_user(id)
 

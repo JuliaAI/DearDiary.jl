@@ -6,8 +6,8 @@ the same `key` form a series indexed by `step` and timestamped by `recorded_at`,
 training script can record a loss curve over many epochs.
 
 Fields
-- `id::Int64`: The ID of the metric.
-- `iteration_id::Int64`: The ID of the iteration this metric belongs to.
+- `id::String`: The ID of the metric.
+- `iteration_id::String`: The ID of the iteration this metric belongs to.
 - `key::String`: The key/name of the metric (e.g. `"loss"`, `"accuracy"`).
 - `value::Float64`: The recorded value.
 - `step::Int64`: Position in the time series for this `(iteration_id, key)`. Defaults to
@@ -16,8 +16,8 @@ Fields
   not supplied by the caller.
 """
 struct Metric <: ResultType
-    id::Int64
-    iteration_id::Int64
+    id::String
+    iteration_id::String
     key::String
     value::Float64
     step::Int64

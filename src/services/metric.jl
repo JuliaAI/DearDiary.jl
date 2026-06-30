@@ -1,53 +1,55 @@
 """
-    get_metric(id::Integer)::Optional{Metric}
+    get_metric(id::AbstractString)::Optional{Metric}
 
 Get a [`Metric`](@ref) by id.
 
 # Arguments
-- `id::Integer`: The id of the metric to query.
+- `id::AbstractString`: The id of the metric to query.
 
 # Returns
 A [`Metric`](@ref) object. If the record does not exist, return `nothing`.
 """
-get_metric(id::Integer)::Optional{Metric} = fetch(Metric, id)
+get_metric(id::AbstractString)::Optional{Metric} = fetch(Metric, id)
 
 """
-    get_metrics(iteration_id::Integer)::Array{Metric, 1}
+    get_metrics(iteration_id::AbstractString)::Array{Metric, 1}
 
 Get all [`Metric`](@ref) for a given iteration, ordered by `step` ascending so the rows
 already form a chronological time series.
 
 # Arguments
-- `iteration_id::Integer`: The id of the iteration to query.
+- `iteration_id::AbstractString`: The id of the iteration to query.
 
 # Returns
 An array of [`Metric`](@ref) objects.
 """
-get_metrics(iteration_id::Integer)::Array{Metric,1} = fetch_all(Metric, iteration_id)
+get_metrics(iteration_id::AbstractString)::Array{Metric,1} = fetch_all(Metric, iteration_id)
 
 """
-    get_metrics(iteration_id::Integer, page::Pagination)::PaginatedResponse{Metric}
+    get_metrics(iteration_id::AbstractString, page::Pagination)::PaginatedResponse{Metric}
 
 Get a page of [`Metric`](@ref) records for an iteration, with `total` count populated.
 
 # Arguments
-- `iteration_id::Integer`: The id of the iteration to query.
+- `iteration_id::AbstractString`: The id of the iteration to query.
 - `page::Pagination`: The page bounds (limit + offset).
 
 # Returns
 A [`PaginatedResponse`](@ref) of `Metric`.
 """
-function get_metrics(iteration_id::Integer, page::Pagination)::PaginatedResponse{Metric}
+function get_metrics(
+    iteration_id::AbstractString, page::Pagination
+)::PaginatedResponse{Metric}
     return fetch_page(Metric, iteration_id, page)
 end
 
 """
-    create_metric(iteration_id::Integer, key::AbstractString, value::AbstractFloat; step=nothing, recorded_at=nothing)::NamedTuple{id::Optional{<:Int64},status::DataType}
+    create_metric(iteration_id::AbstractString, key::AbstractString, value::AbstractFloat; step=nothing, recorded_at=nothing)::NamedTuple{id::Optional{String},status::DataType}
 
 Create a [`Metric`](@ref).
 
 # Arguments
-- `iteration_id::Integer`: The id of the iteration to create the metric for.
+- `iteration_id::AbstractString`: The id of the iteration to create the metric for.
 - `key::AbstractString`: The key of the metric.
 - `value::AbstractFloat`: The value of the metric.
 - `step::Optional{Integer}`: Position in the time series. When `nothing`, the next
@@ -60,12 +62,12 @@ Create a [`Metric`](@ref).
 - An [`UpsertResult`](@ref). [`Created`](@ref) if the record was successfully created, [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
 """
 function create_metric(
-    iteration_id::Integer,
+    iteration_id::AbstractString,
     key::AbstractString,
     value::AbstractFloat;
     step::Optional{Integer}=nothing,
     recorded_at::Optional{DateTime}=nothing,
-)::@NamedTuple{id::Optional{<:Int64}, status::DataType}
+)::@NamedTuple{id::Optional{String}, status::DataType}
     iteration = get_iteration(iteration_id)
     if isnothing(iteration)
         return (id=nothing, status=Unprocessable)
@@ -89,7 +91,7 @@ function create_metric(
 end
 
 """
-    log_metrics(iteration_id::Integer, metrics::AbstractDict{<:AbstractString,<:AbstractFloat}; step=nothing, recorded_at=nothing)::NamedTuple{ids::Array{Int64,1},status::DataType}
+    log_metrics(iteration_id::AbstractString, metrics::AbstractDict{<:AbstractString,<:AbstractFloat}; step=nothing, recorded_at=nothing)::NamedTuple{ids::Array{String,1},status::DataType}
 
 Record many metric values against `iteration_id` in one shot. Every entry shares the same
 `recorded_at` (server clock when `nothing`). When `step` is omitted, each `key` independently
@@ -99,34 +101,34 @@ Stops at the first failure and returns the ids committed before the failure plus
 the failing status; callers can then decide whether to retry or surface the error.
 
 # Arguments
-- `iteration_id::Integer`: The id of the iteration to record against.
+- `iteration_id::AbstractString`: The id of the iteration to record against.
 - `metrics::AbstractDict`: The `key => value` pairs to record.
 - `step::Optional{Integer}`: Shared step for every entry, or `nothing` to let each key
   get its own next value.
 - `recorded_at::Optional{DateTime}`: Shared timestamp, or `nothing` for `now()`.
 
 # Returns
-- `ids::Array{Int64,1}`: The ids of the inserted [`Metric`](@ref) rows in iteration order.
+- `ids::Array{String,1}`: The ids of the inserted [`Metric`](@ref) rows in iteration order.
 - `status::DataType`: [`Created`](@ref) when every insert succeeded; otherwise the
   [`UpsertResult`](@ref) of the first failing insert.
 """
 function log_metrics(
-    iteration_id::Integer,
+    iteration_id::AbstractString,
     metrics::AbstractDict{<:AbstractString,<:AbstractFloat};
     step::Optional{Integer}=nothing,
     recorded_at::Optional{DateTime}=nothing,
-)::@NamedTuple{ids::Array{Int64,1}, status::DataType}
+)::@NamedTuple{ids::Array{String,1}, status::DataType}
     iteration = get_iteration(iteration_id)
     if isnothing(iteration)
-        return (ids=Int64[], status=Unprocessable)
+        return (ids=String[], status=Unprocessable)
     end
     if !(isnothing(iteration.end_date))
-        return (ids=Int64[], status=Unprocessable)
+        return (ids=String[], status=Unprocessable)
     end
 
     resolved_recorded_at = (isnothing(recorded_at)) ? now() : recorded_at
 
-    ids = Int64[]
+    ids = String[]
     for (key, value) in metrics
         resolved_step = (isnothing(step)) ? next_metric_step(iteration_id, key) : step
         id, result = insert(
@@ -141,12 +143,12 @@ function log_metrics(
 end
 
 """
-    update_metric(id::Integer, key::Optional{AbstractString}, value::Optional{AbstractFloat}; step=nothing, recorded_at=nothing)::Type{<:UpsertResult}
+    update_metric(id::AbstractString, key::Optional{AbstractString}, value::Optional{AbstractFloat}; step=nothing, recorded_at=nothing)::Type{<:UpsertResult}
 
 Update a [`Metric`](@ref) record.
 
 # Arguments
-- `id::Integer`: The id of the metric to update.
+- `id::AbstractString`: The id of the metric to update.
 - `key::Optional{AbstractString}`: The new key for the metric.
 - `value::Optional{AbstractFloat}`: The new value for the metric.
 - `step::Optional{Integer}`: The new step in the series.
@@ -156,7 +158,7 @@ Update a [`Metric`](@ref) record.
 An [`UpsertResult`](@ref). [`Updated`](@ref) if the record was successfully updated (or no changes were made), [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
 """
 function update_metric(
-    id::Integer,
+    id::AbstractString,
     key::Optional{AbstractString},
     value::Optional{AbstractFloat};
     step::Optional{Integer}=nothing,
@@ -184,17 +186,17 @@ function update_metric(
 end
 
 """
-    delete_metric(id::Integer)::Bool
+    delete_metric(id::AbstractString)::Bool
 
 Delete a [`Metric`](@ref) record.
 
 # Arguments
-- `id::Integer`: The id of the metric to delete.
+- `id::AbstractString`: The id of the metric to delete.
 
 # Returns
 `true` if the record was successfully deleted, `false` otherwise.
 """
-function delete_metric(id::Integer)::Bool
+function delete_metric(id::AbstractString)::Bool
     metric = get_metric(id)
     if isnothing(metric)
         return false
@@ -220,7 +222,7 @@ Delete all [`Metric`](@ref) records associated with a given [`Iteration`](@ref).
 delete_metrics(iteration::Iteration)::Bool = delete(Metric, iteration)
 
 """
-    get_project_id(metric::Metric)::Optional{Int64}
+    get_project_id(metric::Metric)::Optional{String}
 
 Return the [`Project`](@ref) id that owns the given [`Metric`](@ref) by walking up to its parent
 [`Iteration`](@ref) and [`Experiment`](@ref).
@@ -231,7 +233,7 @@ Return the [`Project`](@ref) id that owns the given [`Metric`](@ref) by walking 
 # Returns
 The owning project id, or `nothing` if any ancestor is missing.
 """
-function get_project_id(metric::Metric)::Optional{Int64}
+function get_project_id(metric::Metric)::Optional{String}
     iteration = get_iteration(metric.iteration_id)
     return isnothing(iteration) ? nothing : (get_project_id(iteration))
 end

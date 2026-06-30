@@ -12,7 +12,7 @@
             response = HTTP.post(
                 "http://127.0.0.1:9000/user"; body=payload, status_exception=false
             )
-            username_user = DearDiary.get_user("missy")
+            username_user = DearDiary.get_user_by_username("missy")
 
             @test response.status == HTTP.StatusCodes.CREATED
             data = JSON.parse(String(response.body), Dict{String,Any})
@@ -20,7 +20,7 @@
         end
 
         @testset verbose = true "get user by id" begin
-            username_user = DearDiary.get_user("missy")
+            username_user = DearDiary.get_user_by_username("missy")
             response = HTTP.get(
                 "http://127.0.0.1:9000/user/$(username_user.id)"; status_exception=false
             )
@@ -30,7 +30,7 @@
             @test !haskey(data, "password")
             user = DearDiary.UserResponse(data)
 
-            @test user.id isa Int
+            @test user.id isa String
             @test user.first_name == "Missy"
             @test user.last_name == "Gala"
             @test user.username == "missy"
@@ -60,7 +60,7 @@
         end
 
         @testset verbose = true "update user" begin
-            username_user = DearDiary.get_user("missy")
+            username_user = DearDiary.get_user_by_username("missy")
             payload = JSON.json(
                 Dict("first_name" => "Ana", "last_name" => nothing, "password" => nothing)
             )
@@ -85,7 +85,7 @@
         end
 
         @testset verbose = true "delete user" begin
-            username_user = DearDiary.get_user("missy")
+            username_user = DearDiary.get_user_by_username("missy")
             response = HTTP.delete(
                 "http://127.0.0.1:9000/user/$(username_user.id)"; status_exception=false
             )

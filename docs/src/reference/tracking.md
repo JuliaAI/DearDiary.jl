@@ -34,6 +34,7 @@ DearDiary.with_iteration
 ## Tags
 ```@docs
 get_tag
+get_tag_by_value
 get_tags
 create_tag
 add_tag

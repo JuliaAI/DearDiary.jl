@@ -49,7 +49,8 @@
 
             @test response.status == HTTP.StatusCodes.CREATED
             data = JSON.parse(String(response.body), Dict{String,Any})
-            @test data["modelversion_id"] isa Integer
+            @test data["modelversion_id"] isa String
+            @test !isempty(data["modelversion_id"])
 
             version_id = data["modelversion_id"]
             response = HTTP.get(
@@ -147,7 +148,8 @@
 
         @testset verbose = true "GET 404 carries NOT_FOUND code" begin
             response = HTTP.get(
-                "http://127.0.0.1:9000/modelversion/9999"; status_exception=false
+                "http://127.0.0.1:9000/modelversion/00000000-0000-0000-0000-000000000000";
+                status_exception=false,
             )
             @test response.status == HTTP.StatusCodes.NOT_FOUND
             data = JSON.parse(String(response.body), Dict{String,Any})

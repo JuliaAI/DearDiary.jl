@@ -5,8 +5,8 @@ A struct representing a registered model in the project-scoped model registry. A
 the named container under which one or more [`ModelVersion`](@ref) checkpoints are recorded.
 
 Fields
-- `id::Int64`: The unique identifier of the model.
-- `project_id::Int64`: The identifier of the [`Project`](@ref) that owns the model.
+- `id::String`: The unique identifier of the model.
+- `project_id::String`: The identifier of the [`Project`](@ref) that owns the model.
 - `name::String`: The registry-unique name of the model (unique per project).
 - `description::String`: A free-form description of the model.
 - `created_date::DateTime`: The date and time when the model was registered.
@@ -14,8 +14,8 @@ Fields
   `nothing` if the record has never been updated.
 """
 struct Model <: ResultType
-    id::Int64
-    project_id::Int64
+    id::String
+    project_id::String
     name::String
     description::String
     created_date::DateTime

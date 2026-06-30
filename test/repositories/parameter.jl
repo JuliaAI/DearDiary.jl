@@ -2,7 +2,7 @@
     @testset verbose = true "parameter repository" begin
         @testset verbose = true "insert" begin
             @testset "with existing iteration" begin
-                user = DearDiary.get_user("default")
+                user = DearDiary.get_user_by_username("default")
                 project_id, _ = DearDiary.create_project(user.id, "Test Project")
                 experiment_id, _ = DearDiary.create_experiment(
                     project_id, DearDiary.IN_PROGRESS, "Parameter Test Experiment"
@@ -12,13 +12,17 @@
                 id, status = DearDiary.insert(
                     DearDiary.Parameter, iteration_id, "learning_rate", "0.01"
                 )
-                @test id isa Integer
+                @test id isa String
+                @test !isempty(id)
                 @test status === DearDiary.Created
             end
 
             @testset "with non-existing iteration" begin
                 id, status = DearDiary.insert(
-                    DearDiary.Parameter, 9999, "learning_rate", "0.01"
+                    DearDiary.Parameter,
+                    "00000000-0000-0000-0000-000000000000",
+                    "learning_rate",
+                    "0.01",
                 )
                 @test isnothing(id)
                 @test status === DearDiary.Unprocessable
@@ -27,7 +31,7 @@
 
         @testset verbose = true "fetch" begin
             @testset "existing parameter" begin
-                user = DearDiary.get_user("default")
+                user = DearDiary.get_user_by_username("default")
                 project_id, _ = DearDiary.create_project(user.id, "Test Project")
                 experiment_id, _ = DearDiary.create_experiment(
                     project_id, DearDiary.IN_PROGRESS, "Parameter Test Experiment"
@@ -47,14 +51,16 @@
             end
 
             @testset "non-existing parameter" begin
-                parameter = DearDiary.fetch(DearDiary.Parameter, 9999)
+                parameter = DearDiary.fetch(
+                    DearDiary.Parameter, "00000000-0000-0000-0000-000000000000"
+                )
 
                 @test isnothing(parameter)
             end
         end
 
         @testset verbose = true "fetch all" begin
-            user = DearDiary.get_user("default")
+            user = DearDiary.get_user_by_username("default")
             project_id, _ = DearDiary.create_project(user.id, "Test Project")
             experiment_id, _ = DearDiary.create_experiment(
                 project_id, DearDiary.IN_PROGRESS, "Parameter Test Experiment"
@@ -69,7 +75,7 @@
         end
 
         @testset verbose = true "update" begin
-            user = DearDiary.get_user("default")
+            user = DearDiary.get_user_by_username("default")
             project_id, _ = DearDiary.create_project(user.id, "Test Project")
             experiment_id, _ = DearDiary.create_experiment(
                 project_id, DearDiary.IN_PROGRESS, "Parameter Test Experiment"
@@ -91,7 +97,7 @@
 
         @testset verbose = true "delete" begin
             @testset "single parameter" begin
-                user = DearDiary.get_user("default")
+                user = DearDiary.get_user_by_username("default")
                 project_id, _ = DearDiary.create_project(user.id, "Test Project")
                 experiment_id, _ = DearDiary.create_experiment(
                     project_id, DearDiary.IN_PROGRESS, "Parameter Test Experiment"
@@ -106,7 +112,7 @@
             end
 
             @testset "all parameters by iteration" begin
-                user = DearDiary.get_user("default")
+                user = DearDiary.get_user_by_username("default")
                 project_id, _ = DearDiary.create_project(user.id, "Test Project")
                 experiment_id, _ = DearDiary.create_experiment(
                     project_id, DearDiary.IN_PROGRESS, "Parameter Test Experiment"

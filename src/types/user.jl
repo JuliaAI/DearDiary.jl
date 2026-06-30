@@ -4,7 +4,7 @@
 A struct that represents a user.
 
 Fields
-- `id::Int64`: The ID of the user.
+- `id::String`: The ID of the user.
 - `first_name::String`: The first name of the user.
 - `last_name::String`: The last name of the user.
 - `username::String`: The username of the user.
@@ -13,7 +13,7 @@ Fields
 - `is_admin::Bool`: Whether the user is an administrator.
 """
 struct User <: ResultType
-    id::Int64
+    id::String
     first_name::String
     last_name::String
     username::String
@@ -47,7 +47,7 @@ end
 A safe-for-API projection of [`User`](@ref) that omits the password hash.
 
 Fields
-- `id::Int64`: The ID of the user.
+- `id::String`: The ID of the user.
 - `first_name::String`: The first name of the user.
 - `last_name::String`: The last name of the user.
 - `username::String`: The username of the user.
@@ -55,7 +55,7 @@ Fields
 - `is_admin::Bool`: Whether the user is an administrator.
 """
 struct UserResponse <: ResultType
-    id::Int64
+    id::String
     first_name::String
     last_name::String
     username::String

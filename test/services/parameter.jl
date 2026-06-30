@@ -2,7 +2,7 @@
     @testset verbose = true "parameter service" begin
         @testset verbose = true "create parameter" begin
             @testset "with existing iteration" begin
-                user = DearDiary.get_user("default")
+                user = DearDiary.get_user_by_username("default")
                 project_id, _ = DearDiary.create_project(user.id, "Test Project")
                 experiment_id, _ = DearDiary.create_experiment(
                     project_id, DearDiary.IN_PROGRESS, "Test experiment"
@@ -13,13 +13,14 @@
                     iteration_id, "learning_rate", "0.01"
                 )
 
-                @test parameter_id isa Integer
+                @test parameter_id isa String
+                @test !isempty(parameter_id)
                 @test result === DearDiary.Created
             end
 
             @testset "with non-existing iteration" begin
                 parameter_id, result = DearDiary.create_parameter(
-                    9999, "learning_rate", 0.01
+                    "00000000-0000-0000-0000-000000000000", "learning_rate", 0.01
                 )
 
                 @test isnothing(parameter_id)
@@ -29,7 +30,7 @@
 
         @testset verbose = true "get parameter by id" begin
             @testset "existing parameter" begin
-                user = DearDiary.get_user("default")
+                user = DearDiary.get_user_by_username("default")
                 project_id, _ = DearDiary.create_project(user.id, "Test Project")
                 experiment_id, _ = DearDiary.create_experiment(
                     project_id, DearDiary.IN_PROGRESS, "Test experiment"
@@ -49,14 +50,14 @@
             end
 
             @testset "non-existing parameter" begin
-                parameter = DearDiary.get_parameter(9999)
+                parameter = DearDiary.get_parameter("00000000-0000-0000-0000-000000000000")
 
                 @test isnothing(parameter)
             end
         end
 
         @testset verbose = true "get parameters" begin
-            user = DearDiary.get_user("default")
+            user = DearDiary.get_user_by_username("default")
             project_id, _ = DearDiary.create_project(user.id, "Test Project")
             experiment_id, _ = DearDiary.create_experiment(
                 project_id, DearDiary.IN_PROGRESS, "Test experiment"
@@ -73,13 +74,15 @@
 
         @testset verbose = true "update parameter" begin
             @testset "with non-existing id" begin
-                result = DearDiary.update_parameter(9999, "momentum", 0.9)
+                result = DearDiary.update_parameter(
+                    "00000000-0000-0000-0000-000000000000", "momentum", 0.9
+                )
 
                 @test result === DearDiary.Unprocessable
             end
 
             @testset "with existing id" begin
-                user = DearDiary.get_user("default")
+                user = DearDiary.get_user_by_username("default")
                 project_id, _ = DearDiary.create_project(user.id, "Test Project")
                 experiment_id, _ = DearDiary.create_experiment(
                     project_id, DearDiary.IN_PROGRESS, "Test experiment"
@@ -104,7 +107,7 @@
 
         @testset verbose = true "delete parameter" begin
             @testset "single parameter" begin
-                user = DearDiary.get_user("default")
+                user = DearDiary.get_user_by_username("default")
                 project_id, _ = DearDiary.create_project(user.id, "Test Project")
                 experiment_id, _ = DearDiary.create_experiment(
                     project_id, DearDiary.IN_PROGRESS, "Test experiment"
@@ -119,7 +122,7 @@
             end
 
             @testset "all parameters by iteration" begin
-                user = DearDiary.get_user("default")
+                user = DearDiary.get_user_by_username("default")
                 project_id, _ = DearDiary.create_project(user.id, "Test Project")
                 experiment_id, _ = DearDiary.create_experiment(
                     project_id, DearDiary.IN_PROGRESS, "Test experiment"
@@ -135,7 +138,7 @@
         end
 
         @testset verbose = true "get project id" begin
-            user = DearDiary.get_user("default")
+            user = DearDiary.get_user_by_username("default")
             project_id, _ = DearDiary.create_project(user.id, "Test Project")
             experiment_id, _ = DearDiary.create_experiment(
                 project_id, DearDiary.IN_PROGRESS, "Test experiment"

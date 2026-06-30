@@ -4,8 +4,8 @@
 A struct representing an experiment within a project.
 
 Fields
-- `id::Int64`: The unique identifier of the experiment.
-- `project_id::Int64`: The identifier of the project to which the experiment belongs.
+- `id::String`: The unique identifier of the experiment.
+- `project_id::String`: The identifier of the project to which the experiment belongs.
 - `status_id::Int64`: The status of the experiment.
 - `name::String`: The name of the experiment.
 - `description::String`: A description of the experiment.
@@ -13,8 +13,8 @@ Fields
 - `end_date::Optional{DateTime}`: The date and time when the experiment ended, or `nothing` if it is still ongoing.
 """
 struct Experiment <: ResultType
-    id::Int64
-    project_id::Int64
+    id::String
+    project_id::String
     status_id::Int64
     name::String
     description::String

@@ -11,13 +11,13 @@
         end
 
         @testset verbose = true "get_tag by value" begin
-            tag = DearDiary.get_tag("test-tag-service")
+            tag = DearDiary.get_tag_by_value("test-tag-service")
             @test tag isa DearDiary.Tag
             @test tag.value == "test-tag-service"
         end
 
         @testset verbose = true "get_tag with non-existent id" begin
-            tag = DearDiary.get_tag(99999)
+            tag = DearDiary.get_tag("00000000-0000-0000-0000-000000000000")
             @test isnothing(tag)
         end
 
@@ -75,7 +75,8 @@
 
         @testset verbose = true "create_tag" begin
             result = DearDiary.create_tag("new-tag-service")
-            @test result.id isa Integer
+            @test result.id isa String
+            @test !isempty(result.id)
             @test result.status === DearDiary.Created
 
             tag = DearDiary.get_tag(result.id)
@@ -94,7 +95,8 @@
             project_id = project_result.id
 
             result = DearDiary.add_tag(DearDiary.Project, project_id, "added-project-tag")
-            @test result.id isa Integer
+            @test result.id isa String
+            @test !isempty(result.id)
             @test result.status === DearDiary.Created
 
             tags = DearDiary.get_tags(DearDiary.Project, project_id)
@@ -104,7 +106,9 @@
         end
 
         @testset verbose = true "add_tag to project with non-existent project" begin
-            result = DearDiary.add_tag(DearDiary.Project, 99999, "some-tag")
+            result = DearDiary.add_tag(
+                DearDiary.Project, "00000000-0000-0000-0000-000000000000", "some-tag"
+            )
             @test isnothing(result.id)
             @test result.status === DearDiary.Unprocessable
         end
@@ -120,7 +124,8 @@
             experiment_id = experiment_result.id
 
             result = DearDiary.add_tag(DearDiary.Experiment, experiment_id, "added-exp-tag")
-            @test result.id isa Integer
+            @test result.id isa String
+            @test !isempty(result.id)
             @test result.status === DearDiary.Created
 
             tags = DearDiary.get_tags(DearDiary.Experiment, experiment_id)
@@ -130,7 +135,9 @@
         end
 
         @testset verbose = true "add_tag to experiment with non-existent experiment" begin
-            result = DearDiary.add_tag(DearDiary.Experiment, 99999, "some-tag")
+            result = DearDiary.add_tag(
+                DearDiary.Experiment, "00000000-0000-0000-0000-000000000000", "some-tag"
+            )
             @test isnothing(result.id)
             @test result.status === DearDiary.Unprocessable
         end
@@ -147,7 +154,8 @@
             iteration_id = iteration_result.id
 
             result = DearDiary.add_tag(DearDiary.Iteration, iteration_id, "added-iter-tag")
-            @test result.id isa Integer
+            @test result.id isa String
+            @test !isempty(result.id)
             @test result.status === DearDiary.Created
 
             tags = DearDiary.get_tags(DearDiary.Iteration, iteration_id)
@@ -157,7 +165,9 @@
         end
 
         @testset verbose = true "add_tag to iteration with non-existent iteration" begin
-            result = DearDiary.add_tag(DearDiary.Iteration, 99999, "some-tag")
+            result = DearDiary.add_tag(
+                DearDiary.Iteration, "00000000-0000-0000-0000-000000000000", "some-tag"
+            )
             @test isnothing(result.id)
             @test result.status === DearDiary.Unprocessable
         end
@@ -174,7 +184,7 @@
         end
 
         @testset verbose = true "delete_tag non-existent" begin
-            deleted = DearDiary.delete_tag(99999)
+            deleted = DearDiary.delete_tag("00000000-0000-0000-0000-000000000000")
             @test deleted == true
         end
     end

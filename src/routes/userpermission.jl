@@ -9,7 +9,7 @@ function setup_userpermission_routes()
     )
 
     @get root("/user/{user_id}/project/{project_id}") function (
-        ::HTTP.Request, user_id::Integer, project_id::Integer
+        ::HTTP.Request, user_id::String, project_id::String
     )
         response_userpermission = get_userpermission(user_id, project_id)
 
@@ -23,8 +23,8 @@ function setup_userpermission_routes()
 
     @post root("/user/{user_id}/project/{project_id}") function (
         ::HTTP.Request,
-        user_id::Integer,
-        project_id::Integer,
+        user_id::String,
+        project_id::String,
         parameters::Json{UserPermissionCreatePayload},
     )
         userpermission_id, upsert_result = create_userpermission(
@@ -48,7 +48,7 @@ function setup_userpermission_routes()
     end
 
     @patch root("/{id}") function (
-        ::HTTP.Request, id::Integer, parameters::Json{UserPermissionUpdatePayload}
+        ::HTTP.Request, id::String, parameters::Json{UserPermissionUpdatePayload}
     )
         upsert_result = update_userpermission(
             id,
@@ -67,7 +67,7 @@ function setup_userpermission_routes()
         return json(("message" => (String(upsert_result))); status=HTTP.StatusCodes.OK)
     end
 
-    @delete root("/{id}") function (::HTTP.Request, id::Integer)
+    @delete root("/{id}") function (::HTTP.Request, id::String)
         success = delete_userpermission(id)
 
         if !success

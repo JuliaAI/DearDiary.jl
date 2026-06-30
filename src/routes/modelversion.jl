@@ -9,7 +9,7 @@ function setup_modelversion_routes()
     @get root(
         "/{id}",
         middleware=[ProjectPermissionRequiredMiddleware(ModelVersion, ReadPermission)],
-    ) function (::HTTP.Request, id::Integer)
+    ) function (::HTTP.Request, id::String)
         response_version = get_modelversion(id)
 
         if (isnothing(response_version))
@@ -23,7 +23,7 @@ function setup_modelversion_routes()
     @get root(
         "/model/{model_id}",
         middleware=[ProjectPermissionRequiredMiddleware(ModelVersion, ReadPermission)],
-    ) function (request::HTTP.Request, model_id::Integer)
+    ) function (request::HTTP.Request, model_id::String)
         page = parse_pagination(request)
         return json(get_modelversions(model_id, page); status=HTTP.StatusCodes.OK)
     end
@@ -32,7 +32,7 @@ function setup_modelversion_routes()
         "/model/{model_id}",
         middleware=[ProjectPermissionRequiredMiddleware(ModelVersion, CreatePermission)],
     ) function (
-        ::HTTP.Request, model_id::Integer, parameters::Json{ModelVersionCreatePayload}
+        ::HTTP.Request, model_id::String, parameters::Json{ModelVersionCreatePayload}
     )
         version_id, upsert_result = create_modelversion(
             model_id,
@@ -57,7 +57,7 @@ function setup_modelversion_routes()
     @patch root(
         "/{id}",
         middleware=[ProjectPermissionRequiredMiddleware(ModelVersion, UpdatePermission)],
-    ) function (::HTTP.Request, id::Integer, parameters::Json{ModelVersionUpdatePayload})
+    ) function (::HTTP.Request, id::String, parameters::Json{ModelVersionUpdatePayload})
         upsert_result = update_modelversion(
             id,
             parameters.payload.stage_id,
@@ -77,7 +77,7 @@ function setup_modelversion_routes()
     @delete root(
         "/{id}",
         middleware=[ProjectPermissionRequiredMiddleware(ModelVersion, DeletePermission)],
-    ) function (::HTTP.Request, id::Integer)
+    ) function (::HTTP.Request, id::String)
         success = delete_modelversion(id)
 
         if !success

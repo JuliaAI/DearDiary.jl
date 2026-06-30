@@ -4,13 +4,13 @@
 A struct representing a project with its details.
 
 Fields
-- `id::Int64`: The ID of the project.
+- `id::String`: The ID of the project.
 - `name::String`: The name of the project.
 - `description::String`: A brief description of the project.
 - `created_date::DateTime`: The date and time the project was created.
 """
 struct Project <: ResultType
-    id::Int64
+    id::String
     name::String
     description::String
     created_date::DateTime

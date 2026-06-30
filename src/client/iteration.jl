@@ -1,11 +1,11 @@
 """
-    get_iteration(client::Client, id::Integer)::Optional{Iteration}
+    get_iteration(client::Client, id::AbstractString)::Optional{Iteration}
 
 Fetch an [`Iteration`](@ref) via `GET /iteration/{id}`. Returns `nothing` when the server
 replies 404 and raises [`ClientError`](@ref) for other failures. Requires
 [`ReadPermission`](@ref) on the iteration's project.
 """
-function get_iteration(client::Client, id::Integer)::Optional{Iteration}
+function get_iteration(client::Client, id::AbstractString)::Optional{Iteration}
     try
         return Iteration(_json(_request(client, "GET", "/iteration/$id")))
     catch err
@@ -15,23 +15,23 @@ function get_iteration(client::Client, id::Integer)::Optional{Iteration}
 end
 
 """
-    get_iterations(client::Client, experiment_id::Integer)::Array{Iteration,1}
+    get_iterations(client::Client, experiment_id::AbstractString)::Array{Iteration,1}
 
 Returns the first page (default limit) of [`Iteration`](@ref) records under `experiment_id`,
 discarding the pagination envelope.
 """
-function get_iterations(client::Client, experiment_id::Integer)::Array{Iteration,1}
+function get_iterations(client::Client, experiment_id::AbstractString)::Array{Iteration,1}
     return get_iterations(client, experiment_id, Pagination(50, 0)).data
 end
 
 """
-    get_iterations(client::Client, experiment_id::Integer, page::Pagination)::PaginatedResponse{Iteration}
+    get_iterations(client::Client, experiment_id::AbstractString, page::Pagination)::PaginatedResponse{Iteration}
 
 Fetch a page of [`Iteration`](@ref) records under `experiment_id` via
 `GET /iteration/experiment/{experiment_id}?limit=…&offset=…`.
 """
 function get_iterations(
-    client::Client, experiment_id::Integer, page::Pagination
+    client::Client, experiment_id::AbstractString, page::Pagination
 )::PaginatedResponse{Iteration}
     response = _request(
         client,
@@ -43,19 +43,19 @@ function get_iterations(
 end
 
 """
-    get_child_iterations(client::Client, parent_id::Integer)::Array{Iteration,1}
+    get_child_iterations(client::Client, parent_id::AbstractString)::Array{Iteration,1}
 
 Fetch the direct children of `parent_id` via `GET /iteration/{parent_id}/children`. Returns
 an empty array when no children exist. Requires [`ReadPermission`](@ref) on the iteration's
 project.
 """
-function get_child_iterations(client::Client, parent_id::Integer)::Array{Iteration,1}
+function get_child_iterations(client::Client, parent_id::AbstractString)::Array{Iteration,1}
     response = _request(client, "GET", "/iteration/$parent_id/children")
     return [Iteration(item) for item in _json(response)]
 end
 
 """
-    create_iteration(client::Client, experiment_id::Integer; parent_iteration_id=nothing)::Iteration
+    create_iteration(client::Client, experiment_id::AbstractString; parent_iteration_id=nothing)::Iteration
 
 Open a fresh [`Iteration`](@ref) under `experiment_id` via
 `POST /iteration/experiment/{experiment_id}` and fetch the freshly-created row so the
@@ -67,7 +67,9 @@ iteration (HPO trial, distributed worker, nested CV fold). The parent must belon
 same `experiment_id`.
 """
 function create_iteration(
-    client::Client, experiment_id::Integer; parent_iteration_id::Optional{<:Integer}=nothing
+    client::Client,
+    experiment_id::AbstractString;
+    parent_iteration_id::Optional{<:AbstractString}=nothing,
 )::Iteration
     query = if (isnothing(parent_iteration_id))
         nothing
@@ -80,7 +82,7 @@ function create_iteration(
 end
 
 """
-    update_iteration(client::Client, id::Integer; notes=nothing, end_date=nothing, status=nothing, error_message=nothing)::Nothing
+    update_iteration(client::Client, id::AbstractString; notes=nothing, end_date=nothing, status=nothing, error_message=nothing)::Nothing
 
 Patch an [`Iteration`](@ref) via `PATCH /iteration/{id}`. Any keyword left as `nothing` is
 left untouched server-side. Once an iteration has an `end_date` set, the server locks it:
@@ -91,7 +93,7 @@ further updates fail with [`ClientError`](@ref) `"INVALID_PAYLOAD"`. Requires
 """
 function update_iteration(
     client::Client,
-    id::Integer;
+    id::AbstractString;
     notes::Optional{AbstractString}=nothing,
     end_date::Optional{DateTime}=nothing,
     status::Optional{IterationStatus}=nothing,
@@ -112,7 +114,7 @@ function update_iteration(
 end
 
 """
-    snapshot_environment!(client::Client, id::Integer; entrypoint=PROGRAM_FILE)::Nothing
+    snapshot_environment!(client::Client, id::AbstractString; entrypoint=PROGRAM_FILE)::Nothing
 
 Capture the calling process's reproducibility state via [`capture_environment`](@ref) and
 POST it to `POST /iteration/{id}/snapshot`. Requires [`UpdatePermission`](@ref) on the
@@ -122,7 +124,7 @@ Capture runs **locally**: `LibGit2` and `Pkg` operate on the client process's wo
 tree, not the server's. The resulting metadata is wired through to the iteration row.
 """
 function snapshot_environment!(
-    client::Client, id::Integer; entrypoint::AbstractString=PROGRAM_FILE
+    client::Client, id::AbstractString; entrypoint::AbstractString=PROGRAM_FILE
 )::Nothing
     snapshot = capture_environment(; entrypoint=entrypoint)
     _request(
@@ -142,12 +144,12 @@ function snapshot_environment!(
 end
 
 """
-    delete_iteration(client::Client, id::Integer)::Nothing
+    delete_iteration(client::Client, id::AbstractString)::Nothing
 
 Delete an [`Iteration`](@ref) (and its [`Parameter`](@ref)s + [`Metric`](@ref)s) via
 `DELETE /iteration/{id}`. Requires [`DeletePermission`](@ref) on the owning project.
 """
-function delete_iteration(client::Client, id::Integer)::Nothing
+function delete_iteration(client::Client, id::AbstractString)::Nothing
     _request(client, "DELETE", "/iteration/$id")
     return nothing
 end

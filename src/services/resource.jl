@@ -1,56 +1,56 @@
 """
-    get_resource(id::Integer)::Optional{Resource}
+    get_resource(id::AbstractString)::Optional{Resource}
 
 Get a [`Resource`](@ref) by id.
 
 # Arguments
-- `id::Integer`: The id of the resource to query.
+- `id::AbstractString`: The id of the resource to query.
 
 # Returns
 A [`Resource`](@ref) object. If the record does not exist, return `nothing`.
 """
-get_resource(id::Integer)::Optional{Resource} = fetch(Resource, id)
+get_resource(id::AbstractString)::Optional{Resource} = fetch(Resource, id)
 
 """
-    get_resources(experiment_id::Integer)::Array{Resource, 1}
+    get_resources(experiment_id::AbstractString)::Array{Resource, 1}
 
 Get all [`Resource`](@ref) for a given experiment.
 
 # Arguments
-- `experiment_id::Integer`: The id of the experiment to query.
+- `experiment_id::AbstractString`: The id of the experiment to query.
 
 # Returns
 An array of [`Resource`](@ref) objects.
 """
-get_resources(experiment_id::Integer)::Array{Resource,1} = fetch_all(
+get_resources(experiment_id::AbstractString)::Array{Resource,1} = fetch_all(
     Resource, experiment_id
 )
 
 """
-    get_resources(experiment_id::Integer, page::Pagination)::PaginatedResponse{Resource}
+    get_resources(experiment_id::AbstractString, page::Pagination)::PaginatedResponse{Resource}
 
 Get a page of [`Resource`](@ref) records for an experiment, with `total` count populated.
 
 # Arguments
-- `experiment_id::Integer`: The id of the experiment to query.
+- `experiment_id::AbstractString`: The id of the experiment to query.
 - `page::Pagination`: The page bounds (limit + offset).
 
 # Returns
 A [`PaginatedResponse`](@ref) of `Resource`.
 """
 function get_resources(
-    experiment_id::Integer, page::Pagination
+    experiment_id::AbstractString, page::Pagination
 )::PaginatedResponse{Resource}
     return fetch_page(Resource, experiment_id, page)
 end
 
 """
-    create_resource(experiment_id::Integer, name::AbstractString, data::AbstractArray{UInt8,1})::NamedTuple{id::Optional{<:Int64},status::DataType}
+    create_resource(experiment_id::AbstractString, name::AbstractString, data::AbstractArray{UInt8,1})::NamedTuple{id::Optional{String},status::DataType}
 
 Create a new [`Resource`](@ref) record.
 
 # Arguments
-- `experiment_id::Integer`: The id of the experiment to create the resource for.
+- `experiment_id::AbstractString`: The id of the experiment to create the resource for.
 - `name::AbstractString`: The name of the resource.
 - `data::AbstractArray{UInt8,1}`: The binary data of the resource.
 
@@ -59,8 +59,8 @@ Create a new [`Resource`](@ref) record.
 - An [`UpsertResult`](@ref). [`Created`](@ref) if the record was successfully created, [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
 """
 function create_resource(
-    experiment_id::Integer, name::AbstractString, data::AbstractArray{UInt8,1}
-)::@NamedTuple{id::Optional{<:Int64}, status::DataType}
+    experiment_id::AbstractString, name::AbstractString, data::AbstractArray{UInt8,1}
+)::@NamedTuple{id::Optional{String}, status::DataType}
     experiment = get_experiment(experiment_id)
     if isnothing(experiment)
         return (id=nothing, status=Unprocessable)
@@ -96,12 +96,12 @@ function create_resource(
 end
 
 """
-    update_resource(id::Integer, name::Optional{AbstractString}, description::Optional{AbstractString}, data::Optional{AbstractArray{UInt8,1}})::Type{<:UpsertResult}
+    update_resource(id::AbstractString, name::Optional{AbstractString}, description::Optional{AbstractString}, data::Optional{AbstractArray{UInt8,1}})::Type{<:UpsertResult}
 
 Update a [`Resource`](@ref) record.
 
 # Arguments
-- `id::Integer`: The id of the resource to update.
+- `id::AbstractString`: The id of the resource to update.
 - `name::Optional{AbstractString}`: The new name for the resource.
 - `description::Optional{AbstractString}`: The new description for the resource.
 - `data::Optional{AbstractArray{UInt8,1}}`: The new binary data for the resource.
@@ -110,7 +110,7 @@ Update a [`Resource`](@ref) record.
 An [`UpsertResult`](@ref). [`Updated`](@ref) if the record was successfully updated (or no changes were made), [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
 """
 function update_resource(
-    id::Integer,
+    id::AbstractString,
     name::Optional{AbstractString},
     description::Optional{AbstractString},
     data::Optional{AbstractArray{UInt8,1}},
@@ -163,18 +163,18 @@ function update_resource(
 end
 
 """
-    delete_resource(id::Integer)::Bool
+    delete_resource(id::AbstractString)::Bool
 
 Delete a [`Resource`](@ref) record. For non-inline backends the underlying artifact bytes
 are removed from the store first; inline-backed rows take their bytes down with the row.
 
 # Arguments
-- `id::Integer`: The id of the resource to delete.
+- `id::AbstractString`: The id of the resource to delete.
 
 # Returns
 `true` if the record was successfully deleted, `false` otherwise.
 """
-function delete_resource(id::Integer)::Bool
+function delete_resource(id::AbstractString)::Bool
     resource = get_resource(id)
     if isnothing(resource)
         return false
@@ -188,14 +188,14 @@ function delete_resource(id::Integer)::Bool
 end
 
 """
-    read_resource_data(id::Integer)::Optional{Vector{UInt8}}
+    read_resource_data(id::AbstractString)::Optional{Vector{UInt8}}
 
 Return the raw bytes of the [`Resource`](@ref) identified by `id`, fetching them from the
 configured backend. For inline-backed rows this returns `resource.data`; for external
 backends it dereferences `resource.uri` through the trait. Returns `nothing` when the row
 does not exist.
 """
-function read_resource_data(id::Integer)::Optional{Vector{UInt8}}
+function read_resource_data(id::AbstractString)::Optional{Vector{UInt8}}
     resource = get_resource(id)
     if isnothing(resource)
         return nothing
@@ -209,7 +209,7 @@ function read_resource_data(id::Integer)::Optional{Vector{UInt8}}
 end
 
 """
-    get_project_id(resource::Resource)::Optional{Int64}
+    get_project_id(resource::Resource)::Optional{String}
 
 Return the [`Project`](@ref) id that owns the given [`Resource`](@ref) by walking up to its
 parent [`Experiment`](@ref).
@@ -220,7 +220,7 @@ parent [`Experiment`](@ref).
 # Returns
 The owning project id, or `nothing` if the parent experiment is missing.
 """
-function get_project_id(resource::Resource)::Optional{Int64}
+function get_project_id(resource::Resource)::Optional{String}
     experiment = get_experiment(resource.experiment_id)
     return isnothing(experiment) ? nothing : (get_project_id(experiment))
 end

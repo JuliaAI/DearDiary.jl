@@ -8,7 +8,7 @@ function setup_model_routes()
 
     @get root(
         "/{id}", middleware=[ProjectPermissionRequiredMiddleware(Model, ReadPermission)]
-    ) function (::HTTP.Request, id::Integer)
+    ) function (::HTTP.Request, id::String)
         response_model = get_model(id)
 
         if (isnothing(response_model))
@@ -22,7 +22,7 @@ function setup_model_routes()
     @get root(
         "/project/{project_id}",
         middleware=[ProjectPermissionRequiredMiddleware(Model, ReadPermission)],
-    ) function (request::HTTP.Request, project_id::Integer)
+    ) function (request::HTTP.Request, project_id::String)
         page = parse_pagination(request)
         return json(get_models(project_id, page); status=HTTP.StatusCodes.OK)
     end
@@ -30,7 +30,7 @@ function setup_model_routes()
     @post root(
         "/project/{project_id}",
         middleware=[ProjectPermissionRequiredMiddleware(Model, CreatePermission)],
-    ) function (::HTTP.Request, project_id::Integer, parameters::Json{ModelCreatePayload})
+    ) function (::HTTP.Request, project_id::String, parameters::Json{ModelCreatePayload})
         model_id, upsert_result = create_model(project_id, parameters.payload.name)
         if !(upsert_result === Created)
             return error_response(
@@ -49,7 +49,7 @@ function setup_model_routes()
 
     @patch root(
         "/{id}", middleware=[ProjectPermissionRequiredMiddleware(Model, UpdatePermission)]
-    ) function (::HTTP.Request, id::Integer, parameters::Json{ModelUpdatePayload})
+    ) function (::HTTP.Request, id::String, parameters::Json{ModelUpdatePayload})
         upsert_result = update_model(
             id, parameters.payload.name, parameters.payload.description
         )
@@ -65,7 +65,7 @@ function setup_model_routes()
 
     @delete root(
         "/{id}", middleware=[ProjectPermissionRequiredMiddleware(Model, DeletePermission)]
-    ) function (::HTTP.Request, id::Integer)
+    ) function (::HTTP.Request, id::String)
         success = delete_model(id)
 
         if !success

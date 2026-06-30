@@ -4,11 +4,11 @@
 A struct that represents a tag.
 
 Fields
-- `id::Int64`: The ID of the tag.
+- `id::String`: The ID of the tag.
 - `value::String`: The value of the tag.
 """
 struct Tag <: ResultType
-    id::Int64
+    id::String
     value::String
 end
 

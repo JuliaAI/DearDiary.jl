@@ -123,8 +123,8 @@ function type_from_dict(::Type{T}, data::AbstractDict)::T where {T}
 
         # The database driver hands back `missing` for NULL columns; treat it the same as
         # `nothing` when the destination field allows it. Without this branch a
-        # nullable INTEGER column (e.g. `model_version.resource_id`) would fail to
-        # `convert(::Type{Union{Nothing,Int64}}, missing)` on every fetch.
+        # nullable VARCHAR column (e.g. `model_version.resource_id`) would fail to
+        # `convert(::Type{Union{Nothing,String}}, missing)` on every fetch.
         if value isa Missing && Nothing <: field_type
             return nothing
         end

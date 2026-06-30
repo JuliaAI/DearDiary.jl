@@ -96,7 +96,9 @@ function AdminRequiredMiddleware(handle::Function)::Function
             end
         else
             @warn "Authentication is disabled. Handlers will be injected with the default admin user."
-            request.context[:user] = get(request.context, :user, get_user("default"))
+            request.context[:user] = get(
+                request.context, :user, get_user_by_username("default")
+            )
         end
         return handle(request)
     end
@@ -118,7 +120,7 @@ function SameUserOrAdminRequiredMiddleware(handle::Function)::Function
             user = request.context[:user]
             if !user.is_admin
                 segments = path_segments(request)
-                target_id = (length(segments)) >= 2 ? tryparse(Int64, segments[2]) : nothing
+                target_id = (length(segments)) >= 2 ? segments[2] : nothing
                 if isnothing(target_id)
                     return error_response(
                         NotFound,
@@ -136,7 +138,9 @@ function SameUserOrAdminRequiredMiddleware(handle::Function)::Function
             end
         else
             @warn "Authentication is disabled. Handlers will be injected with the default admin user."
-            request.context[:user] = get(request.context, :user, get_user("default"))
+            request.context[:user] = get(
+                request.context, :user, get_user_by_username("default")
+            )
         end
         return handle(request)
     end
@@ -200,7 +204,7 @@ function path_segments(request::HTTP.Request)::Vector{String}
 end
 
 """
-    get_project_id(::Type{T}, request::HTTP.Request)::Optional{Int64} where {T}
+    get_project_id(::Type{T}, request::HTTP.Request)::Optional{String} where {T}
 
 Resolve the [`Project`](@ref) id that scopes a request to entity type `T`. Each method matches
 the URL pattern of the route family (`/experiment/...`, `/iteration/...`, etc.) and walks the
@@ -213,130 +217,105 @@ entity hierarchy via the service-layer [`get_project_id`](@ref) overloads.
 
 # Returns
 The owning project id, or `nothing` if it cannot be resolved (URL does not match a known
-pattern, malformed id, or an ancestor record that no longer exists).
+pattern or an ancestor record that no longer exists).
 """
-function get_project_id(::Type{Project}, request::HTTP.Request)::Optional{Int64}
+function get_project_id(::Type{Project}, request::HTTP.Request)::Optional{String}
     segments = path_segments(request)
     (length(segments)) >= 2 || return nothing
-    return tryparse(Int64, segments[2])
+    return segments[2]
 end
 
-function get_project_id(::Type{Experiment}, request::HTTP.Request)::Optional{Int64}
+function get_project_id(::Type{Experiment}, request::HTTP.Request)::Optional{String}
     segments = path_segments(request)
     n = length(segments)
-    n >= 3 && segments[2] == "project" && return tryparse(Int64, segments[3])
+    n >= 3 && segments[2] == "project" && return segments[3]
     n >= 2 || return nothing
 
-    experiment_id = tryparse(Int64, segments[2])
-    isnothing(experiment_id) && return nothing
-    experiment = get_experiment(experiment_id)
+    experiment = get_experiment(segments[2])
     return isnothing(experiment) ? nothing : (get_project_id(experiment))
 end
 
-function get_project_id(::Type{Iteration}, request::HTTP.Request)::Optional{Int64}
+function get_project_id(::Type{Iteration}, request::HTTP.Request)::Optional{String}
     segments = path_segments(request)
     n = length(segments)
     if n >= 3 && segments[2] == "experiment"
-        experiment_id = tryparse(Int64, segments[3])
-        isnothing(experiment_id) && return nothing
-        experiment = get_experiment(experiment_id)
+        experiment = get_experiment(segments[3])
         return isnothing(experiment) ? nothing : (get_project_id(experiment))
     end
     n >= 2 || return nothing
 
-    iteration_id = tryparse(Int64, segments[2])
-    isnothing(iteration_id) && return nothing
-    iteration = get_iteration(iteration_id)
+    iteration = get_iteration(segments[2])
     return isnothing(iteration) ? nothing : (get_project_id(iteration))
 end
 
-function get_project_id(::Type{Metric}, request::HTTP.Request)::Optional{Int64}
+function get_project_id(::Type{Metric}, request::HTTP.Request)::Optional{String}
     segments = path_segments(request)
     n = length(segments)
     if n >= 3 && segments[2] == "iteration"
-        iteration_id = tryparse(Int64, segments[3])
-        isnothing(iteration_id) && return nothing
-        iteration = get_iteration(iteration_id)
+        iteration = get_iteration(segments[3])
         return isnothing(iteration) ? nothing : (get_project_id(iteration))
     end
     n >= 2 || return nothing
 
-    metric_id = tryparse(Int64, segments[2])
-    isnothing(metric_id) && return nothing
-    metric = get_metric(metric_id)
+    metric = get_metric(segments[2])
     return isnothing(metric) ? nothing : (get_project_id(metric))
 end
 
-function get_project_id(::Type{Parameter}, request::HTTP.Request)::Optional{Int64}
+function get_project_id(::Type{Parameter}, request::HTTP.Request)::Optional{String}
     segments = path_segments(request)
     n = length(segments)
     if n >= 3 && segments[2] == "iteration"
-        iteration_id = tryparse(Int64, segments[3])
-        isnothing(iteration_id) && return nothing
-        iteration = get_iteration(iteration_id)
+        iteration = get_iteration(segments[3])
         return isnothing(iteration) ? nothing : (get_project_id(iteration))
     end
     n >= 2 || return nothing
 
-    parameter_id = tryparse(Int64, segments[2])
-    isnothing(parameter_id) && return nothing
-    parameter = get_parameter(parameter_id)
+    parameter = get_parameter(segments[2])
     return isnothing(parameter) ? nothing : (get_project_id(parameter))
 end
 
-function get_project_id(::Type{Resource}, request::HTTP.Request)::Optional{Int64}
+function get_project_id(::Type{Resource}, request::HTTP.Request)::Optional{String}
     segments = path_segments(request)
     n = length(segments)
     if n >= 3 && segments[2] == "experiment"
-        experiment_id = tryparse(Int64, segments[3])
-        isnothing(experiment_id) && return nothing
-        experiment = get_experiment(experiment_id)
+        experiment = get_experiment(segments[3])
         return isnothing(experiment) ? nothing : (get_project_id(experiment))
     end
     n >= 2 || return nothing
 
-    resource_id = tryparse(Int64, segments[2])
-    isnothing(resource_id) && return nothing
-    resource = get_resource(resource_id)
+    resource = get_resource(segments[2])
     return isnothing(resource) ? nothing : (get_project_id(resource))
 end
 
-function get_project_id(::Type{Model}, request::HTTP.Request)::Optional{Int64}
+function get_project_id(::Type{Model}, request::HTTP.Request)::Optional{String}
     segments = path_segments(request)
     n = length(segments)
-    n >= 3 && segments[2] == "project" && return tryparse(Int64, segments[3])
+    n >= 3 && segments[2] == "project" && return segments[3]
     n >= 2 || return nothing
 
-    model_id = tryparse(Int64, segments[2])
-    isnothing(model_id) && return nothing
-    model = get_model(model_id)
+    model = get_model(segments[2])
     return isnothing(model) ? nothing : (get_project_id(model))
 end
 
-function get_project_id(::Type{ModelVersion}, request::HTTP.Request)::Optional{Int64}
+function get_project_id(::Type{ModelVersion}, request::HTTP.Request)::Optional{String}
     segments = path_segments(request)
     n = length(segments)
     if n >= 3 && segments[2] == "model"
-        model_id = tryparse(Int64, segments[3])
-        isnothing(model_id) && return nothing
-        model = get_model(model_id)
+        model = get_model(segments[3])
         return isnothing(model) ? nothing : (get_project_id(model))
     end
     n >= 2 || return nothing
 
-    version_id = tryparse(Int64, segments[2])
-    isnothing(version_id) && return nothing
-    version = get_modelversion(version_id)
+    version = get_modelversion(segments[2])
     return isnothing(version) ? nothing : (get_project_id(version))
 end
 
-function get_project_id(::Type{Tag}, request::HTTP.Request)::Optional{Int64}
+function get_project_id(::Type{Tag}, request::HTTP.Request)::Optional{String}
     segments = path_segments(request)
     (length(segments)) >= 3 || return nothing
 
     parent_kind = segments[2]
-    parent_id = tryparse(Int64, segments[3])
-    isnothing(parent_id) && return nothing
+    parent_id = segments[3]
 
     parent_kind == "project" && return parent_id
     if parent_kind == "experiment"
@@ -350,11 +329,11 @@ function get_project_id(::Type{Tag}, request::HTTP.Request)::Optional{Int64}
     return nothing
 end
 
-function get_project_id(::Type{UserPermission}, request::HTTP.Request)::Optional{Int64}
+function get_project_id(::Type{UserPermission}, request::HTTP.Request)::Optional{String}
     segments = path_segments(request)
     (length(segments)) >= 2 || return nothing
     segments[1] == "project" || return nothing
-    return tryparse(Int64, segments[2])
+    return segments[2]
 end
 
 """
@@ -407,7 +386,9 @@ function ProjectPermissionRequiredMiddleware(
                 end
             else
                 @warn "Authentication is disabled. Handlers will be injected with the default admin user."
-                request.context[:user] = get(request.context, :user, get_user("default"))
+                request.context[:user] = get(
+                    request.context, :user, get_user_by_username("default")
+                )
             end
             return handle(request)
         end

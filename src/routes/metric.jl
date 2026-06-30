@@ -8,7 +8,7 @@ function setup_metric_routes()
 
     @get root(
         "/{id}", middleware=[ProjectPermissionRequiredMiddleware(Metric, ReadPermission)]
-    ) function (::HTTP.Request, id::Integer)
+    ) function (::HTTP.Request, id::String)
         response_metric = get_metric(id)
 
         if (isnothing(response_metric))
@@ -22,7 +22,7 @@ function setup_metric_routes()
     @get root(
         "/iteration/{iteration_id}",
         middleware=[ProjectPermissionRequiredMiddleware(Metric, ReadPermission)],
-    ) function (request::HTTP.Request, iteration_id::Integer)
+    ) function (request::HTTP.Request, iteration_id::String)
         page = parse_pagination(request)
         return json(get_metrics(iteration_id, page); status=HTTP.StatusCodes.OK)
     end
@@ -30,9 +30,7 @@ function setup_metric_routes()
     @post root(
         "/iteration/{iteration_id}",
         middleware=[ProjectPermissionRequiredMiddleware(Metric, CreatePermission)],
-    ) function (
-        ::HTTP.Request, iteration_id::Integer, parameters::Json{MetricCreatePayload}
-    )
+    ) function (::HTTP.Request, iteration_id::String, parameters::Json{MetricCreatePayload})
         metric_id, upsert_result = create_metric(
             iteration_id,
             parameters.payload.key,
@@ -53,7 +51,7 @@ function setup_metric_routes()
     @post root(
         "/iteration/{iteration_id}/batch",
         middleware=[ProjectPermissionRequiredMiddleware(Metric, CreatePermission)],
-    ) function (::HTTP.Request, iteration_id::Integer, parameters::Json{MetricBatchPayload})
+    ) function (::HTTP.Request, iteration_id::String, parameters::Json{MetricBatchPayload})
         # `MetricBatchPayload` carries an ordered array so the inserted ids align with the
         # client-side iteration order, which retries can use to determine what landed.
         items = Dict{String,Float64}(
@@ -77,7 +75,7 @@ function setup_metric_routes()
 
     @patch root(
         "/{id}", middleware=[ProjectPermissionRequiredMiddleware(Metric, UpdatePermission)]
-    ) function (::HTTP.Request, id::Integer, parameters::Json{MetricUpdatePayload})
+    ) function (::HTTP.Request, id::String, parameters::Json{MetricUpdatePayload})
         upsert_result = update_metric(
             id,
             parameters.payload.key,
@@ -97,7 +95,7 @@ function setup_metric_routes()
 
     @delete root(
         "/{id}", middleware=[ProjectPermissionRequiredMiddleware(Metric, DeletePermission)]
-    ) function (::HTTP.Request, id::Integer)
+    ) function (::HTTP.Request, id::String)
         success = delete_metric(id)
 
         if !success

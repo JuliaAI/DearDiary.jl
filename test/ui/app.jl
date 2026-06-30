@@ -1,7 +1,7 @@
 @testset verbose = true "ui/app helpers" begin
     @testset "_iteration_title" begin
         @with_deardiary_test_db begin
-            user = DearDiary.get_user("default")
+            user = DearDiary.get_user_by_username("default")
             project_id, _ = DearDiary.create_project(user.id, "MyProject")
             experiment_id, _ = DearDiary.create_experiment(
                 project_id, DearDiary.IN_PROGRESS, "IrisClassifier"
@@ -9,12 +9,14 @@
             iteration_id, _ = DearDiary.create_iteration(experiment_id)
 
             @test DearDiary._iteration_title(nothing) == "DearDiary"
+            # The title uses the per-experiment ordinal, not the opaque UUID; this is the
+            # experiment's first (and only) iteration, so ordinal 1.
             @test DearDiary._iteration_title(iteration_id) ==
-                "#$(iteration_id) · IrisClassifier · DearDiary"
+                "#1 · IrisClassifier · DearDiary"
 
-            missing_id = iteration_id + 9999
+            missing_id = "00000000-0000-0000-0000-000000000000"
             @test DearDiary._iteration_title(missing_id) ==
-                "Iteration #$(missing_id) not found · DearDiary"
+                "Iteration not found · DearDiary"
         end
     end
 
@@ -35,7 +37,7 @@
 
     @testset "_build_metrics_figure renders inline SVG without external JS" begin
         @with_deardiary_test_db begin
-            user = DearDiary.get_user("default")
+            user = DearDiary.get_user_by_username("default")
             project_id, _ = DearDiary.create_project(user.id, "ChartProject")
             experiment_id, _ = DearDiary.create_experiment(
                 project_id, DearDiary.IN_PROGRESS, "Experiment"
@@ -78,7 +80,7 @@
 
     @testset "_build_metrics_figure handles a single-point series without div-by-zero" begin
         @with_deardiary_test_db begin
-            user = DearDiary.get_user("default")
+            user = DearDiary.get_user_by_username("default")
             project_id, _ = DearDiary.create_project(user.id, "P")
             experiment_id, _ = DearDiary.create_experiment(
                 project_id, DearDiary.IN_PROGRESS, "E"
@@ -146,7 +148,7 @@
 
     @testset "sidebar labels iterations as 'Iteration N · time' with glyph" begin
         @with_deardiary_test_db begin
-            user = DearDiary.get_user("default")
+            user = DearDiary.get_user_by_username("default")
             project_id, _ = DearDiary.create_project(user.id, "Project")
             experiment_id, _ = DearDiary.create_experiment(
                 project_id, DearDiary.IN_PROGRESS, "Experiment"
@@ -155,7 +157,7 @@
             DearDiary.create_iteration(experiment_id)
             DearDiary.create_iteration(experiment_id)
 
-            selected = DearDiary.Observables.Observable{DearDiary.Optional{Int64}}(nothing)
+            selected = DearDiary.Observables.Observable{DearDiary.Optional{String}}(nothing)
             sidebar = DearDiary._render_sidebar(user, selected)
             html = sprint(show, MIME("text/html"), sidebar)
 
@@ -169,6 +171,99 @@
             @test occursin("▶", html)
             # Relative-time suffix renders.
             @test occursin("just now", html) || occursin("ago", html)
+        end
+    end
+
+    @testset "sidebar rows wire the click-driven selection highlight" begin
+        @with_deardiary_test_db begin
+            user = DearDiary.get_user_by_username("default")
+            project_id, _ = DearDiary.create_project(user.id, "HlProject")
+            experiment_id, _ = DearDiary.create_experiment(
+                project_id, DearDiary.IN_PROGRESS, "HlExp"
+            )
+            DearDiary.create_iteration(experiment_id)
+
+            selected = DearDiary.Observables.Observable{DearDiary.Optional{String}}(nothing)
+            html = sprint(
+                show, MIME("text/html"), DearDiary._render_sidebar(user, selected)
+            )
+
+            # The click handler toggles the active class on the client.
+            @test occursin("dd-iter-active", html)
+            @test occursin("classList", html)
+            # The highlight style is defined.
+            @test occursin("dd-iter-active", DearDiary._UI_STYLES)
+        end
+    end
+
+    @testset "_format_duration formats across the unit ladder" begin
+        @test DearDiary._format_duration(DearDiary.Dates.Millisecond(500)) == "500 ms"
+        @test DearDiary._format_duration(DearDiary.Dates.Millisecond(1060)) == "1.06s"
+        @test DearDiary._format_duration(DearDiary.Dates.Millisecond(90000)) == "1m 30s"
+        @test DearDiary._format_duration(DearDiary.Dates.Millisecond(3_660_000)) == "1h 1m"
+    end
+
+    @testset "iteration header surfaces duration, notes, and tags" begin
+        @with_deardiary_test_db begin
+            user = DearDiary.get_user_by_username("default")
+            project_id, _ = DearDiary.create_project(user.id, "HdrProject")
+            experiment_id, _ = DearDiary.create_experiment(
+                project_id, DearDiary.IN_PROGRESS, "HdrExp"
+            )
+            iteration_id, _ = DearDiary.create_iteration(experiment_id)
+            DearDiary.add_tag(DearDiary.Iteration, iteration_id, "baseline")
+            DearDiary.update_iteration(
+                iteration_id, "first run", now(), DearDiary.SUCCEEDED
+            )
+            iteration = DearDiary.get_iteration(iteration_id)
+
+            html = sprint(
+                show, MIME("text/html"), DearDiary._render_iteration_header(iteration)
+            )
+            @test occursin("Duration:", html)
+            @test occursin("Notes:", html)
+            @test occursin("first run", html)
+            @test occursin("Tags:", html)
+            @test occursin("baseline", html)
+            @test occursin("dd-tag", html)
+        end
+    end
+
+    @testset "environment card surfaces the captured snapshot" begin
+        @with_deardiary_test_db begin
+            user = DearDiary.get_user_by_username("default")
+            project_id, _ = DearDiary.create_project(user.id, "EnvProject")
+            experiment_id, _ = DearDiary.create_experiment(
+                project_id, DearDiary.IN_PROGRESS, "EnvExp"
+            )
+
+            # No snapshot captured yet → explicit empty state.
+            bare_id, _ = DearDiary.create_iteration(experiment_id)
+            bare = DearDiary.get_iteration(bare_id)
+            bare_html = sprint(
+                show, MIME("text/html"), DearDiary._render_environment_card(bare)
+            )
+            @test occursin("Environment", bare_html)
+            @test occursin("No environment captured.", bare_html)
+
+            # With a captured (here, hand-set) snapshot → fields render, dirty flag shows.
+            snap_id, _ = DearDiary.create_iteration(experiment_id)
+            DearDiary.update(
+                DearDiary.Iteration,
+                snap_id;
+                julia_version="1.11.0",
+                git_sha="abc1234",
+                git_dirty=1,
+                entrypoint="train.jl",
+            )
+            snap = DearDiary.get_iteration(snap_id)
+            snap_html = sprint(
+                show, MIME("text/html"), DearDiary._render_environment_card(snap)
+            )
+            @test occursin("1.11.0", snap_html)
+            @test occursin("abc1234", snap_html)
+            @test occursin("dirty", snap_html)
+            @test occursin("train.jl", snap_html)
         end
     end
 end

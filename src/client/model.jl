@@ -1,11 +1,11 @@
 """
-    get_model(client::Client, id::Integer)::Optional{Model}
+    get_model(client::Client, id::AbstractString)::Optional{Model}
 
 Fetch a [`Model`](@ref) via `GET /model/{id}`. Returns `nothing` when the server replies 404
 (record missing or viewer lacks [`ReadPermission`](@ref) on the owning project) and raises
 [`ClientError`](@ref) for other failures.
 """
-function get_model(client::Client, id::Integer)::Optional{Model}
+function get_model(client::Client, id::AbstractString)::Optional{Model}
     try
         return Model(_json(_request(client, "GET", "/model/$id")))
     catch err
@@ -15,24 +15,24 @@ function get_model(client::Client, id::Integer)::Optional{Model}
 end
 
 """
-    get_models(client::Client, project_id::Integer)::Array{Model,1}
+    get_models(client::Client, project_id::AbstractString)::Array{Model,1}
 
 Returns the first page (default limit) of [`Model`](@ref) records under `project_id`,
 discarding the pagination envelope.
 """
-function get_models(client::Client, project_id::Integer)::Array{Model,1}
+function get_models(client::Client, project_id::AbstractString)::Array{Model,1}
     return get_models(client, project_id, Pagination(50, 0)).data
 end
 
 """
-    get_models(client::Client, project_id::Integer, page::Pagination)::PaginatedResponse{Model}
+    get_models(client::Client, project_id::AbstractString, page::Pagination)::PaginatedResponse{Model}
 
 Fetch a page of [`Model`](@ref) records under `project_id` via
 `GET /model/project/{project_id}?limit=…&offset=…`. Requires [`ReadPermission`](@ref) on the
 project.
 """
 function get_models(
-    client::Client, project_id::Integer, page::Pagination
+    client::Client, project_id::AbstractString, page::Pagination
 )::PaginatedResponse{Model}
     response = _request(
         client,
@@ -44,17 +44,17 @@ function get_models(
 end
 
 """
-    create_model(client::Client, project_id::Integer, name::AbstractString; description=nothing)::Int64
+    create_model(client::Client, project_id::AbstractString, name::AbstractString; description=nothing)::String
 
 Register a [`Model`](@ref) under `project_id` via `POST /model/project/{project_id}`.
 Requires [`CreatePermission`](@ref) on the project. Returns the new model id.
 """
 function create_model(
     client::Client,
-    project_id::Integer,
+    project_id::AbstractString,
     name::AbstractString;
     description::Optional{AbstractString}=nothing,
-)::Int64
+)::String
     response = _request(
         client,
         "POST",
@@ -65,14 +65,14 @@ function create_model(
 end
 
 """
-    update_model(client::Client, id::Integer; name=nothing, description=nothing)::Nothing
+    update_model(client::Client, id::AbstractString; name=nothing, description=nothing)::Nothing
 
 Patch a [`Model`](@ref) via `PATCH /model/{id}`. Any keyword left as `nothing` is left
 untouched server-side. Requires [`UpdatePermission`](@ref) on the owning project.
 """
 function update_model(
     client::Client,
-    id::Integer;
+    id::AbstractString;
     name::Optional{AbstractString}=nothing,
     description::Optional{AbstractString}=nothing,
 )::Nothing
@@ -86,13 +86,13 @@ function update_model(
 end
 
 """
-    delete_model(client::Client, id::Integer)::Nothing
+    delete_model(client::Client, id::AbstractString)::Nothing
 
 Delete a [`Model`](@ref) (and cascade its [`ModelVersion`](@ref)s) via `DELETE /model/{id}`.
 The underlying [`Resource`](@ref) artifacts are not removed. Requires
 [`DeletePermission`](@ref) on the owning project.
 """
-function delete_model(client::Client, id::Integer)::Nothing
+function delete_model(client::Client, id::AbstractString)::Nothing
     _request(client, "DELETE", "/model/$id")
     return nothing
 end

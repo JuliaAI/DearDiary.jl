@@ -1,5 +1,9 @@
 @with_deardiary_test_db begin
     @testset verbose = true "parameter routes" begin
+        iteration_id = ""
+        parameter_id = ""
+        second_parameter_id = ""
+
         @testset verbose = true "create parameter" begin
             project_payload = JSON.json(Dict("name" => "Parameter Project"))
             project_response = HTTP.post(
@@ -40,32 +44,37 @@
 
             @test response.status == HTTP.StatusCodes.CREATED
             data = JSON.parse(String(response.body), Dict{String,Any})
-            @test data["parameter_id"] == 1
+            parameter_id = data["parameter_id"]
+            @test parameter_id isa String
         end
 
         @testset verbose = true "get parameter by id" begin
-            response = HTTP.get("http://127.0.0.1:9000/parameter/1"; status_exception=false)
+            response = HTTP.get(
+                "http://127.0.0.1:9000/parameter/$(parameter_id)"; status_exception=false
+            )
 
             @test response.status == HTTP.StatusCodes.OK
             data = JSON.parse(String(response.body), Dict{String,Any})
             parameter = DearDiary.Parameter(data)
 
-            @test parameter.id isa Int
-            @test parameter.iteration_id == 1
+            @test parameter.id isa String
+            @test parameter.iteration_id == iteration_id
             @test parameter.key == "learning_rate"
             @test parameter.value == "0.01"
         end
 
         @testset verbose = true "get parameters" begin
             payload = JSON.json(Dict("key" => "batch_size", "value" => "32"))
-            HTTP.post(
-                "http://127.0.0.1:9000/parameter/iteration/1";
+            r = HTTP.post(
+                "http://127.0.0.1:9000/parameter/iteration/$(iteration_id)";
                 body=payload,
                 status_exception=false,
             )
+            second_parameter_id = JSON.parse(String(r.body), Dict{String,Any})["parameter_id"]
 
             response = HTTP.get(
-                "http://127.0.0.1:9000/parameter/iteration/1"; status_exception=false
+                "http://127.0.0.1:9000/parameter/iteration/$(iteration_id)";
+                status_exception=false,
             )
 
             @test response.status == HTTP.StatusCodes.OK
@@ -82,14 +91,19 @@
         @testset verbose = true "update parameter" begin
             payload = JSON.json(Dict("key" => "batch_size", "value" => "64"))
             response = HTTP.patch(
-                "http://127.0.0.1:9000/parameter/2"; body=payload, status_exception=false
+                "http://127.0.0.1:9000/parameter/$(second_parameter_id)";
+                body=payload,
+                status_exception=false,
             )
 
             @test response.status == HTTP.StatusCodes.OK
             data = JSON.parse(String(response.body), Dict{String,Any})
             @test data["message"] == "UPDATED"
 
-            response = HTTP.get("http://127.0.0.1:9000/parameter/2"; status_exception=false)
+            response = HTTP.get(
+                "http://127.0.0.1:9000/parameter/$(second_parameter_id)";
+                status_exception=false,
+            )
             data = JSON.parse(String(response.body), Dict{String,Any})
             parameter = DearDiary.Parameter(data)
 
@@ -99,7 +113,8 @@
 
         @testset verbose = true "delete parameter" begin
             response = HTTP.delete(
-                "http://127.0.0.1:9000/parameter/2"; status_exception=false
+                "http://127.0.0.1:9000/parameter/$(second_parameter_id)";
+                status_exception=false,
             )
             @test response.status == HTTP.StatusCodes.OK
             data = JSON.parse(String(response.body), Dict{String,Any})

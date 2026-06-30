@@ -1,3 +1,4 @@
+const _NAMED_PARAM = r":([A-Za-z_][A-Za-z0-9_]*)"
 """
     duckdbify(query::AbstractString)::String
 
@@ -6,7 +7,6 @@ rejects the `:name` syntax that the rest of the repository (and `DBInterface` co
 writes, so every query is normalized at this single execute choke point rather than editing
 each SQL constant. DDL strings contain no `:` tokens, so this is a no-op for them.
 """
-const _NAMED_PARAM = r":([A-Za-z_][A-Za-z0-9_]*)"
 duckdbify(query::AbstractString)::String = replace(query, _NAMED_PARAM => s"$\1")
 
 """
@@ -83,7 +83,7 @@ function fetch_page(
 end
 
 """
-    insert(query::AbstractString, parameters::NamedTuple)::NamedTuple{id::Optional{<:Int64},status::DataType}
+    insert(query::AbstractString, parameters::NamedTuple)::NamedTuple{id::Optional{String},status::DataType}
 
 Execute an INSERT and return the new row id with a status code.
 
@@ -98,7 +98,7 @@ A named tuple `(id, status)` where `status` is one of [`Created`](@ref),
 """
 function insert(
     query::AbstractString, parameters::NamedTuple
-)::@NamedTuple{id::Optional{<:Int64}, status::DataType}
+)::@NamedTuple{id::Optional{String}, status::DataType}
     try
         result = DBInterface.execute(get_database(), duckdbify(query), parameters)
         record_id = first(Tables.namedtupleiterator(result)).id
@@ -161,11 +161,11 @@ function update(
 end
 
 """
-    delete(query::AbstractString, id::Integer)::Bool
+    delete(query::AbstractString, id::AbstractString)::Bool
 
 Execute a DELETE for the row identified by `id`. Returns `true` on success, `false` on error.
 """
-function delete(query::AbstractString, id::Integer)::Bool
+function delete(query::AbstractString, id::AbstractString)::Bool
     try
         DBInterface.execute(get_database(), duckdbify(query), (id=id,))
         return true

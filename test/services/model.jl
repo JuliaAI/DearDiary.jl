@@ -2,24 +2,27 @@
     @testset verbose = true "model service" begin
         @testset verbose = true "create model" begin
             @testset "with existing project" begin
-                user = DearDiary.get_user("default")
+                user = DearDiary.get_user_by_username("default")
                 project_id, _ = DearDiary.create_project(user.id, "Service Model Project")
 
                 model_id, result = DearDiary.create_model(project_id, "fraud-classifier")
 
-                @test model_id isa Integer
+                @test model_id isa String
+                @test !isempty(model_id)
                 @test result === DearDiary.Created
             end
 
             @testset "with non-existing project" begin
-                model_id, result = DearDiary.create_model(9999, "orphan-model")
+                model_id, result = DearDiary.create_model(
+                    "00000000-0000-0000-0000-000000000000", "orphan-model"
+                )
 
                 @test isnothing(model_id)
                 @test result === DearDiary.Unprocessable
             end
 
             @testset "duplicate name within project" begin
-                user = DearDiary.get_user("default")
+                user = DearDiary.get_user_by_username("default")
                 project_id, _ = DearDiary.create_project(user.id, "Service Model Project")
                 DearDiary.create_model(project_id, "fraud-classifier")
 
@@ -31,7 +34,7 @@
         end
 
         @testset verbose = true "get model" begin
-            user = DearDiary.get_user("default")
+            user = DearDiary.get_user_by_username("default")
             project_id, _ = DearDiary.create_project(user.id, "Service Model Project")
             model_id, _ = DearDiary.create_model(project_id, "fraud-classifier")
 
@@ -42,11 +45,11 @@
             @test model.project_id == project_id
             @test model.name == "fraud-classifier"
 
-            @test isnothing(DearDiary.get_model(9999))
+            @test isnothing(DearDiary.get_model("00000000-0000-0000-0000-000000000000"))
         end
 
         @testset verbose = true "get models" begin
-            user = DearDiary.get_user("default")
+            user = DearDiary.get_user_by_username("default")
             project_id, _ = DearDiary.create_project(user.id, "Service Model Project")
             DearDiary.create_model(project_id, "m1")
             DearDiary.create_model(project_id, "m2")
@@ -58,7 +61,7 @@
         end
 
         @testset verbose = true "get models paginated" begin
-            user = DearDiary.get_user("default")
+            user = DearDiary.get_user_by_username("default")
             project_id, _ = DearDiary.create_project(user.id, "Pagination Model Project")
             for i in 1:5
                 DearDiary.create_model(project_id, "model-$(i)")
@@ -73,7 +76,7 @@
 
         @testset verbose = true "update model" begin
             @testset "with existing id" begin
-                user = DearDiary.get_user("default")
+                user = DearDiary.get_user_by_username("default")
                 project_id, _ = DearDiary.create_project(user.id, "Service Model Project")
                 model_id, _ = DearDiary.create_model(project_id, "fraud-classifier")
 
@@ -88,13 +91,15 @@
             end
 
             @testset "with non-existing id" begin
-                result = DearDiary.update_model(9999, "x", "y")
+                result = DearDiary.update_model(
+                    "00000000-0000-0000-0000-000000000000", "x", "y"
+                )
                 @test result === DearDiary.Unprocessable
             end
         end
 
         @testset verbose = true "delete model cascades versions" begin
-            user = DearDiary.get_user("default")
+            user = DearDiary.get_user_by_username("default")
             project_id, _ = DearDiary.create_project(user.id, "Service Model Project")
             experiment_id, _ = DearDiary.create_experiment(
                 project_id, DearDiary.IN_PROGRESS, "Exp"
@@ -110,7 +115,7 @@
         end
 
         @testset verbose = true "get project id" begin
-            user = DearDiary.get_user("default")
+            user = DearDiary.get_user_by_username("default")
             project_id, _ = DearDiary.create_project(user.id, "Service Model Project")
             model_id, _ = DearDiary.create_model(project_id, "fraud-classifier")
 

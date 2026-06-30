@@ -1,5 +1,9 @@
 @with_deardiary_test_db begin
     @testset verbose = true "metric routes" begin
+        iteration_id = ""
+        metric_id = ""
+        second_metric_id = ""
+
         @testset verbose = true "create metric" begin
             project_payload = JSON.json(Dict("name" => "Metric Project"))
             project_response = HTTP.post(
@@ -40,32 +44,37 @@
 
             @test response.status == HTTP.StatusCodes.CREATED
             data = JSON.parse(String(response.body), Dict{String,Any})
-            @test data["metric_id"] == 1
+            metric_id = data["metric_id"]
+            @test metric_id isa String
         end
 
         @testset verbose = true "get metric by id" begin
-            response = HTTP.get("http://127.0.0.1:9000/metric/1"; status_exception=false)
+            response = HTTP.get(
+                "http://127.0.0.1:9000/metric/$(metric_id)"; status_exception=false
+            )
 
             @test response.status == HTTP.StatusCodes.OK
             data = JSON.parse(String(response.body), Dict{String,Any})
             metric = DearDiary.Metric(data)
 
-            @test metric.id isa Int
-            @test metric.iteration_id == 1
+            @test metric.id isa String
+            @test metric.iteration_id == iteration_id
             @test metric.key == "accuracy"
             @test metric.value == 0.92
         end
 
         @testset verbose = true "get metrics" begin
             payload = JSON.json(Dict("key" => "loss", "value" => 0.15))
-            HTTP.post(
-                "http://127.0.0.1:9000/metric/iteration/1";
+            r = HTTP.post(
+                "http://127.0.0.1:9000/metric/iteration/$(iteration_id)";
                 body=payload,
                 status_exception=false,
             )
+            second_metric_id = JSON.parse(String(r.body), Dict{String,Any})["metric_id"]
 
             response = HTTP.get(
-                "http://127.0.0.1:9000/metric/iteration/1"; status_exception=false
+                "http://127.0.0.1:9000/metric/iteration/$(iteration_id)";
+                status_exception=false,
             )
 
             @test response.status == HTTP.StatusCodes.OK
@@ -82,14 +91,18 @@
         @testset verbose = true "update metric" begin
             payload = JSON.json(Dict("key" => "loss", "value" => 0.10))
             response = HTTP.patch(
-                "http://127.0.0.1:9000/metric/2"; body=payload, status_exception=false
+                "http://127.0.0.1:9000/metric/$(second_metric_id)";
+                body=payload,
+                status_exception=false,
             )
 
             @test response.status == HTTP.StatusCodes.OK
             data = JSON.parse(String(response.body), Dict{String,Any})
             @test data["message"] == "UPDATED"
 
-            response = HTTP.get("http://127.0.0.1:9000/metric/2"; status_exception=false)
+            response = HTTP.get(
+                "http://127.0.0.1:9000/metric/$(second_metric_id)"; status_exception=false
+            )
             data = JSON.parse(String(response.body), Dict{String,Any})
             metric = DearDiary.Metric(data)
 
@@ -98,14 +111,15 @@
         end
 
         @testset verbose = true "delete metric" begin
-            response = HTTP.delete("http://127.0.0.1:9000/metric/2"; status_exception=false)
+            response = HTTP.delete(
+                "http://127.0.0.1:9000/metric/$(second_metric_id)"; status_exception=false
+            )
             @test response.status == HTTP.StatusCodes.OK
             data = JSON.parse(String(response.body), Dict{String,Any})
             @test data["message"] == "OK"
         end
 
         @testset verbose = true "create metric persists step and recorded_at" begin
-            # Iteration 1 already exists from earlier in this testset.
             payload = JSON.json(
                 Dict(
                     "key" => "f1",
@@ -115,15 +129,15 @@
                 ),
             )
             response = HTTP.post(
-                "http://127.0.0.1:9000/metric/iteration/1";
+                "http://127.0.0.1:9000/metric/iteration/$(iteration_id)";
                 body=payload,
                 status_exception=false,
             )
             @test response.status == HTTP.StatusCodes.CREATED
-            metric_id = JSON.parse(String(response.body), Dict{String,Any})["metric_id"]
+            step_metric_id = JSON.parse(String(response.body), Dict{String,Any})["metric_id"]
 
             response = HTTP.get(
-                "http://127.0.0.1:9000/metric/$(metric_id)"; status_exception=false
+                "http://127.0.0.1:9000/metric/$(step_metric_id)"; status_exception=false
             )
             metric = DearDiary.Metric(JSON.parse(String(response.body), Dict{String,Any}))
             @test metric.step == 9
@@ -143,7 +157,7 @@
                 ),
             )
             response = HTTP.post(
-                "http://127.0.0.1:9000/metric/iteration/1/batch";
+                "http://127.0.0.1:9000/metric/iteration/$(iteration_id)/batch";
                 body=payload,
                 status_exception=false,
             )

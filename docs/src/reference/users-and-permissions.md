@@ -3,6 +3,7 @@
 ## Users
 ```@docs
 get_user
+get_user_by_username
 get_users
 create_user
 update_user

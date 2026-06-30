@@ -25,12 +25,13 @@ const SQL_SELECT_ITERATIONS_BY_EXPERIMENT_ID = """
     SELECT
         $(_SQL_ITERATION_COLUMNS)
     FROM iteration i WHERE i.experiment_id = :id
+    ORDER BY i.created_date ASC
     """
 
 const SQL_SELECT_ITERATIONS_BY_PARENT_ID = """
     SELECT
         $(_SQL_ITERATION_COLUMNS)
-    FROM iteration i WHERE i.parent_iteration_id = :id ORDER BY i.id ASC
+    FROM iteration i WHERE i.parent_iteration_id = :id ORDER BY i.created_date ASC
     """
 
 const SQL_COUNT_ITERATIONS_BY_EXPERIMENT_ID = """

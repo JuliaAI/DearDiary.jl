@@ -18,6 +18,7 @@ const SQL_SELECT_MODELS_BY_PROJECT_ID = """
         m.created_date,
         m.updated_date
     FROM model m WHERE m.project_id = :id
+    ORDER BY m.created_date ASC
     """
 
 const SQL_COUNT_MODELS_BY_PROJECT_ID = """

@@ -2,18 +2,19 @@
     @testset verbose = true "model repository" begin
         @testset verbose = true "insert" begin
             @testset "with existing project" begin
-                user = DearDiary.get_user("default")
+                user = DearDiary.get_user_by_username("default")
                 project_id, _ = DearDiary.create_project(user.id, "Model Project")
 
                 id, status = DearDiary.insert(
                     DearDiary.Model, project_id, "fraud-classifier"
                 )
-                @test id isa Integer
+                @test id isa String
+                @test !isempty(id)
                 @test status === DearDiary.Created
             end
 
             @testset "with duplicate name in project" begin
-                user = DearDiary.get_user("default")
+                user = DearDiary.get_user_by_username("default")
                 project_id, _ = DearDiary.create_project(user.id, "Model Project")
                 DearDiary.insert(DearDiary.Model, project_id, "fraud-classifier")
 
@@ -25,7 +26,11 @@
             end
 
             @testset "with non-existing project" begin
-                id, status = DearDiary.insert(DearDiary.Model, 9999, "orphan-classifier")
+                id, status = DearDiary.insert(
+                    DearDiary.Model,
+                    "00000000-0000-0000-0000-000000000000",
+                    "orphan-classifier",
+                )
                 @test isnothing(id)
                 @test status === DearDiary.Unprocessable
             end
@@ -33,7 +38,7 @@
 
         @testset verbose = true "fetch" begin
             @testset "existing model" begin
-                user = DearDiary.get_user("default")
+                user = DearDiary.get_user_by_username("default")
                 project_id, _ = DearDiary.create_project(user.id, "Model Project")
                 model_id, _ = DearDiary.insert(
                     DearDiary.Model, project_id, "fraud-classifier"
@@ -49,12 +54,14 @@
             end
 
             @testset "non-existing model" begin
-                @test isnothing(DearDiary.fetch(DearDiary.Model, 9999))
+                @test isnothing(
+                    DearDiary.fetch(DearDiary.Model, "00000000-0000-0000-0000-000000000000")
+                )
             end
         end
 
         @testset verbose = true "fetch all" begin
-            user = DearDiary.get_user("default")
+            user = DearDiary.get_user_by_username("default")
             project_id, _ = DearDiary.create_project(user.id, "Model Project")
             DearDiary.insert(DearDiary.Model, project_id, "m1")
             DearDiary.insert(DearDiary.Model, project_id, "m2")
@@ -66,7 +73,7 @@
         end
 
         @testset verbose = true "update" begin
-            user = DearDiary.get_user("default")
+            user = DearDiary.get_user_by_username("default")
             project_id, _ = DearDiary.create_project(user.id, "Model Project")
             model_id, _ = DearDiary.insert(DearDiary.Model, project_id, "fraud-classifier")
 
@@ -84,7 +91,7 @@
         end
 
         @testset verbose = true "delete" begin
-            user = DearDiary.get_user("default")
+            user = DearDiary.get_user_by_username("default")
             project_id, _ = DearDiary.create_project(user.id, "Model Project")
             model_id, _ = DearDiary.insert(DearDiary.Model, project_id, "fraud-classifier")
 

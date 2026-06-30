@@ -1,7 +1,7 @@
 @with_deardiary_test_db begin
     @testset verbose = true "model version service" begin
         function _scaffold(; project_name::AbstractString="ModelVersion Service Project")
-            user = DearDiary.get_user("default")
+            user = DearDiary.get_user_by_username("default")
             project_id, _ = DearDiary.create_project(user.id, project_name)
             experiment_id, _ = DearDiary.create_experiment(
                 project_id, DearDiary.IN_PROGRESS, "Experiment"
@@ -19,7 +19,8 @@
                     model_id, iteration_id, nothing, ""
                 )
 
-                @test version_id isa Integer
+                @test version_id isa String
+                @test !isempty(version_id)
                 @test result === DearDiary.Created
 
                 version = DearDiary.get_modelversion(version_id)
@@ -43,7 +44,7 @@
                 _, _, iteration_id, _ = _scaffold()
 
                 version_id, result = DearDiary.create_modelversion(
-                    9999, iteration_id, nothing, ""
+                    "00000000-0000-0000-0000-000000000000", iteration_id, nothing, ""
                 )
                 @test isnothing(version_id)
                 @test result === DearDiary.Unprocessable
@@ -53,7 +54,7 @@
                 _, _, _, model_id = _scaffold()
 
                 version_id, result = DearDiary.create_modelversion(
-                    model_id, 9999, nothing, ""
+                    model_id, "00000000-0000-0000-0000-000000000000", nothing, ""
                 )
                 @test isnothing(version_id)
                 @test result === DearDiary.Unprocessable
@@ -73,7 +74,7 @@
             @testset "resource belongs to a different project" begin
                 _, _, iteration_id, model_id = _scaffold()
                 # Create a resource under a sibling project.
-                user = DearDiary.get_user("default")
+                user = DearDiary.get_user_by_username("default")
                 other_project_id, _ = DearDiary.create_project(user.id, "Other Project 2")
                 other_experiment_id, _ = DearDiary.create_experiment(
                     other_project_id, DearDiary.IN_PROGRESS, "Other Exp"
@@ -143,7 +144,10 @@
 
             @testset "non-existing id" begin
                 result = DearDiary.update_modelversion(
-                    9999, DearDiary.STAGING, nothing, nothing
+                    "00000000-0000-0000-0000-000000000000",
+                    DearDiary.STAGING,
+                    nothing,
+                    nothing,
                 )
                 @test result === DearDiary.Unprocessable
             end

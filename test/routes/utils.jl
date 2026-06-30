@@ -104,7 +104,7 @@
                 ),
                 Dict{String,Any},
             )["access_token"]
-            missy = DearDiary.get_user("missy")
+            missy = DearDiary.get_user_by_username("missy")
             missy_headers = Dict("Authorization" => "Bearer $missy_token")
 
             @testset "user can read own profile" begin
@@ -181,7 +181,7 @@
                 )),
                 status_exception=false,
             )
-            promo = DearDiary.get_user("promo")
+            promo = DearDiary.get_user_by_username("promo")
             promo_token = JSON.parse(
                 String(
                     HTTP.post(
@@ -207,7 +207,7 @@
                 @test response.status == HTTP.StatusCodes.FORBIDDEN
                 data = JSON.parse(String(response.body), Dict{String,Any})
                 @test data["code"] == "ADMIN_REQUIRED"
-                @test DearDiary.get_user("promo").is_admin == false
+                @test DearDiary.get_user_by_username("promo").is_admin == false
             end
 
             @testset "non-admin can still edit own non-privileged fields" begin
@@ -219,7 +219,7 @@
                 )
 
                 @test response.status == HTTP.StatusCodes.OK
-                refreshed = DearDiary.get_user("promo")
+                refreshed = DearDiary.get_user_by_username("promo")
                 @test refreshed.first_name == "Renamed"
                 @test refreshed.is_admin == false
             end
@@ -233,7 +233,7 @@
                 )
 
                 @test response.status == HTTP.StatusCodes.OK
-                @test DearDiary.get_user("promo").is_admin == true
+                @test DearDiary.get_user_by_username("promo").is_admin == true
             end
         end
 
@@ -260,7 +260,7 @@
             )
             project_id = JSON.parse(String(project_response.body), Dict{String,Any})["project_id"]
 
-            missy = DearDiary.get_user("missy")
+            missy = DearDiary.get_user_by_username("missy")
             DearDiary.create_userpermission(missy.id, project_id, false, true, false, false)
 
             missy_token = JSON.parse(
@@ -387,7 +387,7 @@
             )
             experiment_id = JSON.parse(String(experiment_response.body), Dict{String,Any})["experiment_id"]
 
-            user = DearDiary.get_user("missy")
+            user = DearDiary.get_user_by_username("missy")
             user_token = JSON.parse(
                 String(
                     HTTP.post(
@@ -526,7 +526,7 @@
         end
 
         @testset verbose = true "get_project_id resolvers" begin
-            user = DearDiary.get_user("default")
+            user = DearDiary.get_user_by_username("default")
             project_id, _ = DearDiary.create_project(user.id, "Resolver Project")
             experiment_id, _ = DearDiary.create_experiment(
                 project_id, DearDiary.IN_PROGRESS, "Resolver Experiment"
@@ -633,11 +633,11 @@
                 @test DearDiary.get_project_id(
                     DearDiary.UserPermission, req("/project/$(project_id)/members")
                 ) == project_id
-                @test isnothing(
-                    DearDiary.get_project_id(
-                        DearDiary.UserPermission, req("/project/not-a-number/members")
-                    ),
-                )
+                # A project-id path segment is the project id itself, taken verbatim (ids are
+                # opaque UUID strings now). The permission middleware denies an unknown project.
+                @test DearDiary.get_project_id(
+                    DearDiary.UserPermission, req("/project/not-a-number/members")
+                ) == "not-a-number"
                 @test isnothing(
                     DearDiary.get_project_id(
                         DearDiary.UserPermission, req("/userpermission/$(project_id)")
@@ -664,11 +664,11 @@
                 @test isnothing(
                     DearDiary.get_project_id(DearDiary.Tag, req("/tag/iteration/9999"))
                 )
-                @test isnothing(
-                    DearDiary.get_project_id(
-                        DearDiary.Tag, req("/tag/project/not-a-number")
-                    ),
-                )
+                # `/tag/project/{id}` scopes by the project id verbatim (opaque UUID strings);
+                # the permission middleware denies an unknown project.
+                @test DearDiary.get_project_id(
+                    DearDiary.Tag, req("/tag/project/not-a-number")
+                ) == "not-a-number"
                 @test isnothing(
                     DearDiary.get_project_id(
                         DearDiary.Tag, req("/tag/unknown/$(project_id)")

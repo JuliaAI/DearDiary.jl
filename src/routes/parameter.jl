@@ -8,7 +8,7 @@ function setup_parameter_routes()
 
     @get root(
         "/{id}", middleware=[ProjectPermissionRequiredMiddleware(Parameter, ReadPermission)]
-    ) function (::HTTP.Request, id::Integer)
+    ) function (::HTTP.Request, id::String)
         response_parameter = get_parameter(id)
 
         if (isnothing(response_parameter))
@@ -22,7 +22,7 @@ function setup_parameter_routes()
     @get root(
         "/iteration/{iteration_id}",
         middleware=[ProjectPermissionRequiredMiddleware(Parameter, ReadPermission)],
-    ) function (request::HTTP.Request, iteration_id::Integer)
+    ) function (request::HTTP.Request, iteration_id::String)
         page = parse_pagination(request)
         return json(get_parameters(iteration_id, page); status=HTTP.StatusCodes.OK)
     end
@@ -31,7 +31,7 @@ function setup_parameter_routes()
         "/iteration/{iteration_id}",
         middleware=[ProjectPermissionRequiredMiddleware(Parameter, CreatePermission)],
     ) function (
-        ::HTTP.Request, iteration_id::Integer, parameters::Json{ParameterCreatePayload}
+        ::HTTP.Request, iteration_id::String, parameters::Json{ParameterCreatePayload}
     )
         parameter_id, upsert_result = create_parameter(
             iteration_id, parameters.payload.key, parameters.payload.value
@@ -49,7 +49,7 @@ function setup_parameter_routes()
     @patch root(
         "/{id}",
         middleware=[ProjectPermissionRequiredMiddleware(Parameter, UpdatePermission)],
-    ) function (::HTTP.Request, id::Integer, parameters::Json{ParameterUpdatePayload})
+    ) function (::HTTP.Request, id::String, parameters::Json{ParameterUpdatePayload})
         upsert_result = update_parameter(
             id, parameters.payload.key, parameters.payload.value
         )
@@ -66,7 +66,7 @@ function setup_parameter_routes()
     @delete root(
         "/{id}",
         middleware=[ProjectPermissionRequiredMiddleware(Parameter, DeletePermission)],
-    ) function (::HTTP.Request, id::Integer)
+    ) function (::HTTP.Request, id::String)
         success = delete_parameter(id)
 
         if !success

@@ -8,7 +8,7 @@ function setup_iteration_routes()
 
     @get root(
         "/{id}", middleware=[ProjectPermissionRequiredMiddleware(Iteration, ReadPermission)]
-    ) function (::HTTP.Request, id::Integer)
+    ) function (::HTTP.Request, id::String)
         response_iteration = get_iteration(id)
 
         if (isnothing(response_iteration))
@@ -22,7 +22,7 @@ function setup_iteration_routes()
     @get root(
         "/experiment/{experiment_id}",
         middleware=[ProjectPermissionRequiredMiddleware(Iteration, ReadPermission)],
-    ) function (request::HTTP.Request, experiment_id::Integer)
+    ) function (request::HTTP.Request, experiment_id::String)
         page = parse_pagination(request)
         return json(get_iterations(experiment_id, page); status=HTTP.StatusCodes.OK)
     end
@@ -30,7 +30,7 @@ function setup_iteration_routes()
     @get root(
         "/{id}/children",
         middleware=[ProjectPermissionRequiredMiddleware(Iteration, ReadPermission)],
-    ) function (::HTTP.Request, id::Integer)
+    ) function (::HTTP.Request, id::String)
         return json(get_child_iterations(id); status=HTTP.StatusCodes.OK)
     end
 
@@ -41,7 +41,7 @@ function setup_iteration_routes()
     @post root(
         "/{id}/snapshot",
         middleware=[ProjectPermissionRequiredMiddleware(Iteration, UpdatePermission)],
-    ) function (::HTTP.Request, id::Integer, parameters::Json{IterationSnapshotPayload})
+    ) function (::HTTP.Request, id::String, parameters::Json{IterationSnapshotPayload})
         iteration = get_iteration(id)
         if isnothing(iteration)
             return error_response(
@@ -71,21 +71,12 @@ function setup_iteration_routes()
     @post root(
         "/experiment/{experiment_id}",
         middleware=[ProjectPermissionRequiredMiddleware(Iteration, CreatePermission)],
-    ) function (request::HTTP.Request, experiment_id::Integer)
-        # Optional `?parent_iteration_id=N` query param makes the new row a child of `N`.
-        # Absent → top-level iteration (the legacy default).
+    ) function (request::HTTP.Request, experiment_id::String)
+        # Optional `?parent_iteration_id=<id>` query param makes the new row a child of that
+        # iteration. Absent → top-level iteration (the legacy default). A non-existent or
+        # cross-experiment parent is rejected downstream by `create_iteration`.
         qp = queryparams(request)
-        parent_iteration_id = nothing
-        if haskey(qp, "parent_iteration_id")
-            parent_iteration_id = tryparse(Int64, qp["parent_iteration_id"])
-            if isnothing(parent_iteration_id)
-                return error_response(
-                    InvalidPayload,
-                    "parent_iteration_id must be an integer";
-                    status=HTTP.StatusCodes.UNPROCESSABLE_ENTITY,
-                )
-            end
-        end
+        parent_iteration_id = get(qp, "parent_iteration_id", nothing)
 
         iteration_id, upsert_result = create_iteration(
             experiment_id; parent_iteration_id=parent_iteration_id
@@ -103,7 +94,7 @@ function setup_iteration_routes()
     @patch root(
         "/{id}",
         middleware=[ProjectPermissionRequiredMiddleware(Iteration, UpdatePermission)],
-    ) function (::HTTP.Request, id::Integer, parameters::Json{IterationUpdatePayload})
+    ) function (::HTTP.Request, id::String, parameters::Json{IterationUpdatePayload})
         upsert_result = update_iteration(
             id,
             parameters.payload.notes,
@@ -124,7 +115,7 @@ function setup_iteration_routes()
     @delete root(
         "/{id}",
         middleware=[ProjectPermissionRequiredMiddleware(Iteration, DeletePermission)],
-    ) function (::HTTP.Request, id::Integer)
+    ) function (::HTTP.Request, id::String)
         success = delete_iteration(id)
 
         if !success

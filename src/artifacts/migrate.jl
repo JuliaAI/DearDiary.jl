@@ -53,7 +53,7 @@ function migrate_artifacts!(
 
     db = get_database()
     rows = DBInterface.execute(
-        db, "SELECT id FROM resource WHERE backend = 'inline' ORDER BY id"
+        db, "SELECT id FROM resource WHERE backend = 'inline' ORDER BY created_date"
     )
     ids = [row.id for row in Tables.namedtupleiterator(rows)]
 

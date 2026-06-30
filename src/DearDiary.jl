@@ -122,7 +122,8 @@ include("ui/server.jl")
 
 export Client, ClientError, connect, disconnect, refresh_token!, whoami, with_iteration
 
-export get_user, get_users, create_user, update_user, delete_user, sanitize_user
+export get_user,
+    get_user_by_username, get_users, create_user, update_user, delete_user, sanitize_user
 export get_project, get_projects, create_project, update_project, delete_project
 export get_userpermission,
     get_userpermissions, create_userpermission, update_userpermission, delete_userpermission
@@ -137,7 +138,7 @@ export get_metric, get_metrics, create_metric, update_metric, delete_metric, log
 export get_resource, get_resources, create_resource, update_resource, delete_resource
 export read_resource_data
 export migrate_artifacts!, MigrateArtifactsResult
-export get_tag, get_tags, create_tag, add_tag, delete_tag
+export get_tag, get_tag_by_value, get_tags, create_tag, add_tag, delete_tag
 export get_model, get_models, create_model, update_model, delete_model
 export get_modelversion,
     get_modelversions, create_modelversion, update_modelversion, delete_modelversion
@@ -213,8 +214,8 @@ function AuthMiddleware(handler)
                         )
                     end
 
-                    user_id = get(payload, "id", 0)
-                    is_valid_user_id = user_id isa Int && user_id > 0
+                    user_id = get(payload, "id", nothing)
+                    is_valid_user_id = user_id isa AbstractString && !isempty(user_id)
                     if !is_valid_user_id
                         return error_response(
                             TokenPayloadInvalid,
@@ -325,10 +326,5 @@ function stop()
     terminate()
     @info "DearDiary server stopped."
 end
-
-# No PrecompileTools `@compile_workload` runs here. The previous warmup rendered the Bonito
-# dashboard, but rendering bundles widget JS through a Deno subprocess that hangs during
-# precompilation on CI, stalling the build. The `using PrecompileTools` import is kept so
-# the dependency stays referenced; a Deno-free, DB-only warmup can be reintroduced later.
 
 end

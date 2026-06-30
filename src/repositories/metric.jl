@@ -1,15 +1,15 @@
-function fetch(::Type{<:Metric}, id::Integer)::Optional{Metric}
+function fetch(::Type{<:Metric}, id::AbstractString)::Optional{Metric}
     metric = fetch(SQL_SELECT_METRIC_BY_ID, (id=id,))
     return (isnothing(metric)) ? nothing : (Metric(metric))
 end
 
-function fetch_all(::Type{<:Metric}, iteration_id::Integer)::Array{Metric,1}
+function fetch_all(::Type{<:Metric}, iteration_id::AbstractString)::Array{Metric,1}
     metrics = fetch_all(SQL_SELECT_METRICS_BY_ITERATION_ID; parameters=(id=iteration_id,))
     return Metric.(metrics)
 end
 
 function fetch_page(
-    ::Type{<:Metric}, iteration_id::Integer, page::Pagination
+    ::Type{<:Metric}, iteration_id::AbstractString, page::Pagination
 )::PaginatedResponse{Metric}
     paged = fetch_page(
         SQL_SELECT_METRICS_BY_ITERATION_ID,
@@ -23,25 +23,25 @@ function fetch_page(
 end
 
 """
-    next_metric_step(iteration_id::Integer, key::AbstractString)::Int64
+    next_metric_step(iteration_id::AbstractString, key::AbstractString)::Int64
 
 Return `max(step) + 1` for the `(iteration_id, key)` series, or `0` when no metric with
 that key exists yet. Used by [`create_metric`](@ref) and [`log_metrics`](@ref) to
 auto-assign `step` when the caller does not pass one.
 """
-function next_metric_step(iteration_id::Integer, key::AbstractString)::Int64
+function next_metric_step(iteration_id::AbstractString, key::AbstractString)::Int64
     row = fetch(SQL_SELECT_NEXT_METRIC_STEP, (iteration_id=iteration_id, key=key))
     return (isnothing(row)) ? 0 : (Int64(row[:next_step]))
 end
 
 function insert(
     ::Type{<:Metric},
-    iteration_id::Integer,
+    iteration_id::AbstractString,
     key::AbstractString,
     value::AbstractFloat,
     step::Integer,
     recorded_at::DateTime,
-)::@NamedTuple{id::Optional{<:Int64}, status::DataType}
+)::@NamedTuple{id::Optional{String}, status::DataType}
     fields = (
         iteration_id=iteration_id,
         key=key,
@@ -54,7 +54,7 @@ end
 
 function update(
     ::Type{<:Metric},
-    id::Integer;
+    id::AbstractString;
     key::Optional{AbstractString}=nothing,
     value::Optional{AbstractFloat}=nothing,
     step::Optional{Integer}=nothing,
@@ -67,7 +67,7 @@ function update(
     return update(SQL_UPDATE_METRIC, fetch(Metric, id); fields...)
 end
 
-delete(::Type{<:Metric}, id::Integer)::Bool = delete(SQL_DELETE_METRIC, id)
+delete(::Type{<:Metric}, id::AbstractString)::Bool = delete(SQL_DELETE_METRIC, id)
 
 function delete(::Type{<:Metric}, iteration::Iteration)::Bool
     return delete(SQL_DELETE_METRICS_BY_ITERATION_ID, iteration.id)

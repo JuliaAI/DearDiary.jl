@@ -1,7 +1,21 @@
 """
-    get_user(username::AbstractString)::Optional{User}
+    get_user(id::AbstractString)::Optional{User}
 
-Get an [`User`](@ref) by username.
+Get an [`User`](@ref) by id.
+
+# Arguments
+- `id::AbstractString`: The id of the user to query.
+
+# Returns
+An [`User`](@ref) object. If the record does not exist, return `nothing`.
+"""
+get_user(id::AbstractString)::Optional{User} = fetch(User, id)
+
+"""
+    get_user_by_username(username::AbstractString)::Optional{User}
+
+Get an [`User`](@ref) by username. Distinct from [`get_user`](@ref) because ids and usernames
+are both strings now and can no longer be told apart by argument type.
 
 # Arguments
 - `username::AbstractString`: The username of the user to query.
@@ -9,20 +23,9 @@ Get an [`User`](@ref) by username.
 # Returns
 An [`User`](@ref) object. If the record does not exist, return `nothing`.
 """
-get_user(username::AbstractString)::Optional{User} = fetch(User, username)
-
-"""
-    get_user(id::Integer)::Optional{User}
-
-Get an [`User`](@ref) by id.
-
-# Arguments
-- `id::Integer`: The id of the user to query.
-
-# Returns
-An [`User`](@ref) object. If the record does not exist, return `nothing`.
-"""
-get_user(id::Integer)::Optional{User} = fetch(User, id)
+get_user_by_username(username::AbstractString)::Optional{User} = fetch_by_username(
+    User, username
+)
 
 """
     get_users()::Array{User, 1}
@@ -35,7 +38,7 @@ An array of [`User`](@ref) objects.
 get_users()::Array{User,1} = fetch_all(User)
 
 """
-    create_user(first_name::AbstractString, last_name::AbstractString, username::AbstractString, password::AbstractString)::NamedTuple{id::Optional{<:Int64},status::DataType}
+    create_user(first_name::AbstractString, last_name::AbstractString, username::AbstractString, password::AbstractString)::NamedTuple{id::Optional{String},status::DataType}
 
 Create an [`User`](@ref).
 
@@ -54,19 +57,19 @@ function create_user(
     last_name::AbstractString,
     username::AbstractString,
     password::AbstractString,
-)::@NamedTuple{id::Optional{<:Int64}, status::DataType}
+)::@NamedTuple{id::Optional{String}, status::DataType}
     return insert(
         User, first_name, last_name, username, String(GenerateFromPassword(password))
     )
 end
 
 """
-    update_user(id::Integer, first_name::Optional{AbstractString}, last_name::Optional{AbstractString}, password::Optional{AbstractString}, is_admin::Optional{Bool})::Type{<:UpsertResult}
+    update_user(id::AbstractString, first_name::Optional{AbstractString}, last_name::Optional{AbstractString}, password::Optional{AbstractString}, is_admin::Optional{Bool})::Type{<:UpsertResult}
 
 Update an [`User`](@ref).
 
 # Arguments
-- `id::Integer`: The id of the user to update.
+- `id::AbstractString`: The id of the user to update.
 - `first_name::Optional{AbstractString}`: The new first name of the user.
 - `last_name::Optional{AbstractString}`: The new last name of the user.
 - `password::Optional{AbstractString}`: The new password of the user.
@@ -76,7 +79,7 @@ Update an [`User`](@ref).
 An [`UpsertResult`](@ref). [`Updated`](@ref) if the record was successfully updated (or no fields were changed), [`Unprocessable`](@ref) if the record violates a constraint or if no fields were provided to update, and [`Error`](@ref) if an error occurred while updating the record.
 """
 function update_user(
-    id::Integer,
+    id::AbstractString,
     first_name::Optional{AbstractString},
     last_name::Optional{AbstractString},
     password::Optional{AbstractString},
@@ -118,17 +121,17 @@ function update_user(
 end
 
 """
-    delete_user(id::Integer)::Bool
+    delete_user(id::AbstractString)::Bool
 
 Delete an [`User`](@ref). Also deletes all associated [`UserPermission`](@ref).
 
 # Arguments
-- `id::Integer`: The id of the user to delete.
+- `id::AbstractString`: The id of the user to delete.
 
 # Returns
 `true` if the record was successfully deleted, `false` otherwise.
 """
-function delete_user(id::Integer)::Bool
+function delete_user(id::AbstractString)::Bool
     user = fetch(User, id)
     # The seeded `default` user is protected (previously enforced by a DB trigger; DuckDB has
     # no triggers, so the guard lives here).

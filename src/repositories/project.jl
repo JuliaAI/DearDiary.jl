@@ -1,4 +1,4 @@
-function fetch(::Type{<:Project}, id::Integer)::Optional{Project}
+function fetch(::Type{<:Project}, id::AbstractString)::Optional{Project}
     project = fetch(SQL_SELECT_PROJECT_BY_ID, (id=id,))
     return (isnothing(project)) ? nothing : (Project(project))
 end
@@ -9,13 +9,13 @@ end
 
 function insert(
     ::Type{<:Project}, name::AbstractString
-)::@NamedTuple{id::Optional{<:Int64}, status::DataType}
+)::@NamedTuple{id::Optional{String}, status::DataType}
     return insert(SQL_INSERT_PROJECT, (name=name, created_date=(string(now()))))
 end
 
 function update(
     ::Type{<:Project},
-    id::Integer;
+    id::AbstractString;
     name::Optional{AbstractString}=nothing,
     description::Optional{AbstractString}=nothing,
 )::Type{<:UpsertResult}
@@ -23,4 +23,4 @@ function update(
     return update(SQL_UPDATE_PROJECT, fetch(Project, id); fields...)
 end
 
-delete(::Type{<:Project}, id::Integer)::Bool = delete(SQL_DELETE_PROJECT, id)
+delete(::Type{<:Project}, id::AbstractString)::Bool = delete(SQL_DELETE_PROJECT, id)

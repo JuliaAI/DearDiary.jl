@@ -1,15 +1,15 @@
 """
-    get_project(id::Integer)::Optional{Project}
+    get_project(id::AbstractString)::Optional{Project}
 
 Get a [`Project`](@ref) by id.
 
 # Arguments
-- `id::Integer`: The id of the project to query.
+- `id::AbstractString`: The id of the project to query.
 
 # Returns
 A [`Project`](@ref) object. If the record does not exist, return `nothing`.
 """
-get_project(id::Integer)::Optional{Project} = fetch(Project, id)
+get_project(id::AbstractString)::Optional{Project} = fetch(Project, id)
 
 """
     get_projects()::Array{Project, 1}
@@ -44,12 +44,12 @@ function get_projects(user::User)::Array{Project,1}
 end
 
 """
-    create_project(user_id::Integer, name::AbstractString)::NamedTuple{id::Optional{<:Int64},status::DataType}
+    create_project(user_id::AbstractString, name::AbstractString)::NamedTuple{id::Optional{String},status::DataType}
 
 Create a [`Project`](@ref).
 
 # Arguments
-- `user_id::Integer`: The id of the user creating the project. The user must have admin privileges.
+- `user_id::AbstractString`: The id of the user creating the project. The user must have admin privileges.
 - `name::AbstractString`: The name of the project.
 
 # Returns
@@ -57,8 +57,8 @@ Create a [`Project`](@ref).
 - An [`UpsertResult`](@ref). [`Created`](@ref) if the record was successfully created, [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
 """
 function create_project(
-    user_id::Integer, name::AbstractString
-)::@NamedTuple{id::Optional{<:Int64}, status::DataType}
+    user_id::AbstractString, name::AbstractString
+)::@NamedTuple{id::Optional{String}, status::DataType}
     user = get_user(user_id)
     if isnothing(user) || user.is_admin == 0
         return (id=nothing, status=Unprocessable)
@@ -78,7 +78,7 @@ function create_project(
 end
 
 """
-    create_project(name::AbstractString)::NamedTuple{id::Optional{<:Int64},status::DataType}
+    create_project(name::AbstractString)::NamedTuple{id::Optional{String},status::DataType}
 
 Create a [`Project`](@ref). Uses the "default" user to create the project.
 
@@ -91,18 +91,18 @@ Create a [`Project`](@ref). Uses the "default" user to create the project.
 """
 function create_project(
     name::AbstractString
-)::@NamedTuple{id::Optional{<:Int64}, status::DataType}
-    default_user = get_user("default")
+)::@NamedTuple{id::Optional{String}, status::DataType}
+    default_user = get_user_by_username("default")
     return create_project(default_user.id, name)
 end
 
 """
-    update_project(id::Int, name::Optional{AbstractString}, description::Optional{AbstractString})::Type{<:UpsertResult}
+    update_project(id::AbstractString, name::Optional{AbstractString}, description::Optional{AbstractString})::Type{<:UpsertResult}
 
 Update a [`Project`](@ref) record.
 
 # Arguments
-- `id::Integer`: The id of the project to update.
+- `id::AbstractString`: The id of the project to update.
 - `name::Optional{AbstractString}`: The new name for the project.
 - `description::Optional{AbstractString}`: The new description for the project.
 
@@ -110,7 +110,9 @@ Update a [`Project`](@ref) record.
 An [`UpsertResult`](@ref). [`Updated`](@ref) if the record was successfully updated (or no changes were made), [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
 """
 function update_project(
-    id::Integer, name::Optional{AbstractString}, description::Optional{AbstractString}
+    id::AbstractString,
+    name::Optional{AbstractString},
+    description::Optional{AbstractString},
 )::Type{<:UpsertResult}
     project = fetch(Project, id)
     if isnothing(project)
@@ -126,17 +128,17 @@ function update_project(
 end
 
 """
-    delete_project(id::Integer)::Bool
+    delete_project(id::AbstractString)::Bool
 
 Delete a [`Project`](@ref) record. Also deletes all associated [`UserPermission`](@ref) and [`Experiment`](@ref) records.
 
 # Arguments
-- `id::Integer`: The id of the project to delete.
+- `id::AbstractString`: The id of the project to delete.
 
 # Returns
 `true` if the record was successfully deleted, `false` otherwise.
 """
-function delete_project(id::Integer)::Bool
+function delete_project(id::AbstractString)::Bool
     project = fetch(Project, id)
 
     for experiment in get_experiments(project.id)

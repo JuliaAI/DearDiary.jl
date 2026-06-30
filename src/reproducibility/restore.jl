@@ -26,7 +26,7 @@ struct RestoreResult
 end
 
 """
-    restore(iteration_id::Integer; depot::AbstractString=mktempdir())::RestoreResult
+    restore(iteration_id::AbstractString; depot::AbstractString=mktempdir())::RestoreResult
 
 Materialise the captured Pkg environment of `iteration_id` into a fresh directory under
 `depot`. Writes `Project.toml` and `Manifest.toml` from the iteration row; does **not**
@@ -44,7 +44,7 @@ Pkg.instantiate()
 ```
 
 # Arguments
-- `iteration_id::Integer`: The iteration whose environment to restore.
+- `iteration_id::AbstractString`: The iteration whose environment to restore.
 - `depot::AbstractString`: Directory under which to create the project subdirectory.
   Defaults to a fresh tempdir.
 
@@ -56,7 +56,9 @@ A [`RestoreResult`](@ref).
 - `ArgumentError` when the iteration has no captured manifest (i.e.
   [`snapshot_environment!`](@ref) was never invoked on it).
 """
-function restore(iteration_id::Integer; depot::AbstractString=mktempdir())::RestoreResult
+function restore(
+    iteration_id::AbstractString; depot::AbstractString=mktempdir()
+)::RestoreResult
     iteration = get_iteration(iteration_id)
     if isnothing(iteration)
         throw(ArgumentError("Iteration $iteration_id not found"))

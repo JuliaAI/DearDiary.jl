@@ -2,20 +2,23 @@
     @testset verbose = true "experiment service" begin
         @testset verbose = true "create experiment" begin
             @testset "with existing project" begin
-                user = DearDiary.get_user("default")
+                user = DearDiary.get_user_by_username("default")
                 project_id, _ = DearDiary.create_project(user.id, "Test Project")
 
                 experiment_id, result = DearDiary.create_experiment(
                     project_id, DearDiary.IN_PROGRESS, "Service Test Experiment"
                 )
 
-                @test experiment_id isa Integer
+                @test experiment_id isa String
+                @test !isempty(experiment_id)
                 @test result === DearDiary.Created
             end
 
             @testset "with non-existing project" begin
                 experiment_id, result = DearDiary.create_experiment(
-                    9999, DearDiary.IN_PROGRESS, "Service Test Experiment"
+                    "00000000-0000-0000-0000-000000000000",
+                    DearDiary.IN_PROGRESS,
+                    "Service Test Experiment",
                 )
 
                 @test isnothing(experiment_id)
@@ -23,7 +26,7 @@
             end
 
             @testset "with invalid status" begin
-                user = DearDiary.get_user("default")
+                user = DearDiary.get_user_by_username("default")
                 project_id, _ = DearDiary.create_project(user.id, "Test Project")
 
                 experiment_id, result = DearDiary.create_experiment(
@@ -36,7 +39,7 @@
         end
         @testset verbose = true "get experiment by id" begin
             @testset "existing experiment" begin
-                user = DearDiary.get_user("default")
+                user = DearDiary.get_user_by_username("default")
                 project_id, _ = DearDiary.create_project(user.id, "Test Project")
                 experiment_id, _ = DearDiary.create_experiment(
                     project_id, DearDiary.IN_PROGRESS, "Service Test Experiment"
@@ -52,14 +55,16 @@
             end
 
             @testset "non-existing experiment" begin
-                experiment = DearDiary.get_experiment(9999)
+                experiment = DearDiary.get_experiment(
+                    "00000000-0000-0000-0000-000000000000"
+                )
 
                 @test isnothing(experiment)
             end
         end
 
         @testset verbose = true "get experiments" begin
-            user = DearDiary.get_user("default")
+            user = DearDiary.get_user_by_username("default")
             project_id, _ = DearDiary.create_project(user.id, "Test Project")
             experiment_id1, _ = DearDiary.create_experiment(
                 project_id, DearDiary.IN_PROGRESS, "Service Test Experiment 1"
@@ -77,7 +82,7 @@
         @testset verbose = true "update experiment" begin
             @testset "with non-existing id" begin
                 result = DearDiary.update_experiment(
-                    9999,
+                    "00000000-0000-0000-0000-000000000000",
                     DearDiary.FINISHED,
                     "Updated Experiment",
                     "Updated description",
@@ -88,7 +93,7 @@
             end
 
             @testset "with existing id" begin
-                user = DearDiary.get_user("default")
+                user = DearDiary.get_user_by_username("default")
                 project_id, _ = DearDiary.create_project(user.id, "Test Project")
                 experiment_id, _ = DearDiary.create_experiment(
                     project_id, DearDiary.IN_PROGRESS, "Service Test Experiment"
@@ -113,7 +118,7 @@
             end
 
             @testset "with invalid status" begin
-                user = DearDiary.get_user("default")
+                user = DearDiary.get_user_by_username("default")
                 project_id, _ = DearDiary.create_project(user.id, "Test Project")
                 experiment_id, _ = DearDiary.create_experiment(
                     project_id, DearDiary.IN_PROGRESS, "Service Test Experiment"
@@ -132,7 +137,7 @@
         end
 
         @testset verbose = true "delete experiment" begin
-            user = DearDiary.get_user("default")
+            user = DearDiary.get_user_by_username("default")
             project_id, _ = DearDiary.create_project(user.id, "Test Project")
             experiment_id, _ = DearDiary.create_experiment(
                 project_id, DearDiary.IN_PROGRESS, "Service Test Experiment"
@@ -147,7 +152,7 @@
         end
 
         @testset verbose = true "get project id" begin
-            user = DearDiary.get_user("default")
+            user = DearDiary.get_user_by_username("default")
             project_id, _ = DearDiary.create_project(user.id, "Test Project")
             experiment_id, _ = DearDiary.create_experiment(
                 project_id, DearDiary.IN_PROGRESS, "Test experiment"
@@ -158,7 +163,7 @@
         end
 
         @testset verbose = true "get experiments paginated" begin
-            user = DearDiary.get_user("default")
+            user = DearDiary.get_user_by_username("default")
             project_id, _ = DearDiary.create_project(user.id, "Pagination Project")
             for i in 1:5
                 DearDiary.create_experiment(project_id, DearDiary.IN_PROGRESS, "Exp $(i)")

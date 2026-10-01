@@ -72,6 +72,13 @@ function setup_experiment_routes()
         "/{id}",
         middleware=[ProjectPermissionRequiredMiddleware(Experiment, DeletePermission)],
     ) function (::HTTP.Request, id::String)
+        if !(isempty(get_modelversions(Experiment, id)))
+            return error_response(
+                Conflict,
+                "Model versions are registered from this experiment; delete them first";
+                status=HTTP.StatusCodes.CONFLICT,
+            )
+        end
         success = delete_experiment(id)
 
         if !success

@@ -22,9 +22,8 @@ Get all [`Resource`](@ref) for a given experiment.
 # Returns
 An array of [`Resource`](@ref) objects.
 """
-get_resources(experiment_id::AbstractString)::Array{Resource,1} = fetch_all(
-    Resource, experiment_id
-)
+get_resources(experiment_id::AbstractString)::Array{Resource,1} =
+    fetch_all(Resource, experiment_id)
 
 """
     get_resources(experiment_id::AbstractString, page::Pagination)::PaginatedResponse{Resource}
@@ -166,6 +165,9 @@ end
     delete_resource(id::AbstractString)::Bool
 
 Delete a [`Resource`](@ref) record. For non-inline backends the underlying artifact bytes
+
+The delete is refused (returns `false`) while a [`ModelVersion`](@ref) points at the
+artifact; delete or re-point those versions first.
 are removed from the store first; inline-backed rows take their bytes down with the row.
 
 # Arguments
@@ -176,7 +178,7 @@ are removed from the store first; inline-backed rows take their bytes down with 
 """
 function delete_resource(id::AbstractString)::Bool
     resource = get_resource(id)
-    if isnothing(resource)
+    if isnothing(resource) || !(isempty(get_modelversions(Resource, id)))
         return false
     end
 

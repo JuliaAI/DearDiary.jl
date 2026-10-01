@@ -64,6 +64,9 @@ function create_model(
     if isnothing(project)
         return (id=nothing, status=Unprocessable)
     end
+    if any(model -> model.name == name, get_models(project_id))
+        return (id=nothing, status=Duplicate)
+    end
 
     model_id, model_upsert_result = insert(Model, project_id, name)
     if !(model_upsert_result === Created)
@@ -76,6 +79,7 @@ end
     update_model(id::AbstractString, name::Optional{AbstractString}, description::Optional{AbstractString})::Type{<:UpsertResult}
 
 Update a [`Model`](@ref)'s mutable fields. Any keyword left as `nothing` is left untouched.
+A new `name` must be unique within the project; a collision returns [`Duplicate`](@ref).
 
 # Arguments
 - `id::AbstractString`: The id of the model to update.
@@ -93,6 +97,12 @@ function update_model(
     model = get_model(id)
     if isnothing(model)
         return Unprocessable
+    end
+    # Checked here so a collision reports `Duplicate` before the database constraint does.
+    if !(isnothing(name)) &&
+        name != model.name &&
+        any(other -> other.id != id && other.name == name, get_models(model.project_id))
+        return Duplicate
     end
 
     should_be_updated = compare_object_fields(model; name=name, description=description)

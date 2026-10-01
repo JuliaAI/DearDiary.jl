@@ -18,11 +18,15 @@
                 project_id, _ = DearDiary.create_project(user.id, "Model Project")
                 DearDiary.insert(DearDiary.Model, project_id, "fraud-classifier")
 
+                # Name uniqueness is a service rule (see `create_model`), not a database
+                # constraint, so the repository accepts the row.
                 id, status = DearDiary.insert(
                     DearDiary.Model, project_id, "fraud-classifier"
                 )
-                @test isnothing(id)
-                @test status === DearDiary.Duplicate
+                @test id isa String
+                @test status === DearDiary.Created
+                @test DearDiary.create_model(project_id, "fraud-classifier").status ===
+                    DearDiary.Duplicate
             end
 
             @testset "with non-existing project" begin

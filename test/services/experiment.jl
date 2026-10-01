@@ -185,5 +185,32 @@
             @test isempty(beyond.data)
             @test beyond.total == 5
         end
+
+        @testset verbose = true "delete experiment is refused while a version is registered" begin
+            user = DearDiary.get_user_by_username("default")
+            project_id, _ = DearDiary.create_project(user.id, "Registered experiment")
+            experiment_id, _ = DearDiary.create_experiment(
+                project_id, DearDiary.IN_PROGRESS, "E"
+            )
+            iteration_id, _ = DearDiary.create_iteration(experiment_id)
+            other_id, _ = DearDiary.create_iteration(experiment_id)
+            resource_id, _ = DearDiary.create_resource(experiment_id, "w.bin", UInt8[1, 2])
+            model_id, _ = DearDiary.create_model(project_id, "forest")
+            version_id, _ = DearDiary.create_modelversion(
+                model_id, iteration_id, resource_id, "v1"
+            )
+
+            @test length(
+                DearDiary.get_modelversions(DearDiary.Experiment, experiment_id)
+            ) == 1
+            @test !DearDiary.delete_experiment(experiment_id)
+            @test !isnothing(DearDiary.get_iteration(other_id))
+            @test !isnothing(DearDiary.get_resource(resource_id))
+
+            @test DearDiary.delete_modelversion(version_id)
+            @test DearDiary.delete_experiment(experiment_id)
+            @test isnothing(DearDiary.get_iteration(other_id))
+            @test !DearDiary.delete_experiment(experiment_id)
+        end
     end
 end

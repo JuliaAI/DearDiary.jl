@@ -131,6 +131,8 @@ end
     delete_project(id::AbstractString)::Bool
 
 Delete a [`Project`](@ref) record. Also deletes all associated [`UserPermission`](@ref) and [`Experiment`](@ref) records.
+The project's model registry, experiments (with their iterations and artifacts),
+permissions, and tags are deleted with it.
 
 # Arguments
 - `id::AbstractString`: The id of the project to delete.
@@ -140,10 +142,20 @@ Delete a [`Project`](@ref) record. Also deletes all associated [`UserPermission`
 """
 function delete_project(id::AbstractString)::Bool
     project = fetch(Project, id)
+    if isnothing(project)
+        return false
+    end
+
+    # The registry belongs to the project, so it goes first; afterwards no version can
+    # block the experiments below.
+    for model in get_models(project.id)
+        delete_model(model.id)
+    end
 
     for experiment in get_experiments(project.id)
         delete_experiment(experiment.id)
     end
     delete(UserPermission, project)
+    delete_tags(Project, project.id)
     return delete(Project, id)
 end

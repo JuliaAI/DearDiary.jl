@@ -127,6 +127,7 @@ DearDiary.run(; env_file=file)
 
 include("routes/auth.jl")
 include("routes/utils.jl")
+include("ui/auth.jl")
 
 DearDiary.stop()
 rm(file)

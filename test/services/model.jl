@@ -122,5 +122,28 @@
             model = DearDiary.get_model(model_id)
             @test (DearDiary.get_project_id(model)) == project_id
         end
+
+        @testset verbose = true "model names stay unique per project without a constraint" begin
+            user = DearDiary.get_user_by_username("default")
+            project_id, _ = DearDiary.create_project(user.id, "Registry names")
+            experiment_id, _ = DearDiary.create_experiment(
+                project_id, DearDiary.IN_PROGRESS, "E"
+            )
+            iteration_id, _ = DearDiary.create_iteration(experiment_id)
+            forest_id, _ = DearDiary.create_model(project_id, "forest")
+            DearDiary.create_model(project_id, "logreg")
+            @test DearDiary.create_model(project_id, "forest").status ===
+                DearDiary.Duplicate
+            @test DearDiary.update_model(forest_id, "logreg", nothing) ===
+                DearDiary.Duplicate
+            @test DearDiary.update_model(forest_id, "forest", "same name") ===
+                DearDiary.Updated
+
+            DearDiary.create_modelversion(forest_id, iteration_id, nothing, "v1")
+            @test DearDiary.update_model(forest_id, "forest-renamed", nothing) ===
+                DearDiary.Updated
+            @test DearDiary.get_model(forest_id).name == "forest-renamed"
+            @test length(DearDiary.get_modelversions(forest_id)) == 1
+        end
     end
 end

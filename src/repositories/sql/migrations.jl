@@ -43,6 +43,7 @@ const SQL_SELECT_SCHEMA_MIGRATIONS = """
     """
 
 include("migrations/001_baseline.jl")
+include("migrations/002_model_name_rename.jl")
 
 """
     MIGRATIONS
@@ -52,7 +53,7 @@ changes must append a new entry here (and add a numbered file under `migrations/
 edit a previously-released migration in place: existing databases have already applied it
 and will not re-run it.
 """
-const MIGRATIONS = Migration[MIGRATION_001_BASELINE]
+const MIGRATIONS = Migration[MIGRATION_001_BASELINE, MIGRATION_002_MODEL_NAME_RENAME]
 
 """
     applied_versions(db::DuckDB.DB)::Set{Int}

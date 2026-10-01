@@ -219,5 +219,24 @@
             @test stored.status_id == (Integer(DearDiary.FAILED))
             @test stored.error_message == "OutOfMemoryError"
         end
+
+        @testset verbose = true "delete registered iteration returns 409" begin
+            user = DearDiary.get_user_by_username("default")
+            project_id, _ = DearDiary.create_project(user.id, "Registered")
+            experiment_id, _ = DearDiary.create_experiment(
+                project_id, DearDiary.IN_PROGRESS, "E"
+            )
+            iteration_id, _ = DearDiary.create_iteration(experiment_id)
+            model_id, _ = DearDiary.create_model(project_id, "forest")
+            DearDiary.create_modelversion(model_id, iteration_id, nothing, "v1")
+
+            response = HTTP.delete(
+                "http://127.0.0.1:9000/iteration/$(iteration_id)"; status_exception=false
+            )
+            @test response.status == HTTP.StatusCodes.CONFLICT
+            data = JSON.parse(String(response.body), Dict{String,Any})
+            @test data["code"] == "CONFLICT"
+            @test !isnothing(DearDiary.get_iteration(iteration_id))
+        end
     end
 end

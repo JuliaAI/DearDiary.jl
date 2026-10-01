@@ -51,6 +51,16 @@ A [`Resource`](@ref DearDiary.Resource) stores artifact bytes (model checkpoints
 to an experiment. The backend that holds the bytes is recorded on the row itself (see
 [Storage](@ref) for details).
 
+## Deleting records
+
+Deletes cascade downwards: removing a project removes its registry, experiments,
+iterations, artifacts, permissions, and tags; removing an experiment removes its iterations
+and artifacts; removing an iteration removes its parameters and metrics and detaches its
+children. A record that a [`ModelVersion`](@ref DearDiary.ModelVersion) still points at
+(the iteration it was registered from, or the artifact it stores) cannot be deleted until
+that version is deleted, so the registry never references a missing run. The REST API
+answers such a delete with `409 CONFLICT`; the service functions return `false`.
+
 ## Model registry
 
 The model registry adds two more entity types, both project-scoped:

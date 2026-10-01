@@ -190,6 +190,9 @@ end
 
 Delete a [`Experiment`](@ref) record. Also deletes all associated [`Iteration`](@ref) and [`Resource`](@ref) records.
 
+The delete is refused (returns `false`) while a [`ModelVersion`](@ref) is registered from
+one of the experiment's iterations or points at one of its artifacts.
+
 # Arguments
 - `id::AbstractString`: The id of the experiment to delete.
 
@@ -198,6 +201,9 @@ Delete a [`Experiment`](@ref) record. Also deletes all associated [`Iteration`](
 """
 function delete_experiment(id::AbstractString)::Bool
     experiment = fetch(Experiment, id)
+    if isnothing(experiment) || !(isempty(get_modelversions(Experiment, id)))
+        return false
+    end
 
     for iteration in get_iterations(experiment.id)
         delete_iteration(iteration.id)
@@ -205,6 +211,7 @@ function delete_experiment(id::AbstractString)::Bool
     for resource in get_resources(experiment.id)
         delete_resource(resource.id)
     end
+    delete_tags(Experiment, experiment.id)
     return delete(Experiment, id)
 end
 

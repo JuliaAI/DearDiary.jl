@@ -26,6 +26,34 @@ const SQL_SELECT_MODELVERSIONS_BY_MODEL_ID = """
     FROM model_version mv WHERE mv.model_id = :id ORDER BY mv.version ASC
     """
 
+const SQL_SELECT_MODELVERSIONS_BY_ITERATION_ID = """
+    SELECT
+        mv.id,
+        mv.model_id,
+        mv.version,
+        mv.iteration_id,
+        mv.resource_id,
+        mv.stage_id,
+        mv.description,
+        mv.created_date,
+        mv.updated_date
+    FROM model_version mv WHERE mv.iteration_id = :id ORDER BY mv.created_date ASC
+    """
+
+const SQL_SELECT_MODELVERSIONS_BY_RESOURCE_ID = """
+    SELECT
+        mv.id,
+        mv.model_id,
+        mv.version,
+        mv.iteration_id,
+        mv.resource_id,
+        mv.stage_id,
+        mv.description,
+        mv.created_date,
+        mv.updated_date
+    FROM model_version mv WHERE mv.resource_id = :id ORDER BY mv.created_date ASC
+    """
+
 const SQL_COUNT_MODELVERSIONS_BY_MODEL_ID = """
     SELECT COUNT(*) AS count FROM model_version WHERE model_id = :id
     """

@@ -8,6 +8,24 @@ function fetch_all(::Type{<:ModelVersion}, model_id::AbstractString)::Array{Mode
     return ModelVersion.(versions)
 end
 
+function fetch_all(
+    ::Type{<:ModelVersion}, ::Type{<:Iteration}, iteration_id::AbstractString
+)::Array{ModelVersion,1}
+    versions = fetch_all(
+        SQL_SELECT_MODELVERSIONS_BY_ITERATION_ID; parameters=(id=iteration_id,)
+    )
+    return ModelVersion.(versions)
+end
+
+function fetch_all(
+    ::Type{<:ModelVersion}, ::Type{<:Resource}, resource_id::AbstractString
+)::Array{ModelVersion,1}
+    versions = fetch_all(
+        SQL_SELECT_MODELVERSIONS_BY_RESOURCE_ID; parameters=(id=resource_id,)
+    )
+    return ModelVersion.(versions)
+end
+
 function fetch_page(
     ::Type{<:ModelVersion}, model_id::AbstractString, page::Pagination
 )::PaginatedResponse{ModelVersion}
@@ -57,9 +75,8 @@ function update(
     return update(SQL_UPDATE_MODELVERSION, fetch(ModelVersion, id); fields...)
 end
 
-delete(::Type{<:ModelVersion}, id::AbstractString)::Bool = delete(
-    SQL_DELETE_MODELVERSION, id
-)
+delete(::Type{<:ModelVersion}, id::AbstractString)::Bool =
+    delete(SQL_DELETE_MODELVERSION, id)
 
 """
     delete_all(::Type{<:ModelVersion}, model_id::AbstractString)::Bool

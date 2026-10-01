@@ -116,6 +116,13 @@ function setup_iteration_routes()
         "/{id}",
         middleware=[ProjectPermissionRequiredMiddleware(Iteration, DeletePermission)],
     ) function (::HTTP.Request, id::String)
+        if !(isempty(get_modelversions(Iteration, id)))
+            return error_response(
+                Conflict,
+                "Model versions are registered from this iteration; delete them first";
+                status=HTTP.StatusCodes.CONFLICT,
+            )
+        end
         success = delete_iteration(id)
 
         if !success

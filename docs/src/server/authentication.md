@@ -49,6 +49,13 @@ Authorization: Bearer <token>
 **Refresh:** `POST /auth/refresh` with a valid (non-expired) token. Returns the
 same envelope shape with a fresh token and a new `expires_at`.
 
+## Dashboard sessions
+
+The embedded dashboard signs in with the same credentials at `/login` on the UI port. It
+stores the token from `POST /auth` in an `HttpOnly`, `SameSite=Strict` cookie that expires
+with the token, and **Sign out** clears it. See [Embedded web UI](@ref) for the pages that
+manage users and permissions.
+
 ## Client helpers
 
 [`connect`](@ref) handles the sign-in call and stores the returned token:

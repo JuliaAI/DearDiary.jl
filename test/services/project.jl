@@ -101,5 +101,23 @@
             @test DearDiary.delete_project(project_id)
             @test isnothing(DearDiary.get_project(project_id))
         end
+
+        @testset verbose = true "delete project removes its registry first" begin
+            user = DearDiary.get_user_by_username("default")
+            project_id, _ = DearDiary.create_project(user.id, "Project with registry")
+            experiment_id, _ = DearDiary.create_experiment(
+                project_id, DearDiary.IN_PROGRESS, "E"
+            )
+            iteration_id, _ = DearDiary.create_iteration(experiment_id)
+            model_id, _ = DearDiary.create_model(project_id, "forest")
+            DearDiary.create_modelversion(model_id, iteration_id, nothing, "v1")
+            DearDiary.create_model(project_id, "empty")
+
+            @test DearDiary.delete_project(project_id)
+            @test isnothing(DearDiary.get_project(project_id))
+            @test isnothing(DearDiary.get_model(model_id))
+            @test isnothing(DearDiary.get_iteration(iteration_id))
+            @test !DearDiary.delete_project(project_id)
+        end
     end
 end

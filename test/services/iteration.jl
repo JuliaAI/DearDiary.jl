@@ -301,5 +301,30 @@
                 @test isnothing((DearDiary.get_project_id(iteration)))
             end
         end
+
+        @testset verbose = true "delete iteration is refused while a version is registered" begin
+            user = DearDiary.get_user_by_username("default")
+            project_id, _ = DearDiary.create_project(user.id, "Registered iteration")
+            experiment_id, _ = DearDiary.create_experiment(
+                project_id, DearDiary.IN_PROGRESS, "E"
+            )
+            iteration_id, _ = DearDiary.create_iteration(experiment_id)
+            DearDiary.create_parameter(iteration_id, "depth", 3)
+            model_id, _ = DearDiary.create_model(project_id, "forest")
+            version_id, _ = DearDiary.create_modelversion(
+                model_id, iteration_id, nothing, "v1"
+            )
+
+            @test !DearDiary.delete_iteration(iteration_id)
+            # Nothing was removed half-way.
+            @test length(DearDiary.get_parameters(iteration_id)) == 1
+            @test length(DearDiary.get_modelversions(DearDiary.Iteration, iteration_id)) ==
+                1
+
+            @test DearDiary.delete_modelversion(version_id)
+            @test isempty(DearDiary.get_modelversions(DearDiary.Iteration, iteration_id))
+            @test DearDiary.delete_iteration(iteration_id)
+            @test !DearDiary.delete_iteration(iteration_id)
+        end
     end
 end

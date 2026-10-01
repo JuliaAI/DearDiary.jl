@@ -72,7 +72,7 @@ A few modules sit alongside those layers:
 - **`artifacts/`** is pluggable artifact storage. `store.jl` dispatches to the `inline`, `filesystem`, or `s3` backend chosen by `DEARDIARY_ARTIFACT_BACKEND`, and `migrate.jl` moves bytes between backends on a live database.
 - **`reproducibility/`** captures and replays environments. `snapshot.jl` records the `Manifest.toml`, Julia version, and git SHA per iteration; `restore.jl` rebuilds that environment.
 - **`client/`** is the native Julia client (`connect`, `with_iteration`, and friends) that talks to the REST API, mirroring the route surface for remote logging.
-- **`ui/`** is the [Bonito](https://github.com/SimonDanisch/Bonito.jl) web frontend: `app.jl` builds it, `server.jl` serves it, and `DEARDIARY_ENABLE_UI` toggles it.
+- **`ui/`** is the web dashboard, served as plain server-rendered pages by the HTTP server from [Bonito](https://github.com/SimonDanisch/Bonito.jl): `types.jl` declares the page and context structs, `app.jl` routes a request to a page and wraps it in the document shell, `auth.jl` handles the session cookie and sign-in, `server.jl` boots the server, `pages/` holds one renderer per entity plus the user-management pages and the editing forms in `edit.jl`, and `components.jl`, `charts.jl`, `queries.jl`, and `format.jl` hold the shared building blocks. The stylesheet, client script, and fonts live in `assets/ui/`. `DEARDIARY_ENABLE_UI` toggles it.
 
 Keep each change in the module that owns that responsibility, and picture the next person who will read your code.
 

@@ -156,6 +156,24 @@
                 data = JSON.parse(String(response.body), Dict{String,Any})
                 @test data["message"] == "OK"
             end
+
+            @testset verbose = true "delete registered resource returns 409" begin
+                user = DearDiary.get_user_by_username("default")
+                owner_id, _ = DearDiary.create_project(user.id, "Registered artifact")
+                registered_id, _ = DearDiary.create_experiment(
+                    owner_id, DearDiary.IN_PROGRESS, "E"
+                )
+                iteration_id, _ = DearDiary.create_iteration(registered_id)
+                artifact_id, _ = DearDiary.create_resource(registered_id, "w.bin", UInt8[1])
+                model_id, _ = DearDiary.create_model(owner_id, "forest")
+                DearDiary.create_modelversion(model_id, iteration_id, artifact_id, "v1")
+
+                response = HTTP.delete(
+                    "http://127.0.0.1:9000/resource/$(artifact_id)"; status_exception=false
+                )
+                @test response.status == HTTP.StatusCodes.CONFLICT
+                @test !isnothing(DearDiary.get_resource(artifact_id))
+            end
         finally
             isfile(dummy_file) && rm(dummy_file)
         end

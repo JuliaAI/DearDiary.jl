@@ -194,5 +194,24 @@
             data = JSON.parse(String(response.body), Dict{String,Any})
             @test data["code"] == "NOT_FOUND"
         end
+
+        @testset verbose = true "delete registered experiment returns 409" begin
+            user = DearDiary.get_user_by_username("default")
+            owner_id, _ = DearDiary.create_project(user.id, "Registered")
+            registered_id, _ = DearDiary.create_experiment(
+                owner_id, DearDiary.IN_PROGRESS, "E"
+            )
+            iteration_id, _ = DearDiary.create_iteration(registered_id)
+            model_id, _ = DearDiary.create_model(owner_id, "forest")
+            DearDiary.create_modelversion(model_id, iteration_id, nothing, "v1")
+
+            response = HTTP.delete(
+                "http://127.0.0.1:9000/experiment/$(registered_id)"; status_exception=false
+            )
+            @test response.status == HTTP.StatusCodes.CONFLICT
+            data = JSON.parse(String(response.body), Dict{String,Any})
+            @test data["code"] == "CONFLICT"
+            @test !isnothing(DearDiary.get_experiment(registered_id))
+        end
     end
 end

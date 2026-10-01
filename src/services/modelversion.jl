@@ -27,6 +27,70 @@ function get_modelversions(model_id::AbstractString)::Array{ModelVersion,1}
 end
 
 """
+    get_modelversions(::Type{<:Iteration}, iteration_id::AbstractString)::Array{ModelVersion,1}
+
+Get every [`ModelVersion`](@ref) registered from `iteration_id`, across all models. A
+non-empty result blocks [`delete_iteration`](@ref).
+
+# Arguments
+- `::Type{<:Iteration}`: The iteration type.
+- `iteration_id::AbstractString`: The id of the iteration the versions were registered from.
+
+# Returns
+An array of [`ModelVersion`](@ref) objects.
+"""
+function get_modelversions(
+    ::Type{<:Iteration}, iteration_id::AbstractString
+)::Array{ModelVersion,1}
+    return fetch_all(ModelVersion, Iteration, iteration_id)
+end
+
+"""
+    get_modelversions(::Type{<:Resource}, resource_id::AbstractString)::Array{ModelVersion,1}
+
+Get every [`ModelVersion`](@ref) whose artifact is `resource_id`. A non-empty result blocks
+[`delete_resource`](@ref).
+
+# Arguments
+- `::Type{<:Resource}`: The resource type.
+- `resource_id::AbstractString`: The id of the resource the versions point at.
+
+# Returns
+An array of [`ModelVersion`](@ref) objects.
+"""
+function get_modelversions(
+    ::Type{<:Resource}, resource_id::AbstractString
+)::Array{ModelVersion,1}
+    return fetch_all(ModelVersion, Resource, resource_id)
+end
+
+"""
+    get_modelversions(::Type{<:Experiment}, experiment_id::AbstractString)::Array{ModelVersion,1}
+
+Get every [`ModelVersion`](@ref) registered from one of the experiment's iterations or
+pointing at one of its artifacts. A non-empty result blocks [`delete_experiment`](@ref).
+
+# Arguments
+- `::Type{<:Experiment}`: The experiment type.
+- `experiment_id::AbstractString`: The id of the experiment.
+
+# Returns
+An array of [`ModelVersion`](@ref) objects, without duplicates.
+"""
+function get_modelversions(
+    ::Type{<:Experiment}, experiment_id::AbstractString
+)::Array{ModelVersion,1}
+    versions = ModelVersion[]
+    for iteration in get_iterations(experiment_id)
+        append!(versions, get_modelversions(Iteration, iteration.id))
+    end
+    for resource in get_resources(experiment_id)
+        append!(versions, get_modelversions(Resource, resource.id))
+    end
+    return unique(v -> v.id, versions)
+end
+
+"""
     get_modelversions(model_id::AbstractString, page::Pagination)::PaginatedResponse{ModelVersion}
 
 Get a page of [`ModelVersion`](@ref) records for a model, with `total` count populated.

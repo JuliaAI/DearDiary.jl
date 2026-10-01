@@ -230,6 +230,9 @@ Delete a [`Iteration`](@ref) record. Children whose `parent_iteration_id` points
 have their reference set to `NULL` by the service layer before the delete; they continue to
 exist as standalone iterations until explicitly deleted.
 
+The delete is refused (returns `false`) while a [`ModelVersion`](@ref) is registered from
+the iteration; delete those versions first so the registry never points at a missing run.
+
 # Arguments
 - `id::AbstractString`: The id of the iteration to delete. Also deletes all associated
   [`Parameter`](@ref) and [`Metric`](@ref) records.
@@ -239,6 +242,9 @@ exist as standalone iterations until explicitly deleted.
 """
 function delete_iteration(id::AbstractString)::Bool
     iteration = fetch(Iteration, id)
+    if isnothing(iteration) || !(isempty(get_modelversions(Iteration, id)))
+        return false
+    end
 
     delete_parameters(iteration)
     delete_metrics(iteration)
@@ -246,6 +252,7 @@ function delete_iteration(id::AbstractString)::Bool
     # Detach children first: DuckDB FKs block deleting a still-referenced parent (no
     # ON DELETE SET NULL action), so this reproduces the old set-null-on-parent-delete.
     nullify_children(Iteration, id)
+    delete_tags(Iteration, id)
 
     return delete(Iteration, id)
 end

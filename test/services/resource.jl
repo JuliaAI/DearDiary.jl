@@ -152,5 +152,25 @@
                 @test isnothing((DearDiary.get_project_id(resource)))
             end
         end
+
+        @testset verbose = true "delete resource is refused while a version points at it" begin
+            user = DearDiary.get_user_by_username("default")
+            project_id, _ = DearDiary.create_project(user.id, "Registered artifact")
+            experiment_id, _ = DearDiary.create_experiment(
+                project_id, DearDiary.IN_PROGRESS, "E"
+            )
+            iteration_id, _ = DearDiary.create_iteration(experiment_id)
+            resource_id, _ = DearDiary.create_resource(experiment_id, "w.bin", UInt8[1, 2])
+            model_id, _ = DearDiary.create_model(project_id, "forest")
+            version_id, _ = DearDiary.create_modelversion(
+                model_id, iteration_id, resource_id, "v1"
+            )
+
+            @test length(DearDiary.get_modelversions(DearDiary.Resource, resource_id)) == 1
+            @test !DearDiary.delete_resource(resource_id)
+            @test !isnothing(DearDiary.get_resource(resource_id))
+            @test DearDiary.delete_modelversion(version_id)
+            @test DearDiary.delete_resource(resource_id)
+        end
     end
 end

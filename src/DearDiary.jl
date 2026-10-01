@@ -10,7 +10,6 @@ using Dates
 using Bcrypt
 using Bonito
 using Compat
-using Observables
 using Oxygen
 using LibGit2
 using Pkg
@@ -119,7 +118,20 @@ include("client/model.jl")
 include("client/modelversion.jl")
 include("client/lifecycle.jl")
 
+include("ui/format.jl")
+include("ui/types.jl")
+include("ui/queries.jl")
+include("ui/components.jl")
+include("ui/charts.jl")
+include("ui/pages/home.jl")
+include("ui/pages/project.jl")
+include("ui/pages/experiment.jl")
+include("ui/pages/iteration.jl")
+include("ui/pages/model.jl")
 include("ui/app.jl")
+include("ui/auth.jl")
+include("ui/pages/users.jl")
+include("ui/pages/edit.jl")
 include("ui/server.jl")
 
 export Client, ClientError, connect, disconnect, refresh_token!, whoami, with_iteration
@@ -173,9 +185,7 @@ function AuthMiddleware(handler)
 
                 token = string(split(auth_header, " ")[2])
                 jwt = JWT(; jwt=token)
-                key = JWKSymmetric(
-                    "HS256", Array{UInt8,1}(_DEARDIARY_APICONFIG.jwt_secret)
-                )
+                key = JWKSymmetric("HS256", Array{UInt8,1}(_DEARDIARY_APICONFIG.jwt_secret))
                 try
                     validate!(jwt, key)
                 catch _
@@ -253,10 +263,11 @@ Start the server. Reads configuration from `env_file` (defaults to `.env`). The 
 binds to `127.0.0.1:9000` unless overridden by `DEARDIARY_HOST` and `DEARDIARY_PORT`.
 """
 function run(; env_file::String=".env")
-    global _DEARDIARY_APICONFIG = load_config(env_file)
+    config = load_config(env_file)
 
-    if _DEARDIARY_APICONFIG.enable_auth &&
-        _DEARDIARY_APICONFIG.jwt_secret == "deardiary_secret"
+    # Validate before publishing the config so a refused start leaves no half-configured
+    # global behind for the dashboard or the middlewares to read.
+    if config.enable_auth && config.jwt_secret == "deardiary_secret"
         throw(
             ArgumentError(
                 "Authentication is enabled but DEARDIARY_JWT_SECRET is set to the " *
@@ -265,6 +276,7 @@ function run(; env_file::String=".env")
             ),
         )
     end
+    global _DEARDIARY_APICONFIG = config
 
     initialize_database(; file_name=_DEARDIARY_APICONFIG.db_file)
 

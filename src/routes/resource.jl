@@ -122,6 +122,13 @@ function setup_resource_routes()
         "/{id}",
         middleware=[ProjectPermissionRequiredMiddleware(Resource, DeletePermission)],
     ) function (::HTTP.Request, id::String)
+        if !(isempty(get_modelversions(Resource, id)))
+            return error_response(
+                Conflict,
+                "Model versions are registered from this resource; delete them first";
+                status=HTTP.StatusCodes.CONFLICT,
+            )
+        end
         success = delete_resource(id)
 
         if !success

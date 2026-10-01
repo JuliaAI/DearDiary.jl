@@ -46,3 +46,15 @@ const SQL_INSERT_TAG = """
 const SQL_DELETE_TAG = """
     DELETE FROM tag WHERE id = :id
     """
+
+const SQL_DELETE_PROJECT_TAGS = """
+    DELETE FROM project_tag WHERE project_id = :id
+    """
+
+const SQL_DELETE_EXPERIMENT_TAGS = """
+    DELETE FROM experiment_tag WHERE experiment_id = :id
+    """
+
+const SQL_DELETE_ITERATION_TAGS = """
+    DELETE FROM iteration_tag WHERE iteration_id = :id
+    """

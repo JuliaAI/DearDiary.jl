@@ -19,7 +19,11 @@ each migration runs at most once per database, and the default-user insert uses
 `ON CONFLICT DO NOTHING`.
 """
 function initialize_database(; file_name::String="deardiary.db")
-    global _DEARDIARY_DATABASE = DuckDB.DB(file_name)
+    global _DEARDIARY_DATABASE
+    # Never hold two instances of the same file: the previous one must be fully closed
+    # before a new one reads the file.
+    isnothing(_DEARDIARY_DATABASE) || close_database()
+    _DEARDIARY_DATABASE = DuckDB.DB(file_name)
 
     apply_migrations(_DEARDIARY_DATABASE)
     seed_default_user(_DEARDIARY_DATABASE)
@@ -53,8 +57,15 @@ function close_database()
     global _DEARDIARY_DATABASE
 
     if !(isnothing(_DEARDIARY_DATABASE))
+        # DuckDB.jl releases prepared statements and results through finalizers, and each of
+        # them keeps the database instance alive. Collecting them first lets `close!` really
+        # shut the instance down, so the write-ahead log is checkpointed before this
+        # function returns instead of at some later collection, possibly while another
+        # handle to the same file is already open.
+        GC.gc()
         DBInterface.close!(_DEARDIARY_DATABASE)
         _DEARDIARY_DATABASE = nothing
+        GC.gc()
         @info "Database connection closed."
     end
 end

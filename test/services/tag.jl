@@ -187,5 +187,26 @@
             deleted = DearDiary.delete_tag("00000000-0000-0000-0000-000000000000")
             @test deleted == true
         end
+
+        @testset verbose = true "tagged records can be deleted" begin
+            user = DearDiary.get_user_by_username("default")
+            project_id, _ = DearDiary.create_project(user.id, "Tagged project")
+            experiment_id, _ = DearDiary.create_experiment(
+                project_id, DearDiary.IN_PROGRESS, "Tagged experiment"
+            )
+            iteration_id, _ = DearDiary.create_iteration(experiment_id)
+            DearDiary.add_tag(DearDiary.Project, project_id, "cascade-project")
+            DearDiary.add_tag(DearDiary.Experiment, experiment_id, "cascade-experiment")
+            DearDiary.add_tag(DearDiary.Iteration, iteration_id, "cascade-iteration")
+
+            @test DearDiary.delete_iteration(iteration_id)
+            @test isnothing(DearDiary.get_iteration(iteration_id))
+            @test DearDiary.delete_experiment(experiment_id)
+            @test isnothing(DearDiary.get_experiment(experiment_id))
+            @test DearDiary.delete_project(project_id)
+            @test isnothing(DearDiary.get_project(project_id))
+            # The tags themselves outlive the records they were attached to.
+            @test !isnothing(DearDiary.get_tag_by_value("cascade-iteration"))
+        end
     end
 end

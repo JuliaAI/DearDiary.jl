@@ -87,8 +87,9 @@ end
 """
     delete_user(client::Client, id::AbstractString)::Nothing
 
-Delete a [`User`](@ref) via `DELETE /user/{id}`. The viewer must be `id` or an admin; the
-seeded `default` user cannot be removed (the server rejects the request).
+Delete a [`User`](@ref) (and its [`UserPermission`](@ref) rows) via `DELETE /user/{id}`.
+The viewer must be `id` or an admin. The seeded `default` user cannot be removed; the
+server refuses with [`ClientError`](@ref) `"SERVER_ERROR"`.
 """
 function delete_user(client::Client, id::AbstractString)::Nothing
     _request(client, "DELETE", "/user/$id")

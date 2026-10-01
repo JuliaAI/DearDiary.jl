@@ -109,7 +109,7 @@ Update a [`Parameter`](@ref) record.
 - `value::Optional{AbstractString}`: The new value for the parameter.
 
 # Returns
-An [`UpsertResult`](@ref). [`Updated`](@ref) if the record was successfully updated (or no changes were made), [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
+An [`UpsertResult`](@ref). [`Updated`](@ref) if the record was successfully updated (or no changes were made), [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while updating the record.
 """
 function update_parameter(
     id::AbstractString, key::Optional{AbstractString}, value::Optional{AbstractString}
@@ -144,7 +144,7 @@ Update a [`Parameter`](@ref) record.
 - `value::Real`: The new value for the parameter.
 
 # Returns
-An [`UpsertResult`](@ref). [`Updated`](@ref) if the record was successfully updated (or no changes were made), [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
+An [`UpsertResult`](@ref). [`Updated`](@ref) if the record was successfully updated (or no changes were made), [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while updating the record.
 """
 function update_parameter(
     id::AbstractString, key::Optional{AbstractString}, value::Real
@@ -155,7 +155,8 @@ end
 """
     delete_parameter(id::AbstractString)::Bool
 
-Delete a [`Parameter`](@ref) record.
+Delete a [`Parameter`](@ref) record. Refused (returns `false`) when the owning
+[`Iteration`](@ref) has already ended.
 
 # Arguments
 - `id::AbstractString`: The id of the parameter to delete.

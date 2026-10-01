@@ -1,5 +1,5 @@
 @with_deardiary_test_db begin
-    @testset verbose = true " iteration repository" begin
+    @testset verbose = true "iteration repository" begin
         @testset verbose = true "insert" begin
             @testset "with existing experiment" begin
                 user = DearDiary.get_user_by_username("default")

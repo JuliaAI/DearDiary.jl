@@ -104,10 +104,11 @@ convert_field_to_key(::WithSymbolKeys, field::Symbol) = field
 convert_field_to_key(::WithStringKeys, field::Symbol) = String(field)
 
 """
-    type_from_dict(::Type{T}, data::Dict{K,Any}, trait::KeyConversionTrait)::T where {T, K}
+    type_from_dict(::Type{T}, data::AbstractDict)::T where {T}
 
-Build an instance of `T` from `data`, using `trait` to convert `K` keys to field name symbols.
-All fields of `T` must be present in the dictionary.
+Build an instance of `T` from `data`, whose keys may be `Symbol`s or `String`s. Missing keys
+and `missing` values become `nothing` for fields that allow it. Every other value is
+converted to the field type, and an `ArgumentError` is thrown when that conversion fails.
 """
 function type_from_dict(::Type{T}, data::AbstractDict)::T where {T}
     type_fields = fieldnames(T)
@@ -165,14 +166,14 @@ end
 (::Type{T})(data::AbstractDict) where {T<:ResultType} = type_from_dict(T, data)
 
 """
-    Base.show(io::IO, ::MIME"text/plain", T::Type{<:UpsertResult})
+    Base.show(io::IO, ::MIME"text/plain", x::T) where {T<:ResultType}
 
-Pretty-print an [`UpsertResult`](@ref) value to `io`.
+Pretty-print a [`ResultType`](@ref) value to `io`, one field per line.
 
 # Arguments
 - `io::IO`: The IO stream to write to.
 - `::MIME"text/plain"`: The MIME type for plain text.
-- `x::T`: The upsert result to print.
+- `x::T`: The record to print.
 """
 function Base.show(io::IO, ::MIME"text/plain", x::T) where {T<:ResultType}
     println(io, T)

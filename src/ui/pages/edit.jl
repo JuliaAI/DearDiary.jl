@@ -85,7 +85,7 @@ const _STAGE_OPTIONS = [
     (string(Integer(ARCHIVED)), "Archived"),
 ]
 
-# "Registered as v1 of iris-forest, v3 of iris-logreg": the versions that keep a record alive.
+# "Registered as v1 of iris-forest, v3 of iris-logreg": the versions keeping a record alive.
 function _registered_text(versions::AbstractVector{ModelVersion})::String
     labels = String[]
     for version in versions
@@ -256,6 +256,9 @@ function _experiment_editors(
     return (title=title, lede=lede, status=status, tags=_tag_row(tags, adder), menu=menu)
 end
 
+# Notes and tags are editable only while the iteration runs; once it has ended, a locked
+# badge explains why they are fixed. "Mark as killed" stays visible but disabled after the
+# end, and delete is disabled while model versions reference the iteration.
 function _iteration_editors(
     ctx::PageContext,
     iteration::Iteration,
@@ -477,9 +480,9 @@ function _add_tag_from_form(
     return ("err", "invalid")
 end
 
-# Only changed fields reach the service layer, and a form may carry a single field: the
-# store refuses to touch an indexed column such as a model name while versions reference
-# the row, even with the same value, and the inline editors post one field at a time.
+# The inline editors and badge selects post one field at a time, so an absent field means
+# unchanged. An unchanged value is dropped as well, so the service layer only writes what
+# differs.
 _changed(new::AbstractString, old::AbstractString) = new == old ? nothing : String(new)
 _changed(::Nothing, ::AbstractString) = nothing
 
@@ -506,6 +509,7 @@ function _edit_from_form(
         status = _parsed_option(fields, "status", Int.(instances(ExperimentStatus)))
         (status.present && isnothing(status.value)) && return ("err", "invalid")
         status_id = status.present ? status.value : entity.status_id
+        # Leaving "in progress" stamps the end date once; returning to it clears the date.
         end_date =
             status_id == Integer(IN_PROGRESS) ? nothing : something(entity.end_date, now())
         result = update_experiment(

@@ -147,7 +147,11 @@ end
     delete_iteration(client::Client, id::AbstractString)::Nothing
 
 Delete an [`Iteration`](@ref) (and its [`Parameter`](@ref)s + [`Metric`](@ref)s) via
-`DELETE /iteration/{id}`. Requires [`DeletePermission`](@ref) on the owning project.
+`DELETE /iteration/{id}`. Child iterations survive with their parent reference cleared.
+Requires [`DeletePermission`](@ref) on the owning project.
+
+The server refuses with `409` and code `"CONFLICT"` while a [`ModelVersion`](@ref) is
+registered from the iteration; delete those versions first.
 """
 function delete_iteration(client::Client, id::AbstractString)::Nothing
     _request(client, "DELETE", "/iteration/$id")

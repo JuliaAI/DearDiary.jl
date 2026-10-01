@@ -9,8 +9,9 @@ Fields
 - `name::String`: The name of the resource.
 - `description::String`: A description of the resource.
 - `data::Optional{Array{UInt8,1}}`: The binary data of the resource. Populated for the
-  inline backend (legacy inline storage); `nothing` for rows whose canonical bytes live in
-  an external backend (filesystem, S3) and are fetched on demand via the trait.
+  inline backend when the row is fetched by id. Empty for rows whose canonical bytes live in
+  an external backend (filesystem, S3) and are fetched on demand through `uri`. `nothing`
+  in list results, which never load the column.
 - `created_date::DateTime`: The date and time when the resource was created.
 - `updated_date::Optional{DateTime}`: The date and time when the resource was last updated.
 - `backend::String`: Short backend identifier (`"inline"`, `"filesystem"`, `"s3"`). Drives
@@ -19,8 +20,7 @@ Fields
   Empty string when `backend == "inline"` (the bytes are inline in `data`).
 - `size_bytes::Int64`: Exact byte count of the artifact. Surfaced in list endpoints without
   materialising the BLOB.
-- `content_hash::String`: Lower-case sha256 hex digest of the bytes. Empty string for
-  legacy rows not yet re-hashed by the backfill pass.
+- `content_hash::String`: Lower-case sha256 hex digest of the bytes.
 """
 struct Resource <: ResultType
     id::String

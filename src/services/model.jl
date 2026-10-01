@@ -46,7 +46,8 @@ end
 Register a new [`Model`](@ref) under `project_id`.
 
 The name must be unique within the project; a collision returns [`Duplicate`](@ref) instead
-of [`Created`](@ref). Registration against a non-existent project returns
+of [`Created`](@ref). The check lives here because the `model` table has no uniqueness
+constraint on the name. Registration against a non-existent project returns
 [`Unprocessable`](@ref).
 
 # Arguments
@@ -78,7 +79,8 @@ end
 """
     update_model(id::AbstractString, name::Optional{AbstractString}, description::Optional{AbstractString})::Type{<:UpsertResult}
 
-Update a [`Model`](@ref)'s mutable fields. Any keyword left as `nothing` is left untouched.
+Update a [`Model`](@ref)'s mutable fields. Any argument passed as `nothing` is left
+untouched.
 A new `name` must be unique within the project; a collision returns [`Duplicate`](@ref).
 
 # Arguments
@@ -98,7 +100,7 @@ function update_model(
     if isnothing(model)
         return Unprocessable
     end
-    # Checked here so a collision reports `Duplicate` before the database constraint does.
+    # The `model` table has no uniqueness constraint on `name`, so the service enforces it.
     if !(isnothing(name)) &&
         name != model.name &&
         any(other -> other.id != id && other.name == name, get_models(model.project_id))

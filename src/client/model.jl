@@ -47,7 +47,9 @@ end
     create_model(client::Client, project_id::AbstractString, name::AbstractString; description=nothing)::String
 
 Register a [`Model`](@ref) under `project_id` via `POST /model/project/{project_id}`.
-Requires [`CreatePermission`](@ref) on the project. Returns the new model id.
+Model names are unique within a project: a name already in use fails with
+[`ClientError`](@ref) `"CONFLICT"`. Requires [`CreatePermission`](@ref) on the project.
+Returns the new model id.
 """
 function create_model(
     client::Client,
@@ -68,7 +70,9 @@ end
     update_model(client::Client, id::AbstractString; name=nothing, description=nothing)::Nothing
 
 Patch a [`Model`](@ref) via `PATCH /model/{id}`. Any keyword left as `nothing` is left
-untouched server-side. Requires [`UpdatePermission`](@ref) on the owning project.
+untouched server-side. Renaming to a name another model in the project already uses fails
+with [`ClientError`](@ref) `"CONFLICT"`; registered versions follow the model under its new
+name. Requires [`UpdatePermission`](@ref) on the owning project.
 """
 function update_model(
     client::Client,

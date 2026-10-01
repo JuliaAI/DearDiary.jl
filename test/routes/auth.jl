@@ -226,7 +226,7 @@
                 @test response.status == HTTP.StatusCodes.OK
             end
 
-            @testset "with invalid JWT validation process" begin
+            @testset "with malformed JWT" begin
                 token = "invalid.token.string"
 
                 response = HTTP.get(

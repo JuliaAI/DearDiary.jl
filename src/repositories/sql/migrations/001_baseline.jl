@@ -1,10 +1,9 @@
 """
     MIGRATION_001_BASELINE
 
-The v0.9 DuckDB-native baseline schema. Creates every table in its final v0.9 shape (the
-columns that pre-DuckDB releases added incrementally via migrations 002-005 are declared
-inline here). DuckDB cannot open old SQLite `.db` files, so operators must start from a
-fresh DB. The `Migration` framework is retained for future schema changes.
+The baseline schema. Creates every table with `CREATE TABLE IF NOT EXISTS`, so running it
+against a database that already has the tables is a no-op. DuckDB cannot open database
+files written by the SQLite-backed releases, so those deployments start from a fresh file.
 """
 const MIGRATION_001_BASELINE = Migration(
     1,

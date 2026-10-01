@@ -3,8 +3,8 @@ function fetch(::Type{<:Tag}, id::AbstractString)::Optional{Tag}
     return (isnothing(tag)) ? nothing : (Tag(tag))
 end
 
-# `value` is a string just like the UUID `id`, so the by-value lookup can no longer be a
-# `fetch(Tag, ::AbstractString)` overload distinguished by argument type. It gets its own name.
+# `value` is a string just like the UUID `id`, so the by-value lookup cannot be a
+# `fetch(Tag, ::AbstractString)` overload told apart by argument type. It gets its own name.
 function fetch_by_value(::Type{<:Tag}, value::AbstractString)::Optional{Tag}
     tag = fetch(SQL_SELECT_TAG_BY_VALUE, (value=value,))
     return (isnothing(tag)) ? nothing : (Tag(tag))
@@ -65,13 +65,14 @@ function insert_tag(
     return insert(SQL_INSERT_ITERATION_TAG, iteration_tag_fields)
 end
 
+# Fails, returning `false`, while association rows still reference the tag: DuckDB enforces
+# the foreign keys, so an attached tag cannot be removed from under its records.
 function delete(::Type{<:Tag}, id::AbstractString)::Bool
     return delete(SQL_DELETE_TAG, id)
 end
 
 # DuckDB enforces the association foreign keys without cascading, so a tagged record's
 # join rows must go before the record itself or its delete is refused.
-
 delete_tags(::Type{<:Project}, project_id::AbstractString)::Bool =
     delete(SQL_DELETE_PROJECT_TAGS, project_id)
 delete_tags(::Type{<:Experiment}, experiment_id::AbstractString)::Bool =

@@ -1,5 +1,5 @@
 @with_deardiary_test_db begin
-    @testset verbose = true "Tag service" begin
+    @testset verbose = true "tag service" begin
         @testset verbose = true "get_tag by id" begin
             result = DearDiary.insert(DearDiary.Tag, "test-tag-service")
             tag_id = result.id

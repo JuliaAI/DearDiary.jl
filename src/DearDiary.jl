@@ -3,8 +3,8 @@ module DearDiary
 using Oxygen: headers
 using HTTP
 using JSON
-# JWTs 1.0 ships its exports in a way that `using JWTs` does not bring them into scope, so import
-# the names this package uses explicitly.
+# `using JWTs` does not bring these names into scope, so import the ones this package uses
+# explicitly.
 using JWTs: JWT, JWKSymmetric, sign!, validate!, isvalid, claims
 using Dates
 using Bcrypt
@@ -259,8 +259,16 @@ end
 """
     run(; env_file::String=".env")
 
-Start the server. Reads configuration from `env_file` (defaults to `.env`). The server
-binds to `127.0.0.1:9000` unless overridden by `DEARDIARY_HOST` and `DEARDIARY_PORT`.
+Start the REST API server and, when `DEARDIARY_ENABLE_UI` is true, the web dashboard.
+Configuration is read from `env_file` (defaults to `.env`). The API binds to
+`127.0.0.1:9000` unless overridden by `DEARDIARY_HOST` and `DEARDIARY_PORT`. The dashboard
+binds to `DEARDIARY_UI_HOST` and `DEARDIARY_UI_PORT` (`127.0.0.1:9001` by default).
+
+Throws an `ArgumentError` without starting anything when authentication is enabled but
+`DEARDIARY_JWT_SECRET` still holds the built-in default.
+
+# Arguments
+- `env_file::String`: Path of the environment file to load.
 """
 function run(; env_file::String=".env")
     config = load_config(env_file)
@@ -327,7 +335,8 @@ end
 """
     stop()
 
-Stops the server. Alias for `Oxygen.Core.terminate()`.
+Stop the dashboard server if one is running, close the database, and terminate the REST
+API server.
 """
 function stop()
     global _DEARDIARY_UI_SERVER

@@ -23,13 +23,15 @@ CurrentModule = DearDiary
 <img src="assets/deardiary-logo.svg" width="200" align="right" />
 ```
 
-The [Installation](@ref) and [Quickstart](@ref) pages cover initial setup.
+The [Installation](@ref) and [Quickstart](@ref) pages cover initial setup. [Embedded web UI](@ref)
+describes the dashboard.
 
 ## Features
 - **Tracking surface**: projects, experiments, iterations, parameters, metrics, tagged resources. Iterations form parent/child trees for HPO sweeps and distributed workers, and a status enum records failures with the captured exception text.
 - **Server + client**: built-in REST API for remote logging and a native Julia client (`DearDiary.connect`, `with_iteration`, …) that auto-finalises iterations whether the body returns or throws.
 - **Environment capture and replay**: every iteration records a `Manifest.toml` snapshot, the Julia version, and the git SHA. `DearDiary.restore(iteration_id)` writes the captured environment to a fresh directory for `Pkg.instantiate`.
 - **Pluggable storage**: single-file DuckDB metadata store. Artifact bytes live inline, on a local filesystem, or in any S3-compatible object store (AWS S3, MinIO, Cloudflare R2). `migrate_artifacts!` moves rows between backends on a live database.
+- **Web dashboard**: server-rendered pages next to the REST API for browsing projects, experiments, iterations, metric charts, artifacts, and the model registry. Names, descriptions, notes, status, stage, and tags are edited in place, and administrators manage users and project permissions when authentication is on.
 
 ## Motivation
 Reproducible ML depends on knowing what code, data, and environment produced each result. Established trackers such as MLflow, Weights & Biases, and Aim are Python-first, and Python environment capture commonly records dependency specifications that the installer re-resolves at install time. DearDiary is Julia-native and persists the `Manifest.toml` for each run, so the captured dependency environment can be reconstructed later by running `DearDiary.restore(iteration_id)`. The same tracking API applies whether the database is a single-file DuckDB store on a laptop or a multi-worker S3-backed deployment.

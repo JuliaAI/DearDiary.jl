@@ -3,11 +3,13 @@
 
 A rendered dashboard page before it is wrapped in the document shell.
 
-Fields
+# Fields
 - `title::String`: Browser tab title.
-- `crumbs::Vector`: Breadcrumb trail as `label => href` pairs; the current page has `nothing`.
+- `crumbs::Vector`: Breadcrumb trail as `label => href` pairs; the current page has
+  `nothing`.
 - `body::Vector{Any}`: DOM nodes placed inside the main column.
-- `live::Bool`: `true` when the page should refresh itself while iterations are running.
+- `live::Bool`: `true` while the page shows a running iteration and carries the live-refresh
+  pill.
 - `status::Int`: HTTP status the page is served with.
 - `chrome::Bool`: `false` for pages rendered without the top bar and footer (sign-in).
 """
@@ -38,7 +40,7 @@ end
 
 What a page needs to know about the request it answers.
 
-Fields
+# Fields
 - `viewer::User`: The signed-in user (or the seeded default when auth is off).
 - `path::String`: Request path, used to mark the active navigation entry.
 - `query::Dict{String,String}`: Query parameters, used for one-shot notices after a form.
@@ -65,6 +67,11 @@ end
 
 What the viewer may do to the records of one project, mirroring the REST middlewares:
 administrators may do everything, members need the matching project permission.
+
+# Fields
+- `update::Bool`: May edit names, descriptions, notes, statuses, and stages.
+- `create::Bool`: May add tags.
+- `delete::Bool`: May delete records and model versions.
 """
 struct Access
     update::Bool

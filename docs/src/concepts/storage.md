@@ -11,9 +11,11 @@ the working directory and is overridden by the `DEARDIARY_DB_FILE` environment v
 
 The database is created and migrated automatically on first use. There is nothing to
 provision: copying the file is sufficient to move or back up the full tracking history.
+Schema changes ship as forward-only migrations that run when the file is opened; see
+[Migrations](@ref).
 
-DuckDB replaced an earlier SQLite store in v0.9.0. Databases created with older versions
-are not compatible.
+DuckDB replaced an earlier SQLite store. It cannot open the files that store produced, so
+start from a fresh database file.
 
 ## Artifacts: pluggable backends
 
@@ -55,9 +57,3 @@ The pass is idempotent: already-migrated rows are skipped, and rows that fail ar
 untouched so a re-run picks up where it stopped.
 
 For the full walkthrough see [Migrate artifacts between backends](@ref).
-
-## History note
-
-The inline backend identifier was previously `sqlite` in installations that predated the
-DuckDB migration. The current identifier is `inline`. New installations only ever see
-`inline`.

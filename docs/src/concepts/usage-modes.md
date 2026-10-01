@@ -33,7 +33,8 @@ anywhere that has DearDiary installed to inspect the results.
 ## Server mode
 
 Run [`DearDiary.run`](@ref) to start the REST API server, then connect to it from a
-separate process or machine using the [`Client`](@ref).
+separate process or machine using the [`Client`](@ref). The same call serves the dashboard
+on `DEARDIARY_UI_PORT`; see [Embedded web UI](@ref).
 
 ```julia
 # Process 1: start the server
@@ -71,6 +72,7 @@ concurrently.
 | Auth | None | Optional JWT |
 | Concurrent writers | Single process | Multiple processes |
 | Data location | Local DuckDB file | Server-side DuckDB file |
+| Dashboard | None | Served on `DEARDIARY_UI_PORT` |
 
 Offline mode is the simpler starting point. Server mode is appropriate when concurrent
 writers are required or the tracking store needs to be separated from the training machines.

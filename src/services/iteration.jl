@@ -1,13 +1,13 @@
 """
     get_iteration(id::AbstractString)::Optional{Iteration}
 
-Get a [`Iteration`](@ref) by id.
+Get an [`Iteration`](@ref) by id.
 
 # Arguments
 - `id::AbstractString`: The id of the iteration to query.
 
 # Returns
-A [`Iteration`](@ref) object. If the record does not exist, return `nothing`.
+An [`Iteration`](@ref) object. If the record does not exist, return `nothing`.
 """
 get_iteration(id::AbstractString)::Optional{Iteration} = fetch(Iteration, id)
 
@@ -63,7 +63,7 @@ end
 """
     create_iteration(experiment_id::AbstractString; parent_iteration_id=nothing)::NamedTuple{id::Optional{String},status::DataType}
 
-Create a [`Iteration`](@ref).
+Create an [`Iteration`](@ref).
 
 When `parent_iteration_id` is supplied, the new row is a child run, used to model HPO
 trials, nested-CV folds, or distributed-worker fan-outs. The parent must already exist and
@@ -110,7 +110,7 @@ end
 """
     update_iteration(id::AbstractString, notes::Optional{AbstractString}, end_date::Optional{DateTime}; status_id=nothing, error_message=nothing)::Type{<:UpsertResult}
 
-Update a [`Iteration`](@ref) record.
+Update an [`Iteration`](@ref) record.
 
 Once an iteration has been finalised (`end_date` is set), the row is locked: further updates
 return [`Unprocessable`](@ref). The intended terminal-state flow is to pass `end_date`,
@@ -226,16 +226,16 @@ end
 """
     delete_iteration(id::AbstractString)::Bool
 
-Delete a [`Iteration`](@ref) record. Children whose `parent_iteration_id` points at this row
-have their reference set to `NULL` by the service layer before the delete; they continue to
+Delete an [`Iteration`](@ref) record together with its [`Parameter`](@ref) and
+[`Metric`](@ref) records and its tag associations. Children whose `parent_iteration_id`
+points at this row have their reference set to `NULL` before the delete; they continue to
 exist as standalone iterations until explicitly deleted.
 
 The delete is refused (returns `false`) while a [`ModelVersion`](@ref) is registered from
 the iteration; delete those versions first so the registry never points at a missing run.
 
 # Arguments
-- `id::AbstractString`: The id of the iteration to delete. Also deletes all associated
-  [`Parameter`](@ref) and [`Metric`](@ref) records.
+- `id::AbstractString`: The id of the iteration to delete.
 
 # Returns
 `true` if the record was successfully deleted, `false` otherwise.
@@ -249,8 +249,8 @@ function delete_iteration(id::AbstractString)::Bool
     delete_parameters(iteration)
     delete_metrics(iteration)
 
-    # Detach children first: DuckDB FKs block deleting a still-referenced parent (no
-    # ON DELETE SET NULL action), so this reproduces the old set-null-on-parent-delete.
+    # Detach children first: DuckDB foreign keys have no ON DELETE SET NULL action and
+    # refuse to delete a parent that is still referenced.
     nullify_children(Iteration, id)
     delete_tags(Iteration, id)
 

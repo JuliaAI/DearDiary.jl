@@ -42,8 +42,8 @@ function create_test_env_file(;
             write(io, "DEARDIARY_JWT_SECRET=$jwt_secret\n")
         end
         write(io, "DEARDIARY_ENABLE_AUTH=$enable_auth\n")
-        # Keep the Bonito UI server off in the route tests: booting it renders the dashboard,
-        # which bundles JS via a Deno subprocess that hangs on a headless CI runner.
+        # Keep the dashboard server off in the route tests; `ui/server.jl` boots it on its
+        # own port when it needs a live instance.
         write(io, "DEARDIARY_ENABLE_UI=$enable_ui\n")
     end
     return file

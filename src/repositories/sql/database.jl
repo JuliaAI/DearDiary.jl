@@ -10,7 +10,8 @@ const SQL_CREATE_USER = """
     )
     """
 
-# NOTE: the default-user rules live in src/services/user.jl (DuckDB has no triggers).
+# The default-user rules (always an admin, never deleted) live in src/services/user.jl,
+# since DuckDB has no triggers.
 
 const SQL_INSERT_DEFAULT_ADMIN_USER = """
     INSERT INTO user (first_name, last_name, username, password, created_date, is_admin)
@@ -154,6 +155,8 @@ const SQL_CREATE_ITERATIONTAG = """
     )
     """
 
+# The baseline is frozen, so `UNIQUE(project_id, name)` stays declared here. Migration 002
+# rebuilds the table without it, and the service layer enforces name uniqueness instead.
 const SQL_CREATE_MODEL = """
     CREATE TABLE IF NOT EXISTS model (
         id VARCHAR PRIMARY KEY DEFAULT uuid(),

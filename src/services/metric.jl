@@ -155,7 +155,7 @@ Update a [`Metric`](@ref) record.
 - `recorded_at::Optional{DateTime}`: The new timestamp.
 
 # Returns
-An [`UpsertResult`](@ref). [`Updated`](@ref) if the record was successfully updated (or no changes were made), [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
+An [`UpsertResult`](@ref). [`Updated`](@ref) if the record was successfully updated (or no changes were made), [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while updating the record.
 """
 function update_metric(
     id::AbstractString,
@@ -188,7 +188,8 @@ end
 """
     delete_metric(id::AbstractString)::Bool
 
-Delete a [`Metric`](@ref) record.
+Delete a [`Metric`](@ref) record. Refused (returns `false`) when the owning
+[`Iteration`](@ref) has already ended.
 
 # Arguments
 - `id::AbstractString`: The id of the metric to delete.

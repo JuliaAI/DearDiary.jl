@@ -13,7 +13,8 @@ duckdbify(query::AbstractString)::String = replace(query, _NAMED_PARAM => s"$\1"
     row_to_dict(row)::Dict{Symbol,Any}
 
 Convert a query row (a `NamedTuple` from `Tables.namedtupleiterator`) to a dictionary.
-DuckDB returns SQL `NULL` as `missing`, matching the previous SQLite behaviour.
+DuckDB returns SQL `NULL` as `missing`, which `type_from_dict` turns into `nothing` for
+nullable fields.
 """
 row_to_dict(row)::Dict{Symbol,Any} = Dict{Symbol,Any}(pairs(row))
 
@@ -127,7 +128,7 @@ Execute an UPDATE for `object`, setting only the non-`nothing` keyword fields.
 
 # Arguments
 - `query::AbstractString`: UPDATE query with a `{fields}` placeholder and `:id` bind.
-- `object::Optional{<:UpsertType}`: The record to update (provides the `:id` bind value).
+- `object::Optional{<:ResultType}`: The record to update (provides the `:id` bind value).
 - `parameters`: Fields to update; `nothing` values are skipped.
 
 # Returns

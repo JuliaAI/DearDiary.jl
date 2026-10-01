@@ -209,7 +209,7 @@
                 @test length(versions) == 1
                 @test versions[1].iteration_id == "i1"
                 @test versions[1].stage_id == Integer(DearDiary.PRODUCTION)
-                # The unique constraint is gone: renaming a model with versions now works.
+                # Without the unique constraint, a model with versions can be renamed.
                 @test DearDiary.update_model("m1", "forest-renamed", nothing) ===
                     DearDiary.Updated
                 @test DearDiary.get_model("m1").name == "forest-renamed"

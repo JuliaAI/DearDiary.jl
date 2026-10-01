@@ -19,7 +19,7 @@ Each [`Iteration`](@ref DearDiary.Iteration) can hold an [`EnvironmentSnapshot`]
 | `manifest_toml` | Verbatim `Manifest.toml` of the active environment |
 
 The snapshot is taken by [`capture_environment`](@ref) and persisted on the iteration row
-by [`snapshot_environment!`](@ref). Both functions never throw: a missing git repo, an
+by [`snapshot_environment!`](@ref). Neither function throws: a missing git repo, an
 unresolved environment, and a REPL session all fall back to empty strings.
 
 ## Automatic capture

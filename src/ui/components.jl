@@ -324,8 +324,8 @@ function _lineage_row(kind::AbstractString, name, time::AbstractString; current:
     )
 end
 
-# Stacked bar of iteration outcomes, widest segment first so a glance reads the dominant
-# status. The tooltip carries the exact counts.
+# Stacked bar of iteration outcomes in a fixed order (succeeded, failed, running, killed)
+# so each colour always sits in the same place. The tooltip carries the exact counts.
 function _statusbar(counts::Dict{Int64,Int})
     total = sum(values(counts); init=0)
     total == 0 && return DOM.span("–"; class="dd-dim")
@@ -478,7 +478,7 @@ function _button(
 end
 
 """
-    _form(action, csrf, children...; confirm=nothing)
+    _form(action, csrf, children...; confirm=nothing, class="dd-form")
 
 A same-origin POST form carrying the session's CSRF token. `confirm` asks the browser for
 confirmation before submitting, for destructive actions.
@@ -537,7 +537,8 @@ _trash_icon() = _icon("M4 7h16", "M10 11v6", "M14 11v6", "M6 7l1 13h10l1-13", "M
     _tip(node, text)
 
 Wrap `node` so a short explanation appears on hover or focus. Used for controls that are
-present but unavailable right now, so the reason is one hover away instead of hidden.
+present but unavailable right now, so the reason is one hover away instead of hidden. The
+text is also rendered for screen readers, which never see the tooltip.
 """
 _tip(node, text::AbstractString) =
     DOM.span(node, DOM.span(" " * text; class="dd-sr-only"); class="dd-tip", dataTip=text)
@@ -649,7 +650,9 @@ end
 """
     _badge_select(ctx, action, name, options, value, tone; label)
 
-A lifecycle control styled like the status badge it replaces. Changing it submits at once.
+A lifecycle control styled like the status badge it replaces. A pointer pick submits at
+once; a keyboard change reveals the otherwise hidden Apply button so arrowing through the
+options never submits by itself.
 """
 function _badge_select(
     ctx::PageContext,
@@ -693,6 +696,7 @@ function _tag_row(tags::AbstractVector{Tag}, adder)
     return DOM.div(chips..., adder; class="dd-tags dd-tags-row")
 end
 
+# One per page: the opener targets the fixed id `tag-add`.
 function _tag_adder(ctx::PageContext, action::AbstractString)
     opener = DOM.button(
         "+ Tag";

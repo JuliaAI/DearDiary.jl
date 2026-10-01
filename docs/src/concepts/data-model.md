@@ -56,16 +56,24 @@ to an experiment. The backend that holds the bytes is recorded on the row itself
 Deletes cascade downwards: removing a project removes its registry, experiments,
 iterations, artifacts, permissions, and tags; removing an experiment removes its iterations
 and artifacts; removing an iteration removes its parameters and metrics and detaches its
-children. A record that a [`ModelVersion`](@ref DearDiary.ModelVersion) still points at
-(the iteration it was registered from, or the artifact it stores) cannot be deleted until
-that version is deleted, so the registry never references a missing run. The REST API
-answers such a delete with `409 CONFLICT`; the service functions return `false`.
+children; removing a model removes its versions and keeps their artifacts. A record that a
+[`ModelVersion`](@ref DearDiary.ModelVersion) still points at (the iteration it was
+registered from, or the artifact it stores) cannot be deleted until that version is
+deleted, so the registry never references a missing run. The REST API answers such a
+delete with `409 CONFLICT`; the service functions return `false`.
+
+Tags outlive the records they were attached to. Deleting a tagged project, experiment, or
+iteration removes the association and leaves the tag in place, and a tag that is still
+attached to a record cannot be deleted.
 
 ## Model registry
 
 The model registry adds two more entity types, both project-scoped:
 
-- [`Model`](@ref DearDiary.Model): a named entry in the registry. Unique by name within its project.
+- [`Model`](@ref DearDiary.Model): a named entry in the registry. The name is unique within the
+  project: `create_model` and `update_model` return [`Duplicate`](@ref DearDiary.Duplicate)
+  for a name another model in the same project already uses. A model can be renamed at any
+  time, including after versions have been registered.
 - [`ModelVersion`](@ref DearDiary.ModelVersion): one concrete checkpoint of a model. Each version has a monotonically
   increasing version number, points at the [`Iteration`](@ref DearDiary.Iteration) that produced it, and
   optionally links to a [`Resource`](@ref DearDiary.Resource) holding the serialised bytes.

@@ -1,13 +1,13 @@
 """
     get_experiment(id::AbstractString)::Optional{Experiment}
 
-Get a [`Experiment`](@ref) by id.
+Get an [`Experiment`](@ref) by id.
 
 # Arguments
 - `id::AbstractString`: The id of the experiment to query.
 
 # Returns
-A [`Experiment`](@ref) object. If the record does not exist, return `nothing`.
+An [`Experiment`](@ref) object. If the record does not exist, return `nothing`.
 """
 get_experiment(id::AbstractString)::Optional{Experiment} = fetch(Experiment, id)
 
@@ -47,7 +47,7 @@ end
 """
     create_experiment(project_id::AbstractString, status_id::Integer, name::AbstractString)::NamedTuple{id::Optional{String},status::DataType}
 
-Create a [`Experiment`](@ref).
+Create an [`Experiment`](@ref).
 
 # Arguments
 - `project_id::AbstractString`: The id of the project to create the experiment for.
@@ -84,7 +84,7 @@ end
 """
     create_experiment(project_id::AbstractString, status::ExperimentStatus, name::AbstractString)::NamedTuple{id::Optional{String},status::DataType}
 
-Create a [`Experiment`](@ref).
+Create an [`Experiment`](@ref).
 
 # Arguments
 - `project_id::AbstractString`: The id of the project to create the experiment for.
@@ -104,17 +104,19 @@ end
 """
     update_experiment(id::AbstractString, status_id::Optional{Integer}, name::Optional{AbstractString}, description::Optional{AbstractString}, end_date::Optional{DateTime})::Type{<:UpsertResult}
 
-Update a [`Experiment`](@ref) record.
+Update an [`Experiment`](@ref) record. Setting the status back to [`IN_PROGRESS`](@ref)
+clears a previously recorded `end_date`.
 
 # Arguments
 - `id::AbstractString`: The id of the experiment to update.
-- `status_id::Optional{Integer}`: The new status of the experiment.
+- `status_id::Optional{Integer}`: The status of the experiment. Must be a valid
+  [`ExperimentStatus`](@ref) value; passing `nothing` returns [`Unprocessable`](@ref).
 - `name::Optional{AbstractString}`: The new name of the experiment.
 - `description::Optional{AbstractString}`: The new description of the experiment.
 - `end_date::Optional{DateTime}`: The new end date of the experiment.
 
 # Returns
-An [`UpsertResult`](@ref). [`Updated`](@ref) if the record was successfully updated (or no changes were made), [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
+An [`UpsertResult`](@ref). [`Updated`](@ref) if the record was successfully updated (or no changes were made), [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while updating the record.
 """
 function update_experiment(
     id::AbstractString,
@@ -163,7 +165,7 @@ end
 """
     update_experiment(id::AbstractString, status::ExperimentStatus, name::Optional{AbstractString}, description::Optional{AbstractString}, end_date::Optional{DateTime})::Type{<:UpsertResult}
 
-Update a [`Experiment`](@ref) record.
+Update an [`Experiment`](@ref) record.
 
 # Arguments
 - `id::AbstractString`: The id of the experiment to update.
@@ -173,7 +175,7 @@ Update a [`Experiment`](@ref) record.
 - `end_date::Optional{DateTime}`: The new end date of the experiment.
 
 # Returns
-An [`UpsertResult`](@ref). [`Updated`](@ref) if the record was successfully updated (or no changes were made), [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
+An [`UpsertResult`](@ref). [`Updated`](@ref) if the record was successfully updated (or no changes were made), [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while updating the record.
 """
 function update_experiment(
     id::AbstractString,
@@ -188,7 +190,8 @@ end
 """
     delete_experiment(id::AbstractString)::Bool
 
-Delete a [`Experiment`](@ref) record. Also deletes all associated [`Iteration`](@ref) and [`Resource`](@ref) records.
+Delete an [`Experiment`](@ref) record together with its [`Iteration`](@ref) and
+[`Resource`](@ref) records and its tag associations.
 
 The delete is refused (returns `false`) while a [`ModelVersion`](@ref) is registered from
 one of the experiment's iterations or points at one of its artifacts.

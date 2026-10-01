@@ -58,7 +58,9 @@ end
 """
     delete_tag(client::Client, id::AbstractString)::Nothing
 
-Delete a [`Tag`](@ref) (and its parent associations) via `DELETE /tag/{id}`. Admin-only.
+Delete a [`Tag`](@ref) via `DELETE /tag/{id}`. Admin-only. Only a tag attached to nothing
+can be removed: the REST API has no detach endpoint, so a tag still attached to a project,
+experiment, or iteration is refused and surfaces as [`ClientError`](@ref) `"SERVER_ERROR"`.
 """
 function delete_tag(client::Client, id::AbstractString)::Nothing
     _request(client, "DELETE", "/tag/$id")

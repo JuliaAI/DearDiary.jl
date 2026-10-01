@@ -1,27 +1,27 @@
 """
     get_user(id::AbstractString)::Optional{User}
 
-Get an [`User`](@ref) by id.
+Get a [`User`](@ref) by id.
 
 # Arguments
 - `id::AbstractString`: The id of the user to query.
 
 # Returns
-An [`User`](@ref) object. If the record does not exist, return `nothing`.
+A [`User`](@ref) object. If the record does not exist, return `nothing`.
 """
 get_user(id::AbstractString)::Optional{User} = fetch(User, id)
 
 """
     get_user_by_username(username::AbstractString)::Optional{User}
 
-Get an [`User`](@ref) by username. Distinct from [`get_user`](@ref) because ids and usernames
-are both strings now and can no longer be told apart by argument type.
+Get a [`User`](@ref) by username. Distinct from [`get_user`](@ref) because ids and usernames
+are both strings, so the two lookups cannot share a method told apart by argument type.
 
 # Arguments
 - `username::AbstractString`: The username of the user to query.
 
 # Returns
-An [`User`](@ref) object. If the record does not exist, return `nothing`.
+A [`User`](@ref) object. If the record does not exist, return `nothing`.
 """
 get_user_by_username(username::AbstractString)::Optional{User} = fetch_by_username(
     User, username
@@ -40,7 +40,7 @@ get_users()::Array{User,1} = fetch_all(User)
 """
     create_user(first_name::AbstractString, last_name::AbstractString, username::AbstractString, password::AbstractString)::NamedTuple{id::Optional{String},status::DataType}
 
-Create an [`User`](@ref).
+Create a [`User`](@ref).
 
 # Arguments
 - `first_name::AbstractString`: The first name of the user.
@@ -66,7 +66,7 @@ end
 """
     update_user(id::AbstractString, first_name::Optional{AbstractString}, last_name::Optional{AbstractString}, password::Optional{AbstractString}, is_admin::Optional{Bool})::Type{<:UpsertResult}
 
-Update an [`User`](@ref).
+Update a [`User`](@ref).
 
 # Arguments
 - `id::AbstractString`: The id of the user to update.
@@ -76,7 +76,7 @@ Update an [`User`](@ref).
 - `is_admin::Optional{Bool}`: The new admin status of the user.
 
 # Returns
-An [`UpsertResult`](@ref). [`Updated`](@ref) if the record was successfully updated (or no fields were changed), [`Unprocessable`](@ref) if the record violates a constraint or if no fields were provided to update, and [`Error`](@ref) if an error occurred while updating the record.
+An [`UpsertResult`](@ref). [`Updated`](@ref) if the record was successfully updated (or no fields were changed), [`Unprocessable`](@ref) if the user does not exist, the update would demote the seeded `default` user, or a constraint is violated, and [`Error`](@ref) if an error occurred while updating the record.
 """
 function update_user(
     id::AbstractString,
@@ -90,8 +90,8 @@ function update_user(
         return Unprocessable
     end
 
-    # The seeded `default` user must stay an admin (previously a DB trigger; now enforced
-    # here since DuckDB has no triggers).
+    # The seeded `default` user must stay an admin. DuckDB has no triggers, so the service
+    # enforces the rule.
     if user.username == "default" && is_admin === false
         return Unprocessable
     end
@@ -123,7 +123,8 @@ end
 """
     delete_user(id::AbstractString)::Bool
 
-Delete an [`User`](@ref). Also deletes all associated [`UserPermission`](@ref).
+Delete a [`User`](@ref). Also deletes all associated [`UserPermission`](@ref). The seeded
+`default` user is never deleted; the call returns `false` instead.
 
 # Arguments
 - `id::AbstractString`: The id of the user to delete.
@@ -133,8 +134,8 @@ Delete an [`User`](@ref). Also deletes all associated [`UserPermission`](@ref).
 """
 function delete_user(id::AbstractString)::Bool
     user = fetch(User, id)
-    # The seeded `default` user is protected (previously enforced by a DB trigger; DuckDB has
-    # no triggers, so the guard lives here).
+    # The seeded `default` user cannot be deleted. DuckDB has no triggers, so the service
+    # enforces the rule.
     if !(user isa User) || user.username == "default"
         return false
     end

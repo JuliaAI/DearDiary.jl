@@ -1,4 +1,4 @@
-# Ten series colours tuned to read on both the paper and ink themes. Series beyond the
+# Ten series colours tuned to read on both the light and dark themes. Series beyond the
 # tenth wrap around.
 const _SERIES_COLORS = [
     "#4a7aa6",

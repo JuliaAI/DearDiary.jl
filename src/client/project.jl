@@ -61,8 +61,9 @@ end
 """
     delete_project(client::Client, id::AbstractString)::Nothing
 
-Delete a [`Project`](@ref) (cascading [`UserPermission`](@ref) and [`Experiment`](@ref)
-records) via `DELETE /project/{id}`. Admin-only. Raises [`ClientError`](@ref) on failure.
+Delete a [`Project`](@ref) via `DELETE /project/{id}`. The project's model registry,
+experiments (with their iterations and artifacts), [`UserPermission`](@ref) rows, and tag
+attachments go with it. Admin-only. Raises [`ClientError`](@ref) on failure.
 """
 function delete_project(client::Client, id::AbstractString)::Nothing
     _request(client, "DELETE", "/project/$id")

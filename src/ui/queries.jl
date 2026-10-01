@@ -74,6 +74,8 @@ function _tree_order(iterations::AbstractVector{Iteration})::Vector{Tuple{Iterat
     return out
 end
 
+# One metric key on an iteration: the latest value and the step it was logged at, the
+# first value, the finite extrema, the number of points, and every value for the sparkline.
 struct MetricSummary
     key::String
     last::Float64

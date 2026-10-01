@@ -52,8 +52,8 @@ function setup_metric_routes()
         "/iteration/{iteration_id}/batch",
         middleware=[ProjectPermissionRequiredMiddleware(Metric, CreatePermission)],
     ) function (::HTTP.Request, iteration_id::String, parameters::Json{MetricBatchPayload})
-        # `MetricBatchPayload` carries an ordered array so the inserted ids align with the
-        # client-side iteration order, which retries can use to determine what landed.
+        # The payload array is folded into a dict: a repeated key keeps its last value, and
+        # the returned ids follow the dict's iteration order rather than the request order.
         items = Dict{String,Float64}(
             item.key => item.value for item in parameters.payload.metrics
         )

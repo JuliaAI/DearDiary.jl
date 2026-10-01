@@ -87,8 +87,8 @@ Return the [`AbstractArtifactStore`](@ref) selected by the active [`APIConfig`](
 
 `run` populates `_DEARDIARY_APICONFIG` at startup, so this helper is only meaningful after
 the server has booted (or a test harness has supplied a config). When no config is loaded
-the function falls back to [`InlineStore`](@ref) so offline code paths (`@with_deardiary_test_db`)
-behave the same as before the artifact-store refactor.
+the function falls back to [`InlineStore`](@ref), so offline code paths such as
+`@with_deardiary_test_db` keep artifact bytes inline without any configuration.
 """
 function current_artifact_store()::AbstractArtifactStore
     global _DEARDIARY_APICONFIG

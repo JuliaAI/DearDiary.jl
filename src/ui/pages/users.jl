@@ -261,8 +261,8 @@ end
     _handle_users_post(ctx::PageContext, request::HTTP.Request)::HTTP.Response
 
 Apply a user-management form. Authorization mirrors the REST routes: anyone may edit their
-own profile and password, only admins may create, re-role, grant access to, or delete
-accounts, and the seeded default account keeps its protections.
+own profile and password, only admins may create accounts, change roles, grant project
+access, or delete accounts, and the seeded default account keeps its protections.
 """
 function _handle_users_post(ctx::PageContext, request::HTTP.Request)::HTTP.Response
     viewer = ctx.viewer

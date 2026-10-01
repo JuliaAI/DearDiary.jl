@@ -122,6 +122,8 @@ function setup_resource_routes()
         "/{id}",
         middleware=[ProjectPermissionRequiredMiddleware(Resource, DeletePermission)],
     ) function (::HTTP.Request, id::String)
+        # Checked here so the refusal surfaces as 409 CONFLICT instead of the generic 500 a
+        # `false` service result would produce.
         if !(isempty(get_modelversions(Resource, id)))
             return error_response(
                 Conflict,

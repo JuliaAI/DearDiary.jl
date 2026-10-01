@@ -39,8 +39,8 @@ function setup_model_routes()
                 status=get_status_by_upsert_result(upsert_result),
             )
         end
-        # The description is optional at the type level but the registry only stores a
-        # non-null `description` once the row exists; apply it as a follow-up update.
+        # `insert(Model, ...)` takes no description, so an optional one is applied as a
+        # follow-up update once the row exists.
         if !(isnothing(parameters.payload.description))
             update_model(model_id, nothing, parameters.payload.description)
         end

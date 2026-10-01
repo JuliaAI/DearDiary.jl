@@ -107,7 +107,7 @@ Update a [`Project`](@ref) record.
 - `description::Optional{AbstractString}`: The new description for the project.
 
 # Returns
-An [`UpsertResult`](@ref). [`Updated`](@ref) if the record was successfully updated (or no changes were made), [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
+An [`UpsertResult`](@ref). [`Updated`](@ref) if the record was successfully updated (or no changes were made), [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while updating the record.
 """
 function update_project(
     id::AbstractString,
@@ -130,9 +130,9 @@ end
 """
     delete_project(id::AbstractString)::Bool
 
-Delete a [`Project`](@ref) record. Also deletes all associated [`UserPermission`](@ref) and [`Experiment`](@ref) records.
-The project's model registry, experiments (with their iterations and artifacts),
-permissions, and tags are deleted with it.
+Delete a [`Project`](@ref) record together with everything it owns: its model registry
+([`Model`](@ref) and [`ModelVersion`](@ref) rows), its [`Experiment`](@ref) records with
+their iterations and artifacts, its [`UserPermission`](@ref) rows, and its tag associations.
 
 # Arguments
 - `id::AbstractString`: The id of the project to delete.
@@ -146,8 +146,8 @@ function delete_project(id::AbstractString)::Bool
         return false
     end
 
-    # The registry belongs to the project, so it goes first; afterwards no version can
-    # block the experiments below.
+    # Remove the registry first: `delete_experiment` refuses while a model version still
+    # references one of its iterations or artifacts.
     for model in get_models(project.id)
         delete_model(model.id)
     end

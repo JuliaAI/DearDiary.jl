@@ -1,4 +1,4 @@
-# Artifact Storage
+# Artifact storage
 ```@docs
 DearDiary.AbstractArtifactStore
 DearDiary.ArtifactWriteResult

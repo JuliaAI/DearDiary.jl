@@ -85,8 +85,8 @@ end
 delete(::Type{<:Iteration}, id::AbstractString)::Bool = delete(SQL_DELETE_ITERATION, id)
 
 # Set `parent_iteration_id = NULL` on every child of `id`. DuckDB foreign keys have no
-# `ON DELETE SET NULL` action and block deleting a still-referenced parent, so callers must
-# run this before deleting a parent iteration to preserve historical lineage semantics.
+# `ON DELETE SET NULL` action and block deleting a still-referenced parent, so callers run
+# this before deleting a parent iteration; the children survive as standalone runs.
 function nullify_children(::Type{<:Iteration}, id::AbstractString)::Bool
     try
         DBInterface.execute(

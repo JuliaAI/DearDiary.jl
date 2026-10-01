@@ -3,8 +3,9 @@ function fetch(::Type{<:User}, id::AbstractString)::Optional{User}
     return (isnothing(user)) ? nothing : (User(user))
 end
 
-# `username` is a string just like the UUID `id`, so the by-username lookup can no longer be a
-# `fetch(User, ::AbstractString)` overload distinguished by argument type. It gets its own name.
+# `username` is a string just like the UUID `id`, so the by-username lookup cannot be a
+# `fetch(User, ::AbstractString)` overload told apart by argument type. It gets its own
+# name.
 function fetch_by_username(::Type{<:User}, username::AbstractString)::Optional{User}
     user = fetch(SQL_SELECT_USER_BY_USERNAME, (username=username,))
     return (isnothing(user)) ? nothing : (User(user))

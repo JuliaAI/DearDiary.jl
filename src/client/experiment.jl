@@ -47,8 +47,9 @@ end
     create_experiment(client::Client, project_id::AbstractString, status_id::Integer, name::AbstractString)::String
 
 Create an [`Experiment`](@ref) under `project_id` via `POST /experiment/project/{project_id}`.
-`status_id` must equal `Integer(IN_PROGRESS)`; the server rejects experiments created already terminated. Requires [`CreatePermission`](@ref) on the project. Returns
-the new experiment id.
+`status_id` must equal `Integer(IN_PROGRESS)`; the server rejects experiments that start
+already terminated. Requires [`CreatePermission`](@ref) on the project. Returns the new
+experiment id.
 """
 function create_experiment(
     client::Client, project_id::AbstractString, status_id::Integer, name::AbstractString
@@ -80,9 +81,12 @@ end
 """
     update_experiment(client::Client, id::AbstractString; status_id=nothing, name=nothing, description=nothing, end_date=nothing)::Nothing
 
-Patch an [`Experiment`](@ref) via `PATCH /experiment/{id}`. Any keyword left as `nothing`
-is left untouched server-side. Reopening (`status_id == Integer(IN_PROGRESS)` on a row
-that previously had an `end_date`) clears `end_date` automatically. Requires
+Patch an [`Experiment`](@ref) via `PATCH /experiment/{id}`. The server validates
+`status_id` on every call, so pass the current status (or use the
+[`ExperimentStatus`](@ref)-typed overload) when only the other fields change; a missing
+status fails with [`ClientError`](@ref) `"INVALID_PAYLOAD"`. The remaining keywords left as
+`nothing` are left untouched server-side. Reopening (`status_id == Integer(IN_PROGRESS)` on
+a row that has an `end_date`) clears `end_date` automatically. Requires
 [`UpdatePermission`](@ref) on the owning project.
 """
 function update_experiment(
@@ -135,6 +139,10 @@ end
 
 Delete an [`Experiment`](@ref) (and its [`Iteration`](@ref)s + [`Resource`](@ref)s) via
 `DELETE /experiment/{id}`. Requires [`DeletePermission`](@ref) on the owning project.
+
+The server refuses with `409` and code `"CONFLICT"` while a [`ModelVersion`](@ref) is
+registered from one of the experiment's iterations or points at one of its artifacts;
+delete those versions first.
 """
 function delete_experiment(client::Client, id::AbstractString)::Nothing
     _request(client, "DELETE", "/experiment/$id")

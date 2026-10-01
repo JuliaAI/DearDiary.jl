@@ -5,7 +5,7 @@ inlined, and only fonts, the logo, and artifact downloads go through extra reque
 
 [`render_page`](@ref) maps a URL path to a page, and the `_handle_*` functions below adapt
 that to the HTTP handlers [`start_ui_server`](@ref) registers. Sessions and sign-in live in
-`auth.jl`; user management in `pages/users.jl`.
+`auth.jl`, user management in `pages/users.jl`, and the editing forms in `pages/edit.jl`.
 """
 const _ASSETS_DIR = normpath(joinpath(@__DIR__, "..", "..", "assets"))
 const _LOGO_PATH = joinpath(_ASSETS_DIR, "logo.svg")
@@ -52,10 +52,16 @@ end
     render_page(path::AbstractString)::Tuple{Int,String}
 
 Render the dashboard page at `path` (for example `/` or `/iteration/<id>`) for the viewer
-in `ctx` and return the HTTP status with the HTML document. The one-argument form renders
-as the seeded `default` user. Unknown paths and ids the viewer cannot read render the
-not-found page, admin-only pages render a forbidden page for members, and a rendering
-error renders the error page with status 500.
+in `ctx`. The one-argument form renders as the seeded `default` user. Unknown paths and ids
+the viewer cannot read render the not-found page, admin-only pages render a forbidden page
+for members, and a rendering error renders the error page with status 500.
+
+# Arguments
+- `path::AbstractString`: The request path, without query string.
+- `ctx::PageContext`: The viewer, path, query, and CSRF token of the request.
+
+# Returns
+A `(status, html)` tuple: the HTTP status and the complete HTML document.
 """
 function render_page(path::AbstractString, ctx::PageContext)::Tuple{Int,String}
     page = try
@@ -292,6 +298,7 @@ end
 
 _request_path(request::HTTP.Request)::String = String(HTTP.URI(request.target).path)
 
+# Pages are rendered per viewer and carry one-shot notices, so they must not be cached.
 function _html_response(
     status::Integer, html::AbstractString; headers=Pair{String,String}[]
 )::HTTP.Response
@@ -322,6 +329,13 @@ function _page_context(request::HTTP.Request)::Optional{PageContext}
     )
 end
 
+"""
+    _handle_page(context)::HTTP.Response
+
+Serve a dashboard page. Without a viewer, redirect to the sign-in form (or report the
+missing default user when authentication is off). A `GET` renders the page; a `POST` goes
+to the user-management or record-editing handler that owns the path.
+"""
 function _handle_page(context)::HTTP.Response
     request = context.request
     path = _request_path(request)
@@ -377,6 +391,7 @@ function _safe_filename(name::AbstractString)::String
     return isempty(cleaned) ? "artifact" : cleaned
 end
 
+# Artifact downloads apply the same read check as the pages that link to them.
 function _handle_download(context)::HTTP.Response
     request = context.request
     m = match(_DOWNLOAD_PATTERN, _request_path(request))

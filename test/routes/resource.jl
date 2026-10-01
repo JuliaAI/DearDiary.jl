@@ -63,8 +63,8 @@
                 @test resource.id isa String
                 @test resource.experiment_id == experiment_id
                 @test resource.name == "model_weights"
-                # `data` is omitted from the metadata response as of v0.7.0; the bytes are
-                # only reachable via /resource/{id}/data.
+                # `data` is omitted from the metadata response; the bytes are only reachable
+                # via /resource/{id}/data.
                 @test isnothing(resource.data)
                 @test resource.size_bytes == 1024
                 @test !isempty(resource.content_hash)

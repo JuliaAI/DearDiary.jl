@@ -109,7 +109,8 @@ Children are independent rows: deleting the parent does **not** delete its child
 [`delete_iteration`](@ref) sets each surviving child's `parent_iteration_id` to `NULL` before
 removing the parent row, so the children continue to exist as standalone iterations until
 explicitly removed. This preserves historical training results even when the driver run is
-pruned.
+pruned. A parent that a model version was registered from cannot be deleted until that
+version is removed; see [Deleting records](@ref).
 
 ```@repl child-iterations
 delete_iteration(driver_id);

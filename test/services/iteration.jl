@@ -107,12 +107,12 @@
             @test (length(children)) == 2
             @test all(c -> c.parent_iteration_id == parent_id, children)
 
-            # Parent itself has no children of its own once deleted; orphans survive.
+            # Deleting the parent keeps its children; the service clears their parent pointer.
             DearDiary.delete_iteration(parent_id)
             survivors = DearDiary.get_iterations(experiment_id)
             orphans = filter(i -> isnothing(i.parent_iteration_id), survivors)
-            # The unrelated top-level iteration plus the two ex-children whose parent
-            # pointer was set to NULL by the FK action.
+            # The unrelated top-level iteration plus the two former children whose parent
+            # pointer the service set to NULL before the delete.
             @test (length(orphans)) == 3
         end
 

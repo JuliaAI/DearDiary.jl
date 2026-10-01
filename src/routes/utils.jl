@@ -211,8 +211,8 @@ the URL pattern of the route family (`/experiment/...`, `/iteration/...`, etc.) 
 entity hierarchy via the service-layer [`get_project_id`](@ref) overloads.
 
 # Arguments
-- `::Type{T}`: The entity type the route operates on (`Experiment`, `Iteration`, `Metric`,
-  `Parameter`, or `Resource`).
+- `::Type{T}`: The entity type the route operates on (`Project`, `Experiment`, `Iteration`,
+  `Metric`, `Parameter`, `Resource`, `Model`, `ModelVersion`, `Tag`, or `UserPermission`).
 - `request::HTTP.Request`: The incoming HTTP request.
 
 # Returns

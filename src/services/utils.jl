@@ -1,7 +1,8 @@
 """
-    Base.Dict(object::UpsertType)::Dict{String,Any}
+    Base.Dict(object::Union{ResultType,UpsertType})::Dict{Symbol,Any}
 
-Transforms a [`ResultType`](@ref) or an [`UpsertType`](@ref) object to a dictionary.
+Transform a [`ResultType`](@ref) or an [`UpsertType`](@ref) object into a dictionary keyed
+by field name.
 
 # Arguments
 - `object::Union{ResultType,UpsertType}`: The object to convert.

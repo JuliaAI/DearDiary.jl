@@ -17,8 +17,8 @@ backend_id(::InlineStore)::String = "inline"
     write_artifact(::InlineStore, data)::ArtifactWriteResult
 
 For the inline backend the bytes are still inserted in-line into `resource.data` by the
-service layer. This method only computes the metadata the caller needs to populate the new
-columns (`size_bytes`, `content_hash`) on the resource row. The `uri` field is returned as
+service layer. This method only computes the metadata the caller needs to populate the
+`size_bytes` and `content_hash` columns on the resource row. The `uri` field is returned as
 the empty string, the sentinel that signals "look at `resource.data`, not at an external
 URL".
 """

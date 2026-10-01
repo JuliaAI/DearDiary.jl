@@ -141,7 +141,7 @@
 
             stored = get_resource(client, resource_id)
             @test stored.name == "weights.bin"
-            # As of v0.7.0 metadata responses no longer carry bytes; fetch them separately.
+            # Metadata responses never carry the bytes; fetch them separately.
             @test isnothing(stored.data)
             @test stored.size_bytes == (length(payload))
             @test read_resource_data(client, resource_id) == payload

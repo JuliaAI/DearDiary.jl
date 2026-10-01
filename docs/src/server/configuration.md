@@ -21,6 +21,17 @@ To shut down both servers and release the database connection:
 DearDiary.stop()
 ```
 
+## Env file format
+
+The parser skips empty lines and lines that start with `#`. It splits every other line on
+its first `=` and uses the value as written: nothing is trimmed and quotes are kept. An
+empty value is not the default. `DEARDIARY_HOST=` sets the host to an empty string, and
+`DEARDIARY_PORT=` fails to parse. To keep a default, omit the line or comment it out.
+
+`.env.sample` in the repository lists every variable with its default filled in and the
+filesystem and S3 lines commented out. Copy it to `.env` and change what you need. When
+the file does not exist, `run` uses the defaults.
+
 ## Configuration reference
 
 All settings are read from the env file at startup. The table below lists every
@@ -32,7 +43,7 @@ All settings are read from the env file at startup. The table below lists every
 | `DEARDIARY_PORT` | `9000` | Port the REST API server listens on. |
 | `DEARDIARY_DB_FILE` | `deardiary.db` | Path to the DuckDB database file. Created on first run if absent. |
 | `DEARDIARY_JWT_SECRET` | `deardiary_secret` | Secret used to sign and verify JWTs. Replace with a strong random value before enabling auth. |
-| `DEARDIARY_ENABLE_AUTH` | `false` | Set `true` to require bearer tokens on every request except `POST /auth` and `GET /health`. |
+| `DEARDIARY_ENABLE_AUTH` | `false` | Set `true` to require bearer tokens on every request except `POST /auth` and `GET /health`, and a sign-in on the dashboard. |
 | `DEARDIARY_CORS_ORIGINS` | `*` | Comma-separated list of allowed browser origins. `*` permits any origin. |
 | `DEARDIARY_ARTIFACT_BACKEND` | `inline` | Storage backend for artifact bytes: `inline` (stored in the database), `filesystem`, or `s3`. |
 | `DEARDIARY_ARTIFACT_FS_ROOT` | `<cwd>/deardiary_artifacts` | Root directory for the `filesystem` backend. Created on first write. Ignored for other backends. |

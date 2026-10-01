@@ -7,7 +7,8 @@ the named container under which one or more [`ModelVersion`](@ref) checkpoints a
 Fields
 - `id::String`: The unique identifier of the model.
 - `project_id::String`: The identifier of the [`Project`](@ref) that owns the model.
-- `name::String`: The registry-unique name of the model (unique per project).
+- `name::String`: The registry name of the model. Unique within its project, a rule
+  enforced by [`create_model`](@ref) and [`update_model`](@ref).
 - `description::String`: A free-form description of the model.
 - `created_date::DateTime`: The date and time when the model was registered.
 - `updated_date::Optional{DateTime}`: The date and time of the most recent update, or

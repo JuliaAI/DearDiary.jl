@@ -10,9 +10,8 @@
     @testset "captures git state when run inside the repository" begin
         snapshot = DearDiary.capture_environment()
 
-        # The test suite always runs against the live working tree, which is a git repo,
-        # so we expect a non-empty SHA. Specific hashes are not asserted; they change
-        # per commit.
+        # The test suite runs inside the repository's working tree, so the SHA is non-empty.
+        # Specific hashes are not asserted; they change per commit.
         @test !isempty(snapshot.git_sha)
         @test (length(snapshot.git_sha)) == 40
     end
@@ -20,17 +19,17 @@
     @testset "captures project + manifest toml as strings" begin
         snapshot = DearDiary.capture_environment()
 
-        # `Pkg.test` resolves into a temporary sandbox project, so the exact contents
-        # we'll see here depend on the test runner. Assert only the shape; the
-        # `snapshot_environment!` / `restore` round-trip below exercises full data flow.
+        # `Pkg.test` resolves into a temporary sandbox project, so the exact contents depend
+        # on the test runner. Assert only the shape; the `snapshot_environment!` / `restore`
+        # round-trip below exercises the full data flow.
         @test snapshot.project_toml isa String
         @test snapshot.manifest_toml isa String
     end
 
     @testset "degrades gracefully outside a git repo" begin
-        # `mktempdir` lives under /tmp and has no `.git` walking upward (or, if a parent
-        # of /tmp happens to be a git repo, LibGit2 still finds it; that's fine).
-        # This test exercises the no-crash path.
+        # `mktempdir` lives under /tmp with no `.git` above it (if a parent of /tmp happens
+        # to be a git repo, LibGit2 still finds it, which is fine). This exercises the
+        # no-crash path.
         prior_cwd = pwd()
         try
             cd(mktempdir())

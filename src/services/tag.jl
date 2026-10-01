@@ -15,7 +15,7 @@ get_tag(id::AbstractString)::Optional{Tag} = fetch(Tag, id)
     get_tag_by_value(value::AbstractString)::Optional{Tag}
 
 Get a [`Tag`](@ref) by value. Distinct from [`get_tag`](@ref) because ids and values are both
-strings now and can no longer be told apart by argument type.
+strings, so the two lookups cannot share a method told apart by argument type.
 
 # Arguments
 - `value::AbstractString`: The value of the tag to query.
@@ -170,7 +170,8 @@ end
 """
     delete_tag(id::AbstractString)::Bool
 
-Delete a [`Tag`](@ref) record.
+Delete a [`Tag`](@ref) record. Refused (returns `false`) while the tag is still attached to
+a project, experiment, or iteration, since the association rows reference it.
 
 # Arguments
 - `id::AbstractString`: The id of the tag to delete.

@@ -1,8 +1,7 @@
 using Pkg
-# Pin the docs environment to the local DearDiary checkout. Without this the docs/
-# Manifest can pin a stale registered version (the bug that surfaced as a wall of
-# "undefined binding" errors against symbols added since the last release), and
-# `julia --project=docs docs/make.jl` diverges from what the CI workflow does.
+# Build against the local checkout rather than the registered release the docs
+# Manifest may pin. A stale pin reports every symbol added since that release as an
+# undefined binding and makes a local build differ from the CI workflow.
 Pkg.develop(PackageSpec(; path=dirname(@__DIR__)))
 Pkg.instantiate()
 

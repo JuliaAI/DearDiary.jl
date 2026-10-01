@@ -39,3 +39,6 @@ iteration = last(get_iterations(experiment_id))
 get_parameters(iteration.id)
 get_metrics(iteration.id)
 ```
+
+To browse the same data in a browser, start the server with `DearDiary.run()` and open
+`http://127.0.0.1:9001`. See [Embedded web UI](@ref).

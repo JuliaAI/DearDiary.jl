@@ -45,7 +45,10 @@ end
 
 Register a new [`ModelVersion`](@ref) under `model_id` via
 `POST /modelversion/model/{model_id}`. The server assigns the next free per-model version
-number. Requires [`CreatePermission`](@ref) on the owning project. Returns the new version id.
+number and starts the version in [`NO_STAGE`](@ref). The iteration (and the resource, when
+given) must belong to the model's project; a mismatch fails with [`ClientError`](@ref)
+`"INVALID_PAYLOAD"`. Requires [`CreatePermission`](@ref) on the owning project. Returns the
+new version id.
 """
 function create_modelversion(
     client::Client,
@@ -70,9 +73,10 @@ end
 """
     update_modelversion(client::Client, id::AbstractString; stage_id=nothing, description=nothing, resource_id=nothing)::Nothing
 
-Patch a [`ModelVersion`](@ref) via `PATCH /modelversion/{id}`. Promoting to
-[`PRODUCTION`](@ref) automatically archives every sibling that was previously in
-`PRODUCTION`. Requires [`UpdatePermission`](@ref) on the owning project.
+Patch a [`ModelVersion`](@ref) via `PATCH /modelversion/{id}`. Any keyword left as
+`nothing` is left untouched server-side. Promoting to [`PRODUCTION`](@ref) archives every
+sibling currently in `PRODUCTION`. Requires [`UpdatePermission`](@ref) on the owning
+project.
 """
 function update_modelversion(
     client::Client,

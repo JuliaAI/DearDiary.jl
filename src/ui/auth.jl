@@ -74,7 +74,7 @@ function _session_user(request::HTTP.Request)::Optional{User}
 end
 
 # Browsers send the cookie back on same-site navigations only (SameSite=Strict), which
-# already blocks cross-site form posts; the token below is a second check for POSTs.
+# already blocks cross-site form posts; the CSRF token is a second check on every POST.
 function _session_cookie(token::AbstractString)::String
     max_age = TOKEN_TTL_HOURS * 3600
     return "$(_SESSION_COOKIE)=$(token); Path=/; HttpOnly; SameSite=Strict; Max-Age=$(max_age)"
@@ -88,6 +88,7 @@ _clear_session_cookie()::String =
 
 A per-session token embedded in every form and checked on every POST. It is an HMAC of the
 session token, so it cannot be forged without the secret and changes with each sign-in.
+With authentication off there is no session, so the token is derived from a fixed seed.
 """
 function _csrf_token(request::HTTP.Request)::String
     seed = something(_session_token(request), "default")

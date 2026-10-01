@@ -89,4 +89,5 @@ refresh_token!(client)
 The `is_admin` field on a user record is a privilege boundary. A non-admin user
 can update their own account (name, password) but cannot set the `is_admin` flag on
 any account. Only a user with `is_admin = true` may promote or demote a user.
-Attempting to set `is_admin` without admin privileges returns `403 Forbidden`.
+Attempting to set `is_admin` without admin privileges returns `403 Forbidden`. The seeded
+`default` account cannot be demoted or deleted.

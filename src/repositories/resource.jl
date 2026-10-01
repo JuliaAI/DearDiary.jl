@@ -47,10 +47,9 @@ function insert(
     return insert(SQL_INSERT_RESOURCE, fields)
 end
 
-# Convenience overload that mirrors the pre-artifact-store signature: bytes go straight
-# inline into `resource.data` under the inline backend and metadata columns are computed
-# locally. Direct repository-layer callers (notably the test suite) use this to avoid
-# pre-computing hash + size at every insertion site.
+# Convenience overload for inline storage: the bytes go straight into `resource.data` and
+# the metadata columns are computed here. Direct repository-layer callers (notably the test
+# suite) use it to avoid computing the hash and size at every insertion site.
 function insert(
     ::Type{<:Resource},
     experiment_id::AbstractString,

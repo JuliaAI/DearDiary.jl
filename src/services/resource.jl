@@ -106,7 +106,7 @@ Update a [`Resource`](@ref) record.
 - `data::Optional{AbstractArray{UInt8,1}}`: The new binary data for the resource.
 
 # Returns
-An [`UpsertResult`](@ref). [`Updated`](@ref) if the record was successfully updated (or no changes were made), [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while creating the record.
+An [`UpsertResult`](@ref). [`Updated`](@ref) if the record was successfully updated (or no changes were made), [`Duplicate`](@ref) if the record already exists, [`Unprocessable`](@ref) if the record violates a constraint, and [`Error`](@ref) if an error occurred while updating the record.
 """
 function update_resource(
     id::AbstractString,
@@ -165,10 +165,10 @@ end
     delete_resource(id::AbstractString)::Bool
 
 Delete a [`Resource`](@ref) record. For non-inline backends the underlying artifact bytes
+are removed from the store first; inline-backed rows take their bytes down with the row.
 
 The delete is refused (returns `false`) while a [`ModelVersion`](@ref) points at the
 artifact; delete or re-point those versions first.
-are removed from the store first; inline-backed rows take their bytes down with the row.
 
 # Arguments
 - `id::AbstractString`: The id of the resource to delete.

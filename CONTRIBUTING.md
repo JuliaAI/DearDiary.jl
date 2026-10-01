@@ -43,13 +43,13 @@ When everything passes, you're ready to make changes:
 
 ## Running the server locally (optional)
 
-If you want to exercise the REST API while developing, copy the sample environment file and fill in the values:
+If you want to exercise the REST API or the dashboard while developing, copy the sample environment file:
 
 ```bash
 cp .env.sample .env
 ```
 
-Then start the server with `DearDiary.run()`. See the [quickstart](https://juliaai.github.io/DearDiary.jl/dev/getting-started/quickstart/) for the full workflow.
+Every value in the sample is the default. Change the ones you need and delete or comment out the rest: the parser reads an empty value literally, not as the default. Then start the server with `DearDiary.run()`. The REST API listens on port 9000 and the dashboard on port 9001. See [Configuration](https://juliaai.github.io/DearDiary.jl/dev/server/configuration/) for every variable.
 
 To build the documentation locally:
 
@@ -133,18 +133,17 @@ Every change to the DuckDB schema goes through the forward-only migration system
 To add a new migration:
 
 1. Create `src/repositories/sql/migrations/NNN_short_name.jl` where `NNN` is the next free three-digit version number.
-2. In that file, define a `const MIGRATION_NNN_SHORT_NAME = Migration(NNN, "short_name", [...])` whose `statements` list the SQL to apply in order. Re-use the existing `SQL_*` constants when the change is idempotent (e.g. an `IF NOT EXISTS` rebuild) and write inline `ALTER TABLE` strings for additive column changes.
+2. In that file, define a `const MIGRATION_NNN_SHORT_NAME = Migration(NNN, "short_name", [...])` whose `statements` list the SQL to apply in order. Re-use the existing `SQL_*` constants when the change is idempotent (e.g. an `IF NOT EXISTS` rebuild) and write inline `ALTER TABLE` strings for additive column changes. DuckDB refuses to alter or rename a column that an index or a foreign key depends on, and a renamed table keeps its foreign-key bookkeeping under the old name. To change such a table, copy it aside, drop it, create it again, and refill it inside one transaction, as `002_model_name_rename.jl` does.
 3. Append the new constant to the `MIGRATIONS` vector at the bottom of `src/repositories/sql/migrations.jl`, and add the file to the ordered `include`s there.
 
+With `002` as the highest version on disk, the next migration would look like this:
+
 ```julia
-# 002_add_metric_step_recorded_at.jl
-const MIGRATION_002_ADD_METRIC_STEP_RECORDED_AT = Migration(
-    2,
-    "add_metric_step_recorded_at",
-    [
-        "ALTER TABLE metric ADD COLUMN step INTEGER NOT NULL DEFAULT 0",
-        "ALTER TABLE metric ADD COLUMN recorded_at TEXT NOT NULL DEFAULT ''",
-    ],
+# 003_add_metric_unit.jl
+const MIGRATION_003_ADD_METRIC_UNIT = Migration(
+    3,
+    "add_metric_unit",
+    ["ALTER TABLE metric ADD COLUMN unit TEXT NOT NULL DEFAULT ''"],
 )
 ```
 

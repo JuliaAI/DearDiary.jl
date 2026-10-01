@@ -14,8 +14,9 @@ end
     initialize_database(; file_name::String="deardiary.db")
 
 Open `file_name` (creating it if needed), run every pending [`Migration`](@ref) via
-[`apply_migrations`](@ref), and re-seed the default user. Calling this repeatedly is safe:
-each migration runs at most once per database, and the default-user insert uses
+[`apply_migrations`](@ref), and re-seed the default user. A database that is already open
+is closed first, so two instances never hold the same file. Calling this repeatedly is
+safe: each migration runs at most once per database, and the default-user insert uses
 `ON CONFLICT DO NOTHING`.
 """
 function initialize_database(; file_name::String="deardiary.db")
@@ -51,7 +52,9 @@ end
 """
     close_database()
 
-Close the database connection if one is open.
+Close the database if one is open. Garbage is collected before and after the close so
+DuckDB finalizers release the instance and its write-ahead log is checkpointed before this
+function returns.
 """
 function close_database()
     global _DEARDIARY_DATABASE

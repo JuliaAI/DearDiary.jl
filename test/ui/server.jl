@@ -4,8 +4,8 @@
     end
 
     @testset "start_ui_server boots a working server" begin
-        # The pages are plain HTTP handlers, but the Bonito server is still shared with
-        # the runner's network stack; keep the live boot off headless CI.
+        # The dashboard is plain HTTP, so nothing here needs a browser. The live boot is
+        # skipped on CI only as a precaution against the headless runner's network setup.
         if get(ENV, "CI", "false") == "true"
             @test_skip "UI server boot is skipped on CI"
         else

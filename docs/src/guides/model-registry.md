@@ -124,6 +124,37 @@ producing_iteration = (version_b_id |> get_modelversion).iteration_id |> get_ite
 get_parameters(producing_iteration.id)
 ```
 
+## Rename a model
+
+The registry name can change after versions exist. [`update_model`](@ref) leaves a field
+alone when it is `nothing` and returns [`DearDiary.Duplicate`](@ref) when another model in
+the project already uses the new name:
+
+```@repl model-registry
+update_model(model_id, "fraud-classifier-dt", nothing)
+```
+
+```@repl model-registry
+get_model(model_id).name
+```
+
+## Delete rules
+
+An iteration or artifact that a version points at cannot be deleted while that version
+exists, so the registry never references a missing run:
+
+```@repl model-registry
+delete_iteration(iteration_b_id)
+```
+
+Delete the version first, then the run. Deleting a model removes its versions and keeps
+their artifacts. See [Deleting records](@ref).
+
+```@repl model-registry
+delete_modelversion(version_b_id);
+delete_iteration(iteration_b_id)
+```
+
 ```@setup model-registry
 DearDiary.close_database()
 ```

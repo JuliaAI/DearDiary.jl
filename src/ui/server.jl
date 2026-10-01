@@ -1,17 +1,24 @@
 """
     start_ui_server(host::AbstractString, port::Integer)::Bonito.HTTPServer.Server
 
-Boot the embedded DearDiary dashboard on `host:port` and return the running
-[`Bonito.HTTPServer.Server`](https://simondanisch.github.io/Bonito.jl/) instance. The
-server runs in a sibling task alongside the REST API server so a single `DearDiary.run`
-call exposes both endpoints on different ports.
+Boot the embedded DearDiary dashboard on `host:port`. The server runs in a sibling task
+alongside the REST API server so a single `DearDiary.run` call exposes both endpoints on
+different ports.
 
 Pages are plain HTTP handlers (see [`render_page`](@ref)); no Bonito session or JavaScript
-bundle is involved, so the server is safe to boot headless. When `DEARDIARY_ENABLE_AUTH`
-is on, `/login` and `/logout` manage the session cookie the other pages require.
+bundle is involved, so booting needs neither a browser nor a bundler. When
+`DEARDIARY_ENABLE_AUTH` is on, `/login` and `/logout` manage the session cookie the other
+pages require.
 
 Call [`stop_ui_server`](@ref) to shut it down. `DearDiary.stop` closes both the REST and
 UI servers together.
+
+# Arguments
+- `host::AbstractString`: Interface to bind.
+- `port::Integer`: Port to listen on.
+
+# Returns
+The running [`Bonito.HTTPServer.Server`](https://simondanisch.github.io/Bonito.jl/).
 """
 function start_ui_server(host::AbstractString, port::Integer)::Bonito.HTTPServer.Server
     server = Bonito.Server(string(host), Int(port); verbose=-1)
@@ -36,9 +43,11 @@ end
 """
     stop_ui_server(server::Optional{Bonito.HTTPServer.Server})::Nothing
 
-Shut down the UI server. Pass the [`Bonito.HTTPServer.Server`](@ref) instance that
-[`start_ui_server`](@ref) returned, or pass `nothing` to skip the call so `DearDiary.stop`
-need not check whether the UI ever booted.
+Shut down the UI server.
+
+# Arguments
+- `server`: The instance [`start_ui_server`](@ref) returned, or `nothing` to do nothing so
+  `DearDiary.stop` need not check whether the UI ever booted.
 """
 function stop_ui_server(server::Optional{Bonito.HTTPServer.Server})::Nothing
     if !(isnothing(server))

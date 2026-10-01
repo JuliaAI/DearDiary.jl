@@ -41,7 +41,7 @@
     end
 
     @with_deardiary_test_db begin
-        @testset verbose = true "admin required macro" begin
+        @testset verbose = true "admin required middleware" begin
             @testset verbose = true "as an admin" begin
                 payload = JSON.json(Dict("username" => "default", "password" => "default"))
                 response = HTTP.post(
@@ -633,8 +633,8 @@
                 @test DearDiary.get_project_id(
                     DearDiary.UserPermission, req("/project/$(project_id)/members")
                 ) == project_id
-                # A project-id path segment is the project id itself, taken verbatim (ids are
-                # opaque UUID strings now). The permission middleware denies an unknown project.
+                # A project-id path segment is taken verbatim: ids are opaque UUID strings, so
+                # nothing is parsed, and the permission middleware denies an unknown project.
                 @test DearDiary.get_project_id(
                     DearDiary.UserPermission, req("/project/not-a-number/members")
                 ) == "not-a-number"
@@ -664,8 +664,8 @@
                 @test isnothing(
                     DearDiary.get_project_id(DearDiary.Tag, req("/tag/iteration/9999"))
                 )
-                # `/tag/project/{id}` scopes by the project id verbatim (opaque UUID strings);
-                # the permission middleware denies an unknown project.
+                # `/tag/project/{id}` scopes by the project id verbatim; ids are opaque UUID
+                # strings, and the permission middleware denies an unknown project.
                 @test DearDiary.get_project_id(
                     DearDiary.Tag, req("/tag/project/not-a-number")
                 ) == "not-a-number"

@@ -1,7 +1,9 @@
 /* DearDiary dashboard behaviour.
    Inlined at the end of every page by src/ui/app.jl. No dependencies.
    Responsibilities: theme toggle, sortable/filterable tables, copy buttons,
-   metric charts drawn from data-chart JSON payloads, and the live-refresh pill. */
+   metric charts and sparklines drawn from data-chart/data-spark JSON payloads,
+   inline editors, auto-submitting badge selects, the actions menu, confirmation
+   prompts, and the live-refresh pill. */
 (function () {
   "use strict";
 
@@ -484,6 +486,8 @@
     if (ev.key === "Escape") closeMenus(null);
   });
 
+  // Live refresh holds off while an inline form or the actions menu is open, or a
+  // field has focus, so a reload never discards what the viewer is typing.
   function editing() {
     if (doc.querySelector("form[data-inline]:not([hidden])")) return true;
     if (doc.querySelector("details.dd-menu[open]")) return true;

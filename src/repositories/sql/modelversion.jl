@@ -59,8 +59,8 @@ const SQL_COUNT_MODELVERSIONS_BY_MODEL_ID = """
     """
 
 # `version` is assigned inside the INSERT via a subquery; the service layer never supplies it
-# directly. `UNIQUE(model_id, version)` on the table makes a concurrent insert from a racing
-# writer fail with a Duplicate, which is then retried at the service layer.
+# directly. `UNIQUE(model_id, version)` makes a concurrent insert from a racing writer fail
+# with `Duplicate` instead of producing two versions with the same number.
 const SQL_INSERT_MODELVERSION = """
     INSERT INTO model_version (
         model_id, version, iteration_id, resource_id, stage_id, description, created_date

@@ -112,8 +112,8 @@ end
     create_modelversion(model_id::AbstractString, iteration_id::AbstractString, resource_id::Optional{AbstractString}, description::AbstractString)::NamedTuple{id::Optional{String},status::DataType}
 
 Register a new [`ModelVersion`](@ref) under `model_id`. The new version number is the next
-free integer for the model (assigned by the database via a subquery on `MAX(version)` +
-`UNIQUE(model_id, version)`).
+free integer for the model, assigned inside the INSERT as `MAX(version) + 1`;
+`UNIQUE(model_id, version)` rejects a racing duplicate.
 
 The producing [`Iteration`](@ref) must belong to an [`Experiment`](@ref) in the same project
 as the parent [`Model`](@ref); cross-project lineage is rejected with [`Unprocessable`](@ref).

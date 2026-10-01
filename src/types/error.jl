@@ -84,7 +84,9 @@ struct ProjectPermissionRequired <: ErrorCode end
 """
     Conflict <: ErrorCode
 
-A unique-constraint violation: the resource already exists. Pairs with HTTP `409 Conflict`.
+The request clashes with existing state: a unique constraint is violated, or a delete is
+refused because registered model versions still reference the target. Pairs with HTTP
+`409 Conflict`.
 """
 struct Conflict <: ErrorCode end
 

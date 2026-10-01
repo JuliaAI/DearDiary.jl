@@ -72,9 +72,9 @@ function setup_iteration_routes()
         "/experiment/{experiment_id}",
         middleware=[ProjectPermissionRequiredMiddleware(Iteration, CreatePermission)],
     ) function (request::HTTP.Request, experiment_id::String)
-        # Optional `?parent_iteration_id=<id>` query param makes the new row a child of that
-        # iteration. Absent → top-level iteration (the legacy default). A non-existent or
-        # cross-experiment parent is rejected downstream by `create_iteration`.
+        # An optional `?parent_iteration_id=<id>` query parameter makes the new row a child
+        # of that iteration; without it the row is a top-level iteration. A non-existent or
+        # cross-experiment parent is rejected by `create_iteration`.
         qp = queryparams(request)
         parent_iteration_id = get(qp, "parent_iteration_id", nothing)
 
@@ -116,6 +116,8 @@ function setup_iteration_routes()
         "/{id}",
         middleware=[ProjectPermissionRequiredMiddleware(Iteration, DeletePermission)],
     ) function (::HTTP.Request, id::String)
+        # Checked here so the refusal surfaces as 409 CONFLICT instead of the generic 500 a
+        # `false` service result would produce.
         if !(isempty(get_modelversions(Iteration, id)))
             return error_response(
                 Conflict,

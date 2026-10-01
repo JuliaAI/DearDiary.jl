@@ -158,7 +158,7 @@
                 @test child.parent_iteration_id == parent_id
             end
 
-            @testset "non-integer parent_iteration_id is rejected" begin
+            @testset "unknown parent_iteration_id is rejected" begin
                 response = HTTP.post(
                     "http://127.0.0.1:9000/iteration/experiment/$(experiment_id)?parent_iteration_id=notanint";
                     status_exception=false,

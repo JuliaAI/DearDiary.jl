@@ -124,8 +124,12 @@ end
 """
     delete_resource(client::Client, id::AbstractString)::Nothing
 
-Delete a [`Resource`](@ref) via `DELETE /resource/{id}`. Requires
-[`DeletePermission`](@ref) on the experiment's project.
+Delete a [`Resource`](@ref) via `DELETE /resource/{id}`. Filesystem- and S3-backed bytes
+are removed from their store as well. Requires [`DeletePermission`](@ref) on the
+experiment's project.
+
+The server refuses with `409` and code `"CONFLICT"` while a [`ModelVersion`](@ref) points
+at the artifact; delete or re-point those versions first.
 """
 function delete_resource(client::Client, id::AbstractString)::Nothing
     _request(client, "DELETE", "/resource/$id")

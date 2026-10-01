@@ -53,8 +53,8 @@ end
 
 @testset verbose = true "FilesystemStore via service layer" begin
     # The offline tests run with `current_artifact_store()` defaulting to inline (no
-    # _DEARDIARY_APICONFIG). We swap in a fake config pointing at a tempdir, exercise the
-    # full create/read/delete path, then restore the prior state.
+    # _DEARDIARY_APICONFIG). Swap in a config pointing at a tempdir, exercise the full
+    # create/read/delete path, then restore the prior state.
     mktempdir() do root
         prior_config = DearDiary._DEARDIARY_APICONFIG
         try

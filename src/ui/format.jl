@@ -60,7 +60,7 @@ _format_datetime(::Nothing)::String = "–"
 _format_date(dt::DateTime)::String = Dates.format(dt, "u d, yyyy")
 
 # Metric values are shown with four significant digits. Whole numbers drop the decimal
-# point, and magnitudes outside the comfortable range fall back to Julia's exponent form.
+# point, and magnitudes below 1e-4 or from 1e6 up fall back to Julia's exponent form.
 function _format_number(v::Real)::String
     isnan(v) && return "NaN"
     isinf(v) && return (v > 0 ? "Inf" : "-Inf")

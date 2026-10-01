@@ -121,7 +121,7 @@ Update a [`UserPermission`](@ref).
 - `delete_permission::Optional{Bool}`: The new delete permission.
 
 # Returns
-An [`UpsertResult`](@ref). [`Updated`](@ref) if the record was successfully updated (or no fields were changed), [`Unprocessable`](@ref) if the record violates a constraint or if no fields were provided to update, and [`Error`](@ref) if an error occurred while updating the record.
+An [`UpsertResult`](@ref). [`Updated`](@ref) if the record was successfully updated (or no fields were changed), [`Unprocessable`](@ref) if the record does not exist or violates a constraint, and [`Error`](@ref) if an error occurred while updating the record.
 """
 function update_userpermission(
     id::AbstractString,

@@ -230,17 +230,21 @@ function update_modelversion(
         return Updated
     end
 
-    result = update(
-        ModelVersion,
-        id;
-        stage_id=stage_id,
-        description=description,
-        resource_id=resource_id,
-    )
-    if result === Updated && stage_id == (Integer(PRODUCTION))
-        archive_production_siblings(version.model_id, id)
+    # The promotion and the demotion of its siblings run under one lock so two concurrent
+    # promotions cannot leave a model with two production versions, or with none.
+    return with_database_lock() do
+        result = update(
+            ModelVersion,
+            id;
+            stage_id=stage_id,
+            description=description,
+            resource_id=resource_id,
+        )
+        if result === Updated && stage_id == (Integer(PRODUCTION))
+            archive_production_siblings(version.model_id, id)
+        end
+        return result
     end
-    return result
 end
 
 """

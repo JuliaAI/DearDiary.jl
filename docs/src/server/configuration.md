@@ -15,6 +15,11 @@ DearDiary.run(; env_file="/path/.env")  # explicit path
 `run` starts the REST API server (and the embedded dashboard when
 `DEARDIARY_ENABLE_UI=true`) as non-blocking background tasks.
 
+Requests are handled on every thread Julia was started with, so `julia -t auto` lets the
+server parse, authenticate, and answer requests in parallel. Statements to the database
+file run one at a time behind a lock, since DuckDB does not allow concurrent use of a
+single connection.
+
 To shut down both servers and release the database connection:
 
 ```julia

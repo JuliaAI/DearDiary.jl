@@ -13,7 +13,7 @@ concurrency:
   cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
 jobs:
   test:
-    name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
+    name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ matrix.threads }} threads - ${{ github.event_name }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     permissions:
@@ -29,6 +29,9 @@ jobs:
           - ubuntu-latest
         arch:
           - x64
+        threads:
+          - '1'
+          - '4'
     steps:
       - uses: actions/checkout@v7
       - uses: julia-actions/setup-julia@v3
@@ -38,6 +41,8 @@ jobs:
       - uses: julia-actions/cache@v3
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
+        env:
+          JULIA_NUM_THREADS: ${{ matrix.threads }}
       - uses: julia-actions/julia-processcoverage@v1
       - uses: codecov/codecov-action@v7
         with:

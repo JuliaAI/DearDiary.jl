@@ -148,6 +148,7 @@ include("routes/resource.jl")
 include("routes/tag.jl")
 include("routes/model.jl")
 include("routes/modelversion.jl")
+include("routes/concurrency.jl")
 
 include("client/client.jl")
 

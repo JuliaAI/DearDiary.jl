@@ -52,10 +52,11 @@ function migrate_artifacts!(
     end
 
     db = get_database()
-    rows = DBInterface.execute(
+    ids = execute_query(
         db, "SELECT id FROM resource WHERE backend = 'inline' ORDER BY created_date"
-    )
-    ids = [row.id for row in Tables.namedtupleiterator(rows)]
+    ) do rows
+        [row.id for row in Tables.namedtupleiterator(rows)]
+    end
 
     target_backend = backend_id(target)
     migrated = 0
@@ -74,9 +75,9 @@ function migrate_artifacts!(
             write_result = write_artifact(target, bytes)
             # Commit the move in a single UPDATE: flip the backend, point at the new URI,
             # blank out the inline bytes (an empty BLOB), and stamp the metadata columns.
-            DBInterface.execute(
+            execute_statement(
                 db,
-                duckdbify("""
+                """
                 UPDATE resource
                 SET backend = :backend,
                     uri = :uri,
@@ -85,7 +86,7 @@ function migrate_artifacts!(
                     data = :data,
                     updated_date = :updated_date
                 WHERE id = :id
-                """),
+                """,
                 (
                     backend=target_backend,
                     uri=write_result.uri,
@@ -98,17 +99,17 @@ function migrate_artifacts!(
             )
             migrated += 1
         catch err
-            @error "migrate_artifacts!: failed for resource $(id)" exception=err
+            @error "migrate_artifacts!: failed for resource $(id)" exception = err
             failed += 1
         end
     end
 
     @info(
         "migrate_artifacts! complete",
-        migrated=migrated,
-        skipped=skipped,
-        failed=failed,
-        target=target_backend,
+        migrated = migrated,
+        skipped = skipped,
+        failed = failed,
+        target = target_backend,
     )
     return MigrateArtifactsResult(migrated, skipped, failed)
 end

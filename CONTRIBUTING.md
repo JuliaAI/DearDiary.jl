@@ -64,7 +64,7 @@ DearDiary uses a functional style (immutability and multiple dispatch) and is or
 - **`types/`** holds the domain model: structs for users, projects, experiments, iterations, parameters, metrics, resources, tags, and models, plus the enums, errors, and `APIConfig`. Everything else builds on these.
 - **`routes/`** defines the REST API: thin HTTP handlers that parse a request and delegate to a service. `routes/auth.jl` and the `AuthMiddleware` in `src/DearDiary.jl` handle JWT auth.
 - **`services/`** holds the business logic. It validates input, hashes passwords, enforces rules, and orchestrates repositories. Both the routes and the client call into here.
-- **`repositories/`** is backend-agnostic data access. Functions like `fetch`, `insert`, and `update` dispatch on the domain type, e.g. `fetch(::Type{<:User}, id)`.
+- **`repositories/`** is backend-agnostic data access. Functions like `fetch`, `insert`, and `update` dispatch on the domain type, e.g. `fetch(::Type{<:User}, id)`. Every statement goes through `execute_query` or `execute_statement`, which take the database lock and destroy the prepared statement and the result as soon as the rows have been read: request handlers run on several threads and DuckDB does not accept concurrent use of one connection, and `close_database` relies on nothing but the `DB` object holding the instance. A service that must not interleave with other requests, such as a uniqueness check followed by an insert, takes `with_database_lock` around the whole sequence.
 - **`repositories/sql/`** is the DuckDB implementation behind them: the `SQL_*` query constants and the forward-only migration system (see [Schema migrations](#schema-migrations)).
 
 A few modules sit alongside those layers:

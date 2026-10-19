@@ -89,9 +89,7 @@ delete(::Type{<:Iteration}, id::AbstractString)::Bool = delete(SQL_DELETE_ITERAT
 # this before deleting a parent iteration; the children survive as standalone runs.
 function nullify_children(::Type{<:Iteration}, id::AbstractString)::Bool
     try
-        DBInterface.execute(
-            get_database(), duckdbify(SQL_NULLIFY_ITERATION_CHILDREN), (id=id,)
-        )
+        execute_statement(SQL_NULLIFY_ITERATION_CHILDREN, (id=id,))
         return true
     catch _
         return false

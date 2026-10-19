@@ -85,14 +85,7 @@ Delete every [`ModelVersion`](@ref) under `model_id` in a single statement. Used
 service-layer cascade when a [`Model`](@ref) is deleted.
 """
 function delete_all(::Type{<:ModelVersion}, model_id::AbstractString)::Bool
-    try
-        DBInterface.execute(
-            get_database(), duckdbify(SQL_DELETE_MODELVERSIONS_BY_MODEL_ID), (id=model_id,)
-        )
-        return true
-    catch _
-        return false
-    end
+    return delete(SQL_DELETE_MODELVERSIONS_BY_MODEL_ID, model_id)
 end
 
 """
@@ -107,9 +100,8 @@ function archive_production_siblings(
     model_id::AbstractString, excluded_id::AbstractString
 )::Bool
     try
-        DBInterface.execute(
-            get_database(),
-            duckdbify(SQL_ARCHIVE_PRODUCTION_SIBLINGS),
+        execute_statement(
+            SQL_ARCHIVE_PRODUCTION_SIBLINGS,
             (
                 model_id=model_id,
                 production_stage=(Integer(PRODUCTION)),

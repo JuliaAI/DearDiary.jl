@@ -65,15 +65,19 @@ function create_model(
     if isnothing(project)
         return (id=nothing, status=Unprocessable)
     end
-    if any(model -> model.name == name, get_models(project_id))
-        return (id=nothing, status=Duplicate)
-    end
+    # The name check and the insert run under one lock so two concurrent registrations of
+    # the same name cannot both pass the check.
+    return with_database_lock() do
+        if any(model -> model.name == name, get_models(project_id))
+            return (id=nothing, status=Duplicate)
+        end
 
-    model_id, model_upsert_result = insert(Model, project_id, name)
-    if !(model_upsert_result === Created)
-        return (id=nothing, status=model_upsert_result)
+        model_id, model_upsert_result = insert(Model, project_id, name)
+        if !(model_upsert_result === Created)
+            return (id=nothing, status=model_upsert_result)
+        end
+        return (id=model_id, status=model_upsert_result)
     end
-    return (id=model_id, status=model_upsert_result)
 end
 
 """
@@ -101,18 +105,22 @@ function update_model(
         return Unprocessable
     end
     # The `model` table has no uniqueness constraint on `name`, so the service enforces it.
-    if !(isnothing(name)) &&
-        name != model.name &&
-        any(other -> other.id != id && other.name == name, get_models(model.project_id))
-        return Duplicate
-    end
+    # The check and the update run under one lock so two concurrent renames to the same
+    # name cannot both pass the check.
+    return with_database_lock() do
+        if !(isnothing(name)) &&
+            name != model.name &&
+            any(other -> other.id != id && other.name == name, get_models(model.project_id))
+            return Duplicate
+        end
 
-    should_be_updated = compare_object_fields(model; name=name, description=description)
-    if !should_be_updated
-        return Updated
-    end
+        should_be_updated = compare_object_fields(model; name=name, description=description)
+        if !should_be_updated
+            return Updated
+        end
 
-    return update(Model, id; name=name, description=description)
+        return update(Model, id; name=name, description=description)
+    end
 end
 
 """

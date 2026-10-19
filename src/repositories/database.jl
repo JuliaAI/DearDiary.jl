@@ -1,4 +1,5 @@
 _DEARDIARY_DATABASE = nothing
+const _DATABASE_LOCK = ReentrantLock()
 
 """
     get_database()::Union{DuckDB.DB,Nothing}
@@ -11,6 +12,20 @@ function get_database()::Union{DuckDB.DB,Nothing}
 end
 
 """
+    with_database_lock(f::Function)
+
+Run `f()` while holding the lock that serialises every statement sent to the open DuckDB
+connection, and return its result.
+
+DuckDB does not accept concurrent use of one connection, while the REST server handles
+requests on every thread Julia was started with and the dashboard server runs on the
+interactive thread pool. Each repository helper takes the lock around its own statement. A
+service takes it around a sequence that must not interleave with other requests, such as a
+uniqueness check followed by an insert. The lock is reentrant, so nesting is safe.
+"""
+with_database_lock(f::Function) = lock(f, _DATABASE_LOCK)
+
+"""
     initialize_database(; file_name::String="deardiary.db")
 
 Open `file_name` (creating it if needed), run every pending [`Migration`](@ref) via
@@ -20,14 +35,15 @@ safe: each migration runs at most once per database, and the default-user insert
 `ON CONFLICT DO NOTHING`.
 """
 function initialize_database(; file_name::String="deardiary.db")
-    global _DEARDIARY_DATABASE
     # Never hold two instances of the same file: the previous one must be fully closed
     # before a new one reads the file.
-    isnothing(_DEARDIARY_DATABASE) || close_database()
-    _DEARDIARY_DATABASE = DuckDB.DB(file_name)
-
-    apply_migrations(_DEARDIARY_DATABASE)
-    seed_default_user(_DEARDIARY_DATABASE)
+    close_database()
+    with_database_lock() do
+        db = DuckDB.DB(file_name)
+        global _DEARDIARY_DATABASE = db
+        apply_migrations(db)
+        seed_default_user(db)
+    end
 
     @info "Database initialized."
 end
@@ -41,9 +57,9 @@ accepts only static SQL strings). The underlying `ON CONFLICT DO NOTHING` makes 
 idempotent.
 """
 function seed_default_user(db::DuckDB.DB)::Nothing
-    DBInterface.execute(
+    execute_statement(
         db,
-        duckdbify(SQL_INSERT_DEFAULT_ADMIN_USER),
+        SQL_INSERT_DEFAULT_ADMIN_USER,
         (password=String(GenerateFromPassword("default")), created_date=(string(now()))),
     )
     return nothing
@@ -52,23 +68,23 @@ end
 """
     close_database()
 
-Close the database if one is open. Garbage is collected before and after the close so
-DuckDB finalizers release the instance and its write-ahead log is checkpointed before this
-function returns.
+Close the database if one is open. Every statement and result is destroyed as soon as it
+has been read (see [`execute_query`](@ref)), so the `DB` object holds the last references
+to the instance and `close!` shuts it down here, checkpointing the write-ahead log into
+the file before this function returns.
 """
 function close_database()
-    global _DEARDIARY_DATABASE
-
-    if !(isnothing(_DEARDIARY_DATABASE))
-        # DuckDB.jl releases prepared statements and results through finalizers, and each of
-        # them keeps the database instance alive. Collecting them first lets `close!` really
-        # shut the instance down, so the write-ahead log is checkpointed before this
-        # function returns instead of at some later collection, possibly while another
-        # handle to the same file is already open.
-        GC.gc()
-        DBInterface.close!(_DEARDIARY_DATABASE)
+    # Detach under the lock: once the lock is ours no statement is in flight, and none can
+    # start on this instance afterwards because `get_database` returns `nothing`.
+    db = with_database_lock() do
+        global _DEARDIARY_DATABASE
+        instance = _DEARDIARY_DATABASE
         _DEARDIARY_DATABASE = nothing
-        GC.gc()
-        @info "Database connection closed."
+        instance
     end
+    isnothing(db) && return nothing
+
+    DBInterface.close!(db)
+    @info "Database connection closed."
+    return nothing
 end

@@ -10,7 +10,7 @@ Fields
 - `name::String`: Short human-readable identifier (snake_case). Logged on application and
   stored alongside the version for debugging.
 - `statements::Vector{String}`: SQL statements applied in order. Each statement runs through
-  `DBInterface.execute`, matching how the rest of the repository talks to the database.
+  [`execute_statement`](@ref), matching how the rest of the repository talks to the database.
 """
 struct Migration
     version::Int
@@ -62,9 +62,12 @@ Return the set of migration versions already recorded in `schema_migrations`. Cr
 tracking table on first call so a freshly-opened database needs no special bootstrap.
 """
 function applied_versions(db::DuckDB.DB)::Set{Int}
-    DBInterface.execute(db, duckdbify(SQL_CREATE_SCHEMA_MIGRATIONS))
-    rows = DBInterface.execute(db, duckdbify(SQL_SELECT_SCHEMA_MIGRATIONS))
-    return Set{Int}(row.version for row in Tables.namedtupleiterator(rows))
+    return with_database_lock() do
+        execute_statement(db, SQL_CREATE_SCHEMA_MIGRATIONS)
+        execute_query(db, SQL_SELECT_SCHEMA_MIGRATIONS) do rows
+            Set{Int}(row.version for row in Tables.namedtupleiterator(rows))
+        end
+    end
 end
 
 """
@@ -72,40 +75,48 @@ end
 
 Apply every [`Migration`](@ref) in [`MIGRATIONS`](@ref) whose `version` is not yet recorded
 in `schema_migrations`, in ascending order. Each migration's statements run sequentially via
-`DBInterface.execute`; the version is stamped into `schema_migrations` only after every
+[`execute_statement`](@ref); the version is stamped into `schema_migrations` only after every
 statement succeeds, so a crash mid-migration leaves the registry untouched and the migration
-is retried on next startup.
+is retried on next startup. The database lock is held for the whole run, so no request can
+slip a statement between those of a migration.
 
 !!! warning
     Migrations are forward-only. There is no rollback story: every release moves the schema
     forward, never backward.
 """
 function apply_migrations(db::DuckDB.DB)::Nothing
-    applied = applied_versions(db)
-    pending = [m for m in MIGRATIONS if !(m.version in applied)]
+    with_database_lock() do
+        applied = applied_versions(db)
+        pending = [m for m in MIGRATIONS if !(m.version in applied)]
 
-    for migration in (sort_migrations(pending))
-        @info "Applying migration $(lpad(migration.version, 3, '0'))_$(migration.name)"
-        for statement in migration.statements
-            try
-                DBInterface.execute(db, duckdbify(statement))
-            catch exception
-                if _is_idempotent_error(exception)
-                    # Schema is already in the target state, typically because someone
-                    # wiped `schema_migrations` on a DB whose tables were already migrated.
-                    # Tolerate it so apply_migrations is safe to re-run. The version stamp
-                    # is still recorded below, restoring the tracking table to consistency.
-                    @debug "Skipping idempotent statement" statement exception
-                else
-                    rethrow(exception)
+        for migration in (sort_migrations(pending))
+            @info "Applying migration $(lpad(migration.version, 3, '0'))_$(migration.name)"
+            for statement in migration.statements
+                try
+                    execute_statement(db, statement)
+                catch exception
+                    if _is_idempotent_error(exception)
+                        # Schema is already in the target state, typically because someone
+                        # wiped `schema_migrations` on a DB whose tables were already
+                        # migrated. Tolerate it so apply_migrations is safe to re-run. The
+                        # version stamp is still recorded below, restoring the tracking
+                        # table to consistency.
+                        @debug "Skipping idempotent statement" statement exception
+                    else
+                        rethrow(exception)
+                    end
                 end
             end
+            execute_statement(
+                db,
+                SQL_INSERT_SCHEMA_MIGRATION,
+                (
+                    version=migration.version,
+                    name=migration.name,
+                    applied_at=(string(now())),
+                ),
+            )
         end
-        DBInterface.execute(
-            db,
-            duckdbify(SQL_INSERT_SCHEMA_MIGRATION),
-            (version=migration.version, name=migration.name, applied_at=(string(now()))),
-        )
     end
     return nothing
 end

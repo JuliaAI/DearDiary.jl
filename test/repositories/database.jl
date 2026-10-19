@@ -1,4 +1,14 @@
 @testset verbose = true "database utilities" begin
+    @testset verbose = true "database lock" begin
+        @test DearDiary.with_database_lock(() -> 42) == 42
+        # A service takes the lock around a sequence whose statements take it again.
+        nested = DearDiary.with_database_lock() do
+            DearDiary.with_database_lock(() -> :nested)
+        end
+        @test nested == :nested
+        @test !islocked(DearDiary._DATABASE_LOCK)
+    end
+
     @testset verbose = true "initialize database" begin
         @testset "with default file name" begin
             DearDiary.initialize_database()

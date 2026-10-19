@@ -19,16 +19,74 @@ nullable fields.
 row_to_dict(row)::Dict{Symbol,Any} = Dict{Symbol,Any}(pairs(row))
 
 """
+    execute_query(f::Function, query::AbstractString, parameters::NamedTuple=(;))
+    execute_query(f::Function, db::DuckDB.DB, query::AbstractString, parameters::NamedTuple=(;))
+
+Run `query` with `parameters` under the database lock, pass the result to `f`, destroy the
+result and the prepared statement, and return what `f` returned. `f` must copy what it
+needs out of the result; the row helpers below build dictionaries from the Julia-owned
+columns that `Tables.columns` materialises.
+
+The statement and the result are destroyed here instead of by their finalizers, so nothing
+but the `DB` object keeps the instance alive when [`close_database`](@ref) runs, whatever
+the thread count. The generic `DBInterface.execute(db, sql, parameters)` leaves the
+prepared statement to its finalizer, which is why the statement is prepared and closed
+explicitly. Without an explicit `db`, the open database from [`get_database`](@ref) is
+used, read under the lock so a concurrent close cannot hand over an instance that is going
+away.
+"""
+function execute_query(
+    f::Function, db::DuckDB.DB, query::AbstractString, parameters::NamedTuple=(;)
+)
+    return with_database_lock() do
+        stmt = DBInterface.prepare(db, duckdbify(query))
+        try
+            result = DBInterface.execute(stmt, parameters)
+            try
+                f(result)
+            finally
+                DBInterface.close!(result)
+            end
+        finally
+            DBInterface.close!(stmt)
+        end
+    end
+end
+function execute_query(f::Function, query::AbstractString, parameters::NamedTuple=(;))
+    return with_database_lock() do
+        execute_query(f, get_database(), query, parameters)
+    end
+end
+
+"""
+    execute_statement(query::AbstractString, parameters::NamedTuple=(;))::Nothing
+    execute_statement(db::DuckDB.DB, query::AbstractString, parameters::NamedTuple=(;))::Nothing
+
+Run a statement whose rows are not needed, such as an UPDATE, a DELETE, or DDL, through
+[`execute_query`](@ref).
+"""
+function execute_statement(query::AbstractString, parameters::NamedTuple=(;))::Nothing
+    execute_query(_ -> nothing, query, parameters)
+    return nothing
+end
+function execute_statement(
+    db::DuckDB.DB, query::AbstractString, parameters::NamedTuple=(;)
+)::Nothing
+    execute_query(_ -> nothing, db, query, parameters)
+    return nothing
+end
+
+"""
     fetch(query::AbstractString, parameters::NamedTuple)::Optional{Dict{Symbol,Any}}
 
 Execute `query` with `parameters` and return the first row as a dictionary, or `nothing` if
 no row matches.
 """
 function fetch(query::AbstractString, parameters::NamedTuple)::Optional{Dict{Symbol,Any}}
-    result = DBInterface.execute(get_database(), duckdbify(query), parameters)
-    state = iterate(Tables.namedtupleiterator(result))
-    state === nothing && return nothing
-    return row_to_dict(state[1])
+    return execute_query(query, parameters) do result
+        state = iterate(Tables.namedtupleiterator(result))
+        (state === nothing) ? nothing : (row_to_dict(state[1]))
+    end
 end
 
 """
@@ -39,8 +97,9 @@ Execute `query` with `parameters` and return all rows as an array of dictionarie
 function fetch_all(
     query::AbstractString; parameters::NamedTuple=(;)
 )::Array{Dict{Symbol,Any},1}
-    results = DBInterface.execute(get_database(), duckdbify(query), parameters)
-    return [row_to_dict(record) for record in Tables.namedtupleiterator(results)]
+    return execute_query(query, parameters) do result
+        [row_to_dict(record) for record in Tables.namedtupleiterator(result)]
+    end
 end
 
 """
@@ -101,8 +160,9 @@ function insert(
     query::AbstractString, parameters::NamedTuple
 )::@NamedTuple{id::Optional{String}, status::DataType}
     try
-        result = DBInterface.execute(get_database(), duckdbify(query), parameters)
-        record_id = first(Tables.namedtupleiterator(result)).id
+        record_id = execute_query(query, parameters) do result
+            first(Tables.namedtupleiterator(result)).id
+        end
         return (id=record_id, status=Created)
     catch exception
         msg = sprint(showerror, exception)
@@ -144,9 +204,8 @@ function update(
             ["$key=:$key" for key in (keys(parameters)) if !isnothing(parameters[key])],
             ", ",
         )
-        DBInterface.execute(
-            get_database(),
-            duckdbify(replace(query, "{fields}" => fields)),
+        execute_statement(
+            replace(query, "{fields}" => fields),
             merge(parameters, (id=getfield(object, :id),)),
         )
         return Updated
@@ -168,7 +227,7 @@ Execute a DELETE for the row identified by `id`. Returns `true` on success, `fal
 """
 function delete(query::AbstractString, id::AbstractString)::Bool
     try
-        DBInterface.execute(get_database(), duckdbify(query), (id=id,))
+        execute_statement(query, (id=id,))
         return true
     catch _
         return false

@@ -21,17 +21,20 @@ end
 
 Checks if the object fields are different from the provided keyword arguments.
 
+A `nothing` argument means "leave this field unchanged", so it never counts as a
+difference. An update whose arguments are all `nothing` is therefore a no-op.
+
 # Arguments
 - `object::ResultType`: The object to check.
 - `kwargs...`: The keyword arguments to compare with the object fields.
 
 # Returns
-`true` if any of the object fields are different from the provided keyword arguments, `false` otherwise.
+`true` if any of the object fields are different from the provided non-`nothing` keyword arguments, `false` otherwise.
 """
 function compare_object_fields(object::ResultType; kwargs...)::Bool
     fields = fieldnames(typeof(object))
     for field in fields
-        if haskey(kwargs, field)
+        if haskey(kwargs, field) && !(isnothing(kwargs[field]))
             if getfield(object, field) != kwargs[field]
                 return true
             end

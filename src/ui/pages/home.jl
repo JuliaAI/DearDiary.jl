@@ -90,7 +90,9 @@ end
 
 function _project_card(summary::ProjectSummary, index::Integer)
     project = summary.project
+    n_experiments = length(summary.experiments)
     n_iterations = _iteration_count(summary)
+    n_models = length(summary.models)
     last_activity = _last_activity(summary)
     description = if isempty(project.description)
         DOM.p("No description yet."; class="dd-muted")
@@ -102,9 +104,13 @@ function _project_card(summary::ProjectSummary, index::Integer)
         description,
         _tag_chips(summary.tags),
         DOM.div(
-            DOM.span(DOM.b(string(length(summary.experiments))), " experiments"),
-            DOM.span(DOM.b(string(n_iterations)), " iterations"),
-            DOM.span(DOM.b(string(length(summary.models))), " models");
+            DOM.span(
+                DOM.b(string(n_experiments)), " ", _plural_word(n_experiments, "experiment")
+            ),
+            DOM.span(
+                DOM.b(string(n_iterations)), " ", _plural_word(n_iterations, "iteration")
+            ),
+            DOM.span(DOM.b(string(n_models)), " ", _plural_word(n_models, "model"));
             class="dd-card-stats",
         ),
         DOM.div(

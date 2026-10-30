@@ -117,6 +117,30 @@
                 @test experiment.end_date isa DateTime
             end
 
+            @testset "without a status" begin
+                user = DearDiary.get_user_by_username("default")
+                project_id, _ = DearDiary.create_project(user.id, "Test Project")
+                experiment_id, _ = DearDiary.create_experiment(
+                    project_id, DearDiary.IN_PROGRESS, "Service Test Experiment"
+                )
+
+                result = DearDiary.update_experiment(
+                    experiment_id, nothing, nothing, "Only the description", nothing
+                )
+                @test result === DearDiary.Updated
+
+                experiment = DearDiary.get_experiment(experiment_id)
+                @test experiment.description == "Only the description"
+                @test experiment.status_id == Integer(DearDiary.IN_PROGRESS)
+                @test experiment.name == "Service Test Experiment"
+                @test isnothing(experiment.end_date)
+
+                # Nothing to change is a no-op, not an error.
+                @test DearDiary.update_experiment(
+                    experiment_id, nothing, nothing, nothing, nothing
+                ) === DearDiary.Updated
+            end
+
             @testset "with invalid status" begin
                 user = DearDiary.get_user_by_username("default")
                 project_id, _ = DearDiary.create_project(user.id, "Test Project")

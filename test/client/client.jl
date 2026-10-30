@@ -241,8 +241,6 @@
                 client, project_id, (Integer(DearDiary.IN_PROGRESS)), "Mutating Exp"
             )
 
-            # `update_experiment` requires `status_id` on every call. The
-            # ExperimentStatus-typed positional overload passes it without changing it.
             update_experiment(
                 client,
                 experiment_id,
@@ -253,6 +251,12 @@
             renamed = get_experiment(client, experiment_id)
             @test renamed.name == "Renamed"
             @test renamed.description == "updated description"
+
+            # Leaving `status_id` out keeps the current status.
+            update_experiment(client, experiment_id; description="patched without a status")
+            patched = get_experiment(client, experiment_id)
+            @test patched.description == "patched without a status"
+            @test patched.status_id == (Integer(DearDiary.IN_PROGRESS))
 
             # Terminate the experiment.
             update_experiment(client, experiment_id, DearDiary.STOPPED; end_date=now())

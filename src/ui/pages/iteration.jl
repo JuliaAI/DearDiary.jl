@@ -71,7 +71,7 @@ function _render_iteration(iteration::Iteration, ctx::PageContext)::Page
     isnothing(lineage) || push!(body, lineage)
     registry = _registry_section(versions)
     isnothing(registry) || push!(body, registry)
-    push!(body, _environment_section(iteration))
+    push!(body, _environment_section(iteration, _snapshot_source(iteration, parent)))
 
     tab_title = if isnothing(experiment)
         "$(title) · DearDiary"
@@ -211,8 +211,9 @@ function _lineage_section(
     else
         "Child iterations are trials, folds, or workers spawned from this one."
     end
+    # Count the linked iterations: every row except this one.
     return _section(
-        "Lineage", DOM.div(rows...; class="dd-lineage"); count=length(children), note=note
+        "Lineage", DOM.div(rows...; class="dd-lineage"); count=length(rows) - 1, note=note
     )
 end
 
@@ -245,29 +246,51 @@ function _registry_section(versions::AbstractVector{Tuple{Model,ModelVersion}})
     )
 end
 
-function _environment_section(iteration::Iteration)
-    has_snapshot =
-        !isempty(iteration.julia_version) ||
-        !isempty(iteration.git_sha) ||
-        !isempty(iteration.entrypoint) ||
-        !isempty(iteration.manifest_toml)
-    if !has_snapshot
+function _has_snapshot(iteration::Iteration)::Bool
+    return !isempty(iteration.julia_version) ||
+           !isempty(iteration.git_sha) ||
+           !isempty(iteration.entrypoint) ||
+           !isempty(iteration.manifest_toml)
+end
+
+# Child runs skip the capture by default and rely on the run that launched them, so the
+# snapshot that describes an iteration is its own or the nearest ancestor's.
+function _snapshot_source(
+    iteration::Iteration, parent::Optional{Iteration}
+)::Optional{Iteration}
+    _has_snapshot(iteration) && return iteration
+    seen = Set([iteration.id])
+    current = parent
+    while !isnothing(current) && !(current.id in seen)
+        _has_snapshot(current) && return current
+        push!(seen, current.id)
+        current = if isnothing(current.parent_iteration_id)
+            nothing
+        else
+            get_iteration(current.parent_iteration_id)
+        end
+    end
+    return nothing
+end
+
+function _environment_section(iteration::Iteration, source::Optional{Iteration})
+    if isnothing(source)
         return _section(
             "Environment",
             _empty(
                 "No environment captured.",
-                "Snapshots record the Julia version, git commit, entrypoint, and the exact Manifest.toml so the run can be rebuilt later. Child iterations inherit their parent's snapshot.";
+                "Snapshots record the Julia version, git commit, entrypoint, and the exact Manifest.toml so the run can be rebuilt later.";
                 snippet=_SNAPSHOT_SNIPPET,
             );
         )
     end
-    git = if isempty(iteration.git_sha)
+    git = if isempty(source.git_sha)
         DOM.span("not in a git repository"; class="dd-dim")
     else
         DOM.span(
-            DOM.code(iteration.git_sha),
+            DOM.code(source.git_sha),
             " ",
-            if iteration.git_dirty
+            if source.git_dirty
                 _badge((tone="ochre", label="dirty tree"))
             else
                 _badge((tone="sage", label="clean tree"))
@@ -277,24 +300,24 @@ function _environment_section(iteration::Iteration)
     pairs = Any[
         (
             "Julia",
-            if isempty(iteration.julia_version)
+            if isempty(source.julia_version)
                 DOM.span("–"; class="dd-dim")
             else
-                iteration.julia_version
+                source.julia_version
             end,
         ),
         ("Git commit", git),
         (
             "Entrypoint",
-            if isempty(iteration.entrypoint)
+            if isempty(source.entrypoint)
                 DOM.span("REPL session"; class="dd-dim")
             else
-                iteration.entrypoint
+                source.entrypoint
             end,
         ),
     ]
     children = Any[_card(_kv(pairs))]
-    if !isempty(iteration.manifest_toml)
+    if !isempty(source.manifest_toml)
         push!(
             children,
             DOM.div(
@@ -303,31 +326,37 @@ function _environment_section(iteration::Iteration)
                     class="dd-small dd-dim",
                     style="margin: 16px 0 6px",
                 ),
-                _code(
-                    "using DearDiary\nDearDiary.restore(\"$(iteration.id)\")"; inline=true
-                ),
+                _code("using DearDiary\nDearDiary.restore(\"$(source.id)\")"; inline=true),
             ),
         )
     end
-    isempty(iteration.project_toml) || push!(
+    isempty(source.project_toml) || push!(
         children,
         _fold(
             "Project.toml",
-            _code(iteration.project_toml);
-            meta=_pluralize(_line_count(iteration.project_toml), "line"),
+            _code(source.project_toml);
+            meta=_pluralize(_line_count(source.project_toml), "line"),
         ),
     )
-    isempty(iteration.manifest_toml) || push!(
+    isempty(source.manifest_toml) || push!(
         children,
         _fold(
             "Manifest.toml",
-            _code(iteration.manifest_toml);
-            meta=_pluralize(_line_count(iteration.manifest_toml), "line"),
+            _code(source.manifest_toml);
+            meta=_pluralize(_line_count(source.manifest_toml), "line"),
         ),
     )
     return _section(
         "Environment",
         children...;
-        note="Captured at snapshot time so the iteration can be reproduced.",
+        note=if source.id == iteration.id
+            "Captured at snapshot time so the iteration can be reproduced."
+        else
+            DOM.span(
+                "Inherited from ",
+                _link("Iteration $(_iteration_ordinal(source))", _iteration_url(source.id)),
+                ". This iteration has no snapshot of its own.",
+            )
+        end,
     )
 end

@@ -81,11 +81,9 @@ end
 """
     update_experiment(client::Client, id::AbstractString; status_id=nothing, name=nothing, description=nothing, end_date=nothing)::Nothing
 
-Patch an [`Experiment`](@ref) via `PATCH /experiment/{id}`. The server validates
-`status_id` on every call, so pass the current status (or use the
-[`ExperimentStatus`](@ref)-typed overload) when only the other fields change; a missing
-status fails with [`ClientError`](@ref) `"INVALID_PAYLOAD"`. The remaining keywords left as
-`nothing` are left untouched server-side. Reopening (`status_id == Integer(IN_PROGRESS)` on
+Patch an [`Experiment`](@ref) via `PATCH /experiment/{id}`. Keywords left as `nothing`
+are left untouched server-side; a `status_id` outside [`ExperimentStatus`](@ref) fails
+with [`ClientError`](@ref) `"INVALID_PAYLOAD"`. Reopening (`status_id == Integer(IN_PROGRESS)` on
 a row that has an `end_date`) clears `end_date` automatically. Requires
 [`UpdatePermission`](@ref) on the owning project.
 """

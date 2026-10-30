@@ -91,6 +91,13 @@
                 @test project.name == "Updated Test Project"
                 @test project.description == "Updated Description"
             end
+
+            @testset "with nothing to change" begin
+                first_project = DearDiary.get_projects()[1]
+                @test DearDiary.update_project(first_project.id, nothing, nothing) ===
+                    DearDiary.Updated
+                @test DearDiary.get_project(first_project.id).name == first_project.name
+            end
         end
 
         @testset verbose = true "delete project" begin

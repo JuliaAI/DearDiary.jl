@@ -37,5 +37,10 @@
         @test DearDiary.compare_object_fields(
             user; id="00000000-0000-0000-0000-000000000099"
         )
+        # `nothing` means "leave unchanged", so it never counts as a difference.
+        @test !(DearDiary.compare_object_fields(
+            user; first_name=nothing, last_name=nothing
+        ))
+        @test DearDiary.compare_object_fields(user; first_name=nothing, last_name="Gale")
     end
 end

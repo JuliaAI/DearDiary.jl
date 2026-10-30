@@ -86,10 +86,17 @@ end
 
 _short_sha(sha::AbstractString)::String = length(sha) > 7 ? String(sha[1:7]) : String(sha)
 
+# The noun alone, for places that style the count separately from the word.
+function _plural_word(
+    n::Integer, singular::AbstractString, plural::AbstractString="$(singular)s"
+)
+    return n == 1 ? singular : plural
+end
+
 function _pluralize(
     n::Integer, singular::AbstractString, plural::AbstractString="$(singular)s"
 )
-    return "$(n) $(n == 1 ? singular : plural)"
+    return "$(n) $(_plural_word(n, singular, plural))"
 end
 
 function _truncate(s::AbstractString, limit::Integer)::String

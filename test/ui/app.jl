@@ -291,6 +291,10 @@ DearDiary.eval(:(global _DEARDIARY_APICONFIG = nothing))
             @test occursin("Species classification.", home)
             @test occursin("#tabular", home) || occursin(">tabular<", home)
             @test occursin("/project/$(project_id)", home)
+            # Card counts agree with their nouns.
+            @test occursin("<b>1</b> experiment<", home)
+            @test occursin("<b>3</b> iterations<", home)
+            @test occursin("<b>1</b> model<", home)
 
             status, project = DearDiary.render_page("/project/$(project_id)")
             @test status == 200
@@ -341,7 +345,13 @@ DearDiary.eval(:(global _DEARDIARY_APICONFIG = nothing))
 
             status, child = DearDiary.render_page("/iteration/$(child_id)")
             @test status == 200
-            @test occursin("No environment captured.", child)
+            # The child has no snapshot of its own, so it shows its parent's.
+            @test !occursin("No environment captured.", child)
+            @test occursin("Inherited from", child)
+            @test occursin("1.11.0", child)
+            @test occursin("DearDiary.restore&#40;&#34;$(parent_id)&#34;&#41;", child)
+            # Lineage counts the linked parent even when there are no children.
+            @test occursin("Lineage<span class=\"dd-count\">1</span>", child)
             @test occursin("No parameters recorded.", child)
             @test occursin("No metrics recorded.", child)
             @test occursin("/iteration/$(parent_id)", child)
@@ -353,6 +363,9 @@ DearDiary.eval(:(global _DEARDIARY_APICONFIG = nothing))
             @test status == 200
             @test occursin("Boom at step 3", failed)
             @test occursin("dd-note--error", failed)
+            # A top-level run without a snapshot has nothing to inherit.
+            @test occursin("No environment captured.", failed)
+            @test !occursin("Inherited from", failed)
 
             status, model = DearDiary.render_page("/model/$(model_id)")
             @test status == 200

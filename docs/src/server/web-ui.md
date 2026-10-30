@@ -36,7 +36,7 @@ training log.
 | `/` | The projects the viewer can read, with totals for experiments, iterations, and registered models across the workspace. |
 | `/project/<id>` | The project's experiments (status, iteration count, an outcome bar of succeeded, failed, running, and killed iterations, last activity, tags) and its model registry. |
 | `/experiment/<id>` | An iterations table with one column per parameter and per final metric value, child iterations listed under their parent; one chart per metric key comparing iterations; and the experiment's artifacts with download links. |
-| `/iteration/<id>` | A tile per metric with its latest value and a sparkline, a step chart per metric series, the parameters, notes and captured error text, lineage (parent and children), model versions registered from the iteration, and the environment snapshot: Julia version, git commit, entrypoint, and the recorded `Project.toml` and `Manifest.toml` with a ready-to-paste `restore` call. |
+| `/iteration/<id>` | A tile per metric with its latest value and a sparkline, a step chart per metric series, the parameters, notes and captured error text, lineage (parent and children), model versions registered from the iteration, and the environment snapshot (a child without one shows its nearest ancestor's): Julia version, git commit, entrypoint, and the recorded `Project.toml` and `Manifest.toml` with a ready-to-paste `restore` call. |
 | `/model/<id>` | The model's versions with stage, source iteration, and artifact. |
 | `/resource/<id>/download` | The artifact bytes as a file download. |
 

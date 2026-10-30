@@ -109,8 +109,8 @@ clears a previously recorded `end_date`.
 
 # Arguments
 - `id::AbstractString`: The id of the experiment to update.
-- `status_id::Optional{Integer}`: The status of the experiment. Must be a valid
-  [`ExperimentStatus`](@ref) value; passing `nothing` returns [`Unprocessable`](@ref).
+- `status_id::Optional{Integer}`: The new status of the experiment, or `nothing` to leave
+  it unchanged. Any other value must be a valid [`ExperimentStatus`](@ref).
 - `name::Optional{AbstractString}`: The new name of the experiment.
 - `description::Optional{AbstractString}`: The new description of the experiment.
 - `end_date::Optional{DateTime}`: The new end date of the experiment.
@@ -130,7 +130,7 @@ function update_experiment(
         return Unprocessable
     end
 
-    if !(status_id in (Int.(instances(ExperimentStatus))))
+    if !(isnothing(status_id)) && !(status_id in (Int.(instances(ExperimentStatus))))
         return Unprocessable
     end
 

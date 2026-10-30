@@ -81,6 +81,7 @@ include("utils.jl")
 # Functional tests
 include("types/parameter.jl")
 include("types/utils.jl")
+include("types/show.jl")
 include("types/enums.jl")
 
 include("artifacts/vectors.jl")

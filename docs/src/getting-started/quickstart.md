@@ -40,6 +40,11 @@ get_parameters(iteration.id)
 get_metrics(iteration.id)
 ```
 
+A list prints one record per line, and a single record prints every field. Each list is
+also a [Tables.jl](https://github.com/JuliaData/Tables.jl) table, so
+`DataFrame(get_metrics(iteration.id))` or `pretty_table(get_metrics(iteration.id))` work
+once DataFrames.jl or PrettyTables.jl is loaded.
+
 ## See it in the browser
 
 Start the server with `DearDiary.run()` and open `http://127.0.0.1:9001`. Every

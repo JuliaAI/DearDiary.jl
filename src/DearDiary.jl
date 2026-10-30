@@ -37,6 +37,7 @@ include("types/resource.jl")
 include("types/tag.jl")
 include("types/model.jl")
 include("types/modelversion.jl")
+include("types/show.jl")
 
 include("artifacts/store.jl")
 include("artifacts/inline.jl")

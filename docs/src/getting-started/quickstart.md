@@ -40,5 +40,12 @@ get_parameters(iteration.id)
 get_metrics(iteration.id)
 ```
 
-To browse the same data in a browser, start the server with `DearDiary.run()` and open
-`http://127.0.0.1:9001`. See [Embedded web UI](@ref).
+## See it in the browser
+
+Start the server with `DearDiary.run()` and open `http://127.0.0.1:9001`. Every
+iteration gets its own page. Once a run has logged a few metrics per epoch, it looks
+like this:
+
+![An iteration page with notes, a tile and sparkline per metric, and step charts for train_loss and val_accuracy](../assets/screenshots/iteration.png)
+
+[Embedded web UI](@ref) walks through the rest of the dashboard.

@@ -63,6 +63,11 @@ snapshot = DearDiary.capture_environment();
 snapshot.julia_version
 ```
 
+The dashboard shows a captured snapshot at the bottom of the iteration's page, with the
+`restore` call ready to copy:
+
+![The environment section of an iteration page: Julia version, git commit, entrypoint, a restore call, and collapsible Project.toml and Manifest.toml](../assets/screenshots/environment.png)
+
 ## Replay an environment
 
 [`restore`](@ref) writes the captured `Project.toml` and `Manifest.toml` into a fresh

@@ -7,7 +7,7 @@ CurrentModule = DearDiary
 ```
 
 # DearDiary.jl
-*An ML experiment tracker written in Julia.*
+*A diary for your machine learning experiments, written in Julia.*
 
 ```@raw html
 <a class="github-button"
@@ -20,21 +20,63 @@ CurrentModule = DearDiary
 ```
 
 ```@raw html
-<img src="assets/deardiary-logo.svg" width="200" align="right" />
+<img src="assets/deardiary-logo.svg" width="200" align="right" alt="DearDiary logo" />
 ```
 
-The [Installation](@ref) and [Quickstart](@ref) pages cover initial setup. [Embedded web UI](@ref)
-describes the dashboard.
+DearDiary records what you train: the parameters you chose, the metrics you got, the files
+you saved, and the exact Julia environment each run used. By default everything lives in one DuckDB
+file, so you can start on a laptop with no server at all. When more people join, the same
+calls log to a shared server over HTTP, and everyone browses the results in the built-in
+web dashboard.
 
-## Features
-- **Tracking surface**: projects, experiments, iterations, parameters, metrics, tagged resources. Iterations form parent/child trees for HPO sweeps and distributed workers, and a status enum records failures with the captured exception text.
-- **Server + client**: built-in REST API for remote logging and a native Julia client (`DearDiary.connect`, `with_iteration`, …) that auto-finalises iterations whether the body returns or throws.
-- **Environment capture and replay**: every iteration records a `Manifest.toml` snapshot, the Julia version, and the git SHA. `DearDiary.restore(iteration_id)` writes the captured environment to a fresh directory for `Pkg.instantiate`.
-- **Pluggable storage**: single-file DuckDB metadata store. Artifact bytes live inline, on a local filesystem, or in any S3-compatible object store (AWS S3, MinIO, Cloudflare R2). `migrate_artifacts!` moves rows between backends on a live database.
-- **Web dashboard**: server-rendered pages next to the REST API for browsing projects, experiments, iterations, metric charts, artifacts, and the model registry. Names, descriptions, notes, status, stage, and tags are edited in place, and administrators manage users and project permissions when authentication is on.
+![A tour of the DearDiary dashboard: the project list, a learning-rate sweep with its metric charts, one iteration's environment snapshot, and the dark theme](assets/screenshots/tour.gif)
 
-## Motivation
-Reproducible ML depends on knowing what code, data, and environment produced each result. Established trackers such as MLflow, Weights & Biases, and Aim are Python-first, and Python environment capture commonly records dependency specifications that the installer re-resolves at install time. DearDiary is Julia-native and persists the `Manifest.toml` for each run, so the captured dependency environment can be reconstructed later by running `DearDiary.restore(iteration_id)`. The same tracking API applies whether the database is a single-file DuckDB store on a laptop or a multi-worker S3-backed deployment.
+New here? [Installation](@ref) takes one line, and the [Quickstart](@ref) logs your first
+run in about a minute.
+
+## What you can do with it
+
+Track projects, experiments, and iterations, each with parameters, metrics, notes, and
+tagged artifacts. Iterations can have children, which fits hyperparameter sweeps and
+distributed workers (see [Parent and child iterations](@ref)). When a run throws, it is
+marked failed and keeps the error text.
+
+Log from anywhere. Call the tracking functions directly in your training process, or run
+the REST server and log over HTTP with the Julia client (`DearDiary.connect`,
+`with_iteration`, and friends). The client closes each iteration for you, whether the body
+returns or throws. [Log from a remote client](@ref) shows how.
+
+Rebuild old runs. Every driver iteration records a `Manifest.toml` snapshot, the Julia
+version, and the git commit. `DearDiary.restore(iteration_id)` writes that environment to
+a fresh directory, ready for `Pkg.instantiate`. See [Reproduce a past run](@ref).
+
+Store artifacts where they fit. Bytes can sit inline in the database, on a local
+filesystem, or in any S3-compatible object store (AWS S3, MinIO, Cloudflare R2), and
+`migrate_artifacts!` moves them between backends on a live database.
+
+Keep a model registry. Register checkpoints as versions, link them to the run that
+produced them, and promote them through staging and production. See
+[Register and stage models](@ref).
+
+Browse and tidy up in the dashboard. Compare runs in sortable tables and charts, edit
+names, descriptions, notes, statuses, stages, and tags in place, and manage users and
+project permissions when authentication is on. [Embedded web UI](@ref) has the details.
+
+![An experiment page listing seven iterations with their status, duration, parameters, and final metrics](assets/screenshots/experiment.png)
+
+## Why DearDiary?
+
+Reproducible ML depends on knowing which code, data, and environment produced each
+result. Established trackers such as MLflow, Weights & Biases, and Aim are Python-first,
+and Python environment capture usually records dependency specifications that the
+installer resolves again at install time. DearDiary is written for Julia and saves the
+`Manifest.toml` of every run, so `DearDiary.restore(iteration_id)` can bring back the same
+dependency tree later. The tracking API is the same whether the store is a single DuckDB
+file on a laptop or a multi-worker deployment backed by S3.
 
 ## Contributing
-Open an issue or pull request on the [GitHub repository](https://github.com/JuliaAI/DearDiary.jl). Follow the existing [code style](https://github.com/JuliaDiff/BlueStyle) and include tests for new features.
+
+Bug reports, questions, and pull requests are welcome on the
+[GitHub repository](https://github.com/JuliaAI/DearDiary.jl). Please follow the
+[BlueStyle](https://github.com/JuliaDiff/BlueStyle) code style and add tests for new
+features.

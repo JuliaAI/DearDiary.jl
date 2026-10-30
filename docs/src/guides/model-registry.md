@@ -124,6 +124,11 @@ producing_iteration = (version_b_id |> get_modelversion).iteration_id |> get_ite
 get_parameters(producing_iteration.id)
 ```
 
+The model page in the dashboard shows a model's version history, with each version's stage,
+source iteration, and artifact:
+
+![A model page with v2 in production and v1 archived, each linked to its source iteration and checkpoint file](../assets/screenshots/model.png)
+
 ## Rename a model
 
 The registry name can change after versions exist. [`update_model`](@ref) leaves a field

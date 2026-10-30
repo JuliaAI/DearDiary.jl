@@ -56,6 +56,11 @@ stores the token from `POST /auth` in an `HttpOnly`, `SameSite=Strict` cookie th
 with the token, and **Sign out** clears it. See [Embedded web UI](@ref) for the pages that
 manage users and permissions.
 
+Administrators grant access per project from the dashboard, using the same permission
+flags as the REST API:
+
+![The project access grid for one member, with read, create, update, and delete checkboxes per project](../assets/screenshots/user-access.png)
+
 ## Client helpers
 
 [`connect`](@ref) handles the sign-in call and stores the returned token:

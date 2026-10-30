@@ -103,6 +103,12 @@ best = argmax(c -> get_metrics(c.id)[1].value, filter(c -> c.status_id == (DearD
 best_depth = get_parameters(best.id)[1].value
 ```
 
+In the dashboard, the experiment table lists each child under its parent, so a sweep
+reads as one block. A failed trial stays in place with its status, and sorting a metric
+column surfaces the best trial:
+
+![An experiment table with a sweep driver and five child trials, one of which failed, plus a separate running iteration](../assets/screenshots/experiment.png)
+
 ## Cascading deletes
 
 Children are independent rows: deleting the parent does **not** delete its children.
